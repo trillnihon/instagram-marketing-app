@@ -11,7 +11,7 @@ InstagramとThreadsの投稿を分析し、AIによる最適化提案を行うWe
 - **📋 分析履歴管理**: ユーザー別の分析結果保存とPDF出力
 - **📧 メール認証**: SendGridを使用した安全な認証システム
 
-## 📊 現在の開発状況（2025年7月25日）
+## 📊 現在の開発状況（2025年1月25日）
 
 ### ✅ 完了済み機能
 - **認証システム**: メールアドレス・パスワードログイン
@@ -21,7 +21,7 @@ InstagramとThreadsの投稿を分析し、AIによる最適化提案を行うWe
 - **Threads分析**: トレンド分析・ランキング
 - **PWA機能**: 完全実装済み（Service Worker、マニフェスト）
 - **セキュリティ**: HTTPS強制、JWT強度チェック、CORS設定
-- **OAuth認証**: 本番対応済み（Facebook開発者コンソール設定待ち）
+- **OAuth認証**: 本番対応済み（Facebook開発者コンソール設定完了）
 
 ### 🔄 準備完了機能
 - **本番デプロイ**: Vercel + Render設定完了
@@ -29,8 +29,6 @@ InstagramとThreadsの投稿を分析し、AIによる最適化提案を行うWe
 - **環境変数**: 本番用テンプレート準備完了
 
 ### 🚀 次のステップ
-- **MongoDB Atlasクラスター作成**
-- **Facebook開発者コンソール設定**
 - **本番デプロイ実行**
 - **動作確認・テスト**
 
@@ -550,7 +548,7 @@ instagram-marketing-app/
 
 ### 1. リポジトリのクローン
 ```bash
-git clone https://github.com/yourusername/instagram-marketing-app.git
+git clone https://github.com/trillnihon/instagram-marketing-app.git
 cd instagram-marketing-app
 ```
 
@@ -609,7 +607,7 @@ npm start
 ### 6. ログイン方法
 - **新規ユーザー**: 新規登録ページでアカウント作成
 - **既存ユーザー**: メールアドレス・パスワードでログイン
-- **OAuth機能**: 現在デモモード（Facebook開発者コンソール設定完了後に有効化予定）
+- **OAuth機能**: Facebook開発者コンソール設定完了済み
 
 ## 🌐 本番環境構成
 
@@ -620,9 +618,9 @@ npm start
 
 ### URL構成例
 ```
-フロントエンド: https://your-app.vercel.app
-バックエンド: https://your-backend.onrender.com
-API: https://your-backend.onrender.com/api
+フロントエンド: https://instagram-marketing-app.vercel.app
+バックエンド: https://instagram-marketing-backend.onrender.com
+API: https://instagram-marketing-backend.onrender.com/api
 ```
 
 ## 🔐 環境変数一覧
@@ -630,17 +628,17 @@ API: https://your-backend.onrender.com/api
 ### フロントエンド (.env)
 ```env
 # API設定
-VITE_API_BASE_URL=https://your-backend-url.onrender.com/api
-NEXT_PUBLIC_API_URL=https://your-backend-url.onrender.com
+VITE_API_BASE_URL=https://instagram-marketing-backend.onrender.com/api
+NEXT_PUBLIC_API_URL=https://instagram-marketing-backend.onrender.com
 
 # Instagram API設定
-VITE_INSTAGRAM_APP_ID=your_instagram_app_id
-VITE_INSTAGRAM_APP_SECRET=your_instagram_app_secret
-VITE_INSTAGRAM_REDIRECT_URI=https://yourdomain.com/auth/callback
+VITE_INSTAGRAM_APP_ID=25252287587694713
+VITE_INSTAGRAM_APP_SECRET=14ad79e7973687a6e3f803024caaf5b9
+VITE_INSTAGRAM_REDIRECT_URI=https://instagram-marketing-app.vercel.app/auth/callback
 
 # Facebook API設定
-VITE_FACEBOOK_APP_ID=your_facebook_app_id
-VITE_FACEBOOK_APP_SECRET=your_facebook_app_secret
+VITE_FACEBOOK_APP_ID=1193533602546658
+VITE_FACEBOOK_APP_SECRET=5f337d6e7ad05fd7a74cd78f13d7d5c1
 
 # Stripe設定
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_key
@@ -658,7 +656,7 @@ NODE_ENV=production
 PORT=4000
 
 # データベース
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
+MONGODB_URI=mongodb+srv://trill03100321:mYvoYpl10yxf9Py2@instagram-app-cluster.hnahwkn.mongodb.net/?retryWrites=true&w=majority&appName=instagram-app-cluster
 
 # API設定
 OPENAI_API_KEY=sk-your-openai-api-key
@@ -678,7 +676,7 @@ SENDGRID_FROM_EMAIL=noreply@yourdomain.com
 
 # セキュリティ
 SESSION_SECRET=your-super-secure-session-secret
-CORS_ORIGIN=https://your-frontend.vercel.app
+CORS_ORIGIN=https://instagram-marketing-app.vercel.app
 
 # レート制限
 RATE_LIMIT_WINDOW_MS=900000
@@ -762,13 +760,13 @@ RENDER_SERVICE_ID=your-render-service-id
 - ✅ **レスポンシブデザイン**: Tailwind CSSで実装済み
 - ✅ **モバイル最適化**: Viteで自動最適化
 - ✅ **タッチ操作**: タッチフレンドリーなUI
-- ⏳ **PWA対応**: 今後の実装予定
+- ✅ **PWA対応**: 完全実装済み（Service Worker、マニフェスト）
 
-### PWA対応予定
-- Service Worker実装
+### PWA機能
+- Service Worker実装済み
 - オフライン対応
-- プッシュ通知
-- ホーム画面追加
+- プッシュ通知準備完了
+- ホーム画面追加対応
 
 ## 🧩 トラブルシューティング
 
@@ -790,24 +788,24 @@ npm run dev
 
 #### 3. OAuthログインボタンが動作しない
 ```bash
-# 現在デモモードです
+# Facebook開発者コンソール設定完了済み
 # 対処法: メールアドレス・パスワードでログインしてください
-# OAuth機能はFacebook開発者コンソール設定完了後に有効化予定
+# OAuth機能は本番環境で有効化予定
 ```
 
-#### 3. CORSエラー
+#### 4. CORSエラー
 ```bash
 # エラー: CORS policy blocked
 # 対処法: CORS_ORIGIN環境変数を正しく設定
 ```
 
-#### 4. API呼び出しエラー
+#### 5. API呼び出しエラー
 ```bash
 # エラー: Failed to fetch
 # 対処法: VITE_API_BASE_URL環境変数を確認
 ```
 
-#### 5. ビルドエラー
+#### 6. ビルドエラー
 ```bash
 # TypeScriptエラー
 npm run build
@@ -841,11 +839,8 @@ npm run dev
 - **画像最適化**: WebP形式対応
 - **キャッシュ戦略**: ブラウザキャッシュ活用
 - **CDN**: Vercel・RenderのCDN活用
-
-### 実装済み
 - **Service Worker**: オフライン対応実装済み
 - **PWA機能**: マニフェスト・アイコン設定済み
-- **キャッシュ戦略**: 静的・動的コンテンツ対応
 
 ### 今後の改善予定
 - **画像遅延読み込み**: パフォーマンス向上
@@ -901,5 +896,5 @@ MIT License - 詳細は [LICENSE](./LICENSE) を参照
 ---
 
 **開発者**: AI Assistant (Cursor)  
-**最終更新**: 2025年7月25日  
-**バージョン**: 1.0.0 
+**最終更新**: 2025年1月25日  
+**バージョン**: 1.0.0
