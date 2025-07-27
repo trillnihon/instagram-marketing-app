@@ -1,0 +1,55 @@
+{
+  "name": "instagram-marketing-app",
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://instagram-marketing-backend.onrender.com/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_API_BASE_URL": "https://instagram-marketing-backend.onrender.com/api",
+    "VITE_FACEBOOK_APP_ID": "1193533602546658",
+    "VITE_FACEBOOK_APP_SECRET": "5f337d6e7ad05fd7a74cd78f13d7d5c1",
+    "VITE_INSTAGRAM_APP_ID": "25252287587694713",
+    "VITE_INSTAGRAM_APP_SECRET": "14ad79e7973687a6e3f803024caaf5b9",
+    "VITE_INSTAGRAM_REDIRECT_URI": "https://instagram-marketing-app.vercel.app/auth/callback"
+  },
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "installCommand": "npm install",
+  "headers": [
+    {
+      "source": "/manifest.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
+  ]
+} 
