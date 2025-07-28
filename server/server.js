@@ -165,11 +165,22 @@ app.get('/debug', (req, res) => {
 
 // ルートエンドポイント
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Instagram Marketing App Backend API',
     status: 'running',
     version: '1.0.0',
     time: new Date().toISOString()
+  });
+});
+
+// ヘルスチェックエンドポイント
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    mongoConnected: mongoConnected
   });
 });
 
