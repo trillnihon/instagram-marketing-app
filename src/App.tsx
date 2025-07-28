@@ -50,7 +50,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   // 認証チェックを強化
   if (!isAuthenticated || !currentUser) {
     console.log('❌ [DEBUG] ProtectedRoute - 認証失敗、ログイン画面にリダイレクト');
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
   
   console.log('✅ [DEBUG] ProtectedRoute - 認証成功、コンテンツ表示');
@@ -75,7 +75,7 @@ const App: React.FC = () => {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/profile" element={<Profile />} />
