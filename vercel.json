@@ -12,7 +12,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://instagram-marketing-backend.onrender.com/api/$1"
+      "destination": "https://instagram-marketing-backend-v2.onrender.com/api/$1"
     },
     {
       "source": "/manifest.json",
@@ -32,7 +32,7 @@
     }
   ],
   "env": {
-    "VITE_API_BASE_URL": "https://instagram-marketing-backend.onrender.com/api",
+    "VITE_API_BASE_URL": "https://instagram-marketing-backend-v2.onrender.com/api",
     "VITE_FACEBOOK_APP_ID": "1193533602546658",
     "VITE_FACEBOOK_APP_SECRET": "5f337d6e7ad05fd7a74cd78f13d7d5c1",
     "VITE_INSTAGRAM_APP_ID": "25252287587694713",

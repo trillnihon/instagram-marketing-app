@@ -45,7 +45,7 @@ import {
   saveAnalysisResult 
 } from './services/threadsDataService.js';
 import { AIPostGenerator } from './services/aiPostGenerator.js';
-import authRouter from './routes/auth.js';
+import authRouter from './authRouter.js';
 import analysisHistoryRouter from './routes/analysisHistory.js';
 import { User } from './models/User.js';
 import { authenticateToken } from './middleware/auth.js';
