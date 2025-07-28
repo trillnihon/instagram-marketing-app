@@ -176,11 +176,27 @@ app.get('/', (req, res) => {
 // 簡易ログインエンドポイント（デモ用）
 app.post('/api/auth/login', async (req, res) => {
   try {
+    console.log('[DEBUG] ログインリクエスト受信');
+    console.log('[DEBUG] リクエストヘッダー:', req.headers);
+    console.log('[DEBUG] リクエストボディ:', req.body);
+    
     const { email, password } = req.body;
+    
+    // バリデーション
+    if (!email || !password) {
+      console.log('[DEBUG] バリデーションエラー: メールまたはパスワードが不足');
+      return res.status(400).json({
+        success: false,
+        error: 'メールアドレスとパスワードは必須です'
+      });
+    }
+    
+    console.log('[DEBUG] 認証チェック開始:', { email, password: password ? '***' : 'undefined' });
     
     // デモ用の簡易認証
     if (email === 'trill.0310.0321@gmail.com' && password === 'password123') {
-      res.json({
+      console.log('[DEBUG] 認証成功');
+      const response = {
         success: true,
         message: 'ログインに成功しました',
         user: {
@@ -189,18 +205,22 @@ app.post('/api/auth/login', async (req, res) => {
           username: 'demo_user'
         },
         token: 'demo-token-123'
-      });
+      };
+      console.log('[DEBUG] レスポンス送信:', response);
+      res.json(response);
     } else {
+      console.log('[DEBUG] 認証失敗: 無効な認証情報');
       res.status(401).json({
         success: false,
         error: 'メールアドレスまたはパスワードが正しくありません'
       });
     }
   } catch (error) {
-    console.error('ログインエラー:', error);
+    console.error('[ERROR] ログインエラー:', error);
     res.status(500).json({
       success: false,
-      error: 'ログインに失敗しました'
+      error: 'ログインに失敗しました',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

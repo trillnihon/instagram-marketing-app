@@ -85,6 +85,8 @@ export const useAppStore = create<AuthState>()(
         try {
           set({ isLoading: true });
           
+          console.log('[DEBUG] ログイン開始:', { email });
+          
           const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
@@ -93,9 +95,26 @@ export const useAppStore = create<AuthState>()(
             body: JSON.stringify({ email, password }),
           });
 
-          const data = await response.json();
+          console.log('[DEBUG] レスポンスステータス:', response.status);
+          console.log('[DEBUG] レスポンスヘッダー:', Object.fromEntries(response.headers.entries()));
+
+          // レスポンスの内容を確認
+          const responseText = await response.text();
+          console.log('[DEBUG] レスポンス内容:', responseText);
+
+          let data;
+          try {
+            data = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error('[ERROR] JSON解析エラー:', parseError);
+            console.error('[ERROR] レスポンス内容:', responseText);
+            set({ isLoading: false });
+            alert('サーバーからの応答が不正です。しばらく待ってから再試行してください。');
+            return false;
+          }
 
           if (data.success) {
+            console.log('[DEBUG] ログイン成功:', data);
             set({
               isAuthenticated: true,
               token: data.token,
@@ -104,14 +123,21 @@ export const useAppStore = create<AuthState>()(
             });
             return true;
           } else {
+            console.log('[DEBUG] ログイン失敗:', data);
             set({ isLoading: false });
             alert(data.error || 'ログインに失敗しました');
             return false;
           }
         } catch (error) {
-          console.error('ログインエラー:', error);
+          console.error('[ERROR] ログインエラー:', error);
           set({ isLoading: false });
-          alert('ログイン中にエラーが発生しました');
+          
+          // エラーの種類に応じてメッセージを変更
+          if (error instanceof TypeError && error.message.includes('fetch')) {
+            alert('サーバーに接続できません。しばらく待ってから再試行してください。');
+          } else {
+            alert('ログイン中にエラーが発生しました。しばらく待ってから再試行してください。');
+          }
           return false;
         }
       },
