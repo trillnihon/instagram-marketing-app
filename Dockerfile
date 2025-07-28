@@ -1,5 +1,5 @@
 # マルチステージビルド
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # 作業ディレクトリを設定
 WORKDIR /app
@@ -23,7 +23,7 @@ COPY index.html ./
 RUN npm run build
 
 # 本番用イメージ
-FROM node:18-alpine AS production
+FROM node:20-alpine AS production
 
 # 作業ディレクトリを設定
 WORKDIR /app
