@@ -62,13 +62,13 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // APIリクエストはネットワークファースト
+  // APIリクエストはネットワークファースト（GETリクエストのみキャッシュ）
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // 成功したレスポンスをキャッシュに保存
-          if (response.status === 200) {
+          // GETリクエストのみキャッシュに保存
+          if (response.status === 200 && request.method === 'GET') {
             const responseClone = response.clone();
             caches.open(DYNAMIC_CACHE)
               .then((cache) => {
@@ -78,8 +78,11 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // ネットワークエラー時はキャッシュから取得
-          return caches.match(request);
+          // ネットワークエラー時はキャッシュから取得（GETリクエストのみ）
+          if (request.method === 'GET') {
+            return caches.match(request);
+          }
+          return new Response('Network error', { status: 503 });
         })
     );
     return;
