@@ -163,6 +163,16 @@ app.get('/debug', (req, res) => {
   });
 });
 
+// ルートエンドポイント
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Instagram Marketing App Backend API',
+    status: 'running',
+    version: '1.0.0',
+    time: new Date().toISOString()
+  });
+});
+
 // /healthエンドポイント
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });

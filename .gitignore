@@ -97,3 +97,4 @@ SECRETS.md
 *.secrets
 secrets/
 CREDENTIALS_BACKUP.txt 
+.vercel
