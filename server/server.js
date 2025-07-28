@@ -173,6 +173,38 @@ app.get('/', (req, res) => {
   });
 });
 
+// 簡易ログインエンドポイント（デモ用）
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // デモ用の簡易認証
+    if (email === 'trill.0310.0321@gmail.com' && password === 'password123') {
+      res.json({
+        success: true,
+        message: 'ログインに成功しました',
+        user: {
+          id: 'demo-user-1',
+          email: email,
+          username: 'demo_user'
+        },
+        token: 'demo-token-123'
+      });
+    } else {
+      res.status(401).json({
+        success: false,
+        error: 'メールアドレスまたはパスワードが正しくありません'
+      });
+    }
+  } catch (error) {
+    console.error('ログインエラー:', error);
+    res.status(500).json({
+      success: false,
+      error: 'ログインに失敗しました'
+    });
+  }
+});
+
 // /healthエンドポイント
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
