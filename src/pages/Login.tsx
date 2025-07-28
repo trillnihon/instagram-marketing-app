@@ -4,12 +4,20 @@ import { useAppStore } from '../store/useAppStore';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login, oauthLogin, isLoading } = useAppStore();
+  const { login, oauthLogin, isLoading, isAuthenticated, currentUser } = useAppStore();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [error, setError] = useState('');
+
+  // 認証状態の変更を監視してページ遷移
+  React.useEffect(() => {
+    if (isAuthenticated && currentUser) {
+      console.log('[DEBUG] 認証状態変更検知 - ダッシュボードに遷移:', { isAuthenticated, currentUser });
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, currentUser, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -29,7 +37,8 @@ const Login: React.FC = () => {
 
     const success = await login(formData.email, formData.password);
     if (success) {
-      navigate('/dashboard');
+      console.log('[DEBUG] ログイン成功 - 状態更新完了');
+      // useEffectで認証状態の変更を監視しているので、ここでの遷移は不要
     }
   };
 
