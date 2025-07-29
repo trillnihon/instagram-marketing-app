@@ -156,6 +156,10 @@ const App: React.FC = () => {
             } 
           />
           <Route 
+            path="/auth/instagram/callback" 
+            element={<AuthCallback />} 
+          />
+          <Route 
             path="/diagnostics" 
             element={
               <ProtectedRoute>
