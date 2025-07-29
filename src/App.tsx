@@ -69,6 +69,15 @@ const App: React.FC = () => {
       } : null,
       timestamp: new Date().toISOString()
     });
+    
+    // 現在のURLとパスをログ出力
+    console.log('📍 [DEBUG] 現在のURL情報:', {
+      href: window.location.href,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      hash: window.location.hash,
+      origin: window.location.origin
+    });
   }, []);
 
   return (
@@ -157,7 +166,11 @@ const App: React.FC = () => {
           />
           <Route 
             path="/auth/instagram/callback" 
-            element={<AuthCallback />} 
+            element={
+              <React.Suspense fallback={<div>Loading...</div>}>
+                <AuthCallback />
+              </React.Suspense>
+            } 
           />
           <Route 
             path="/diagnostics" 

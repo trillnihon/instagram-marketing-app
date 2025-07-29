@@ -9,6 +9,9 @@ const AuthCallback: React.FC = () => {
 
   const handleAuthCallback = async () => {
     try {
+      console.log('🔄 [DEBUG] AuthCallback - 処理開始');
+      console.log('📍 [DEBUG] AuthCallback - 現在のURL:', window.location.href);
+      
       setLoading?.(true);
       setError?.(null);
 
@@ -16,11 +19,18 @@ const AuthCallback: React.FC = () => {
       const code = urlParams.get('code');
       const state = urlParams.get('state');
 
+      console.log('🔍 [DEBUG] AuthCallback - URLパラメータ:', {
+        code: code ? `${code.substring(0, 10)}...` : null,
+        state,
+        hasCode: !!code,
+        hasState: !!state
+      });
+
       if (!code) {
         throw new Error('認証コードが取得できませんでした');
       }
 
-      console.log('[DEBUG] 認証コード取得:', code);
+      console.log('✅ [DEBUG] 認証コード取得成功:', code.substring(0, 10) + '...');
 
       // バックエンドサーバーへのリクエストを試行
       try {
@@ -29,39 +39,68 @@ const AuthCallback: React.FC = () => {
           ? 'http://localhost:4000' 
           : 'https://instagram-marketing-backend.onrender.com';
         
-        console.log('[DEBUG] AuthCallback - API_BASE_URL:', API_BASE_URL);
+        console.log('🌐 [DEBUG] AuthCallback - API_BASE_URL:', API_BASE_URL);
         
-        const response = await fetch(`${API_BASE_URL}/auth/instagram/callback`, {
+        const requestUrl = `${API_BASE_URL}/auth/instagram/callback`;
+        const requestBody = JSON.stringify({ code, state });
+        
+        console.log('📤 [DEBUG] AuthCallback - リクエスト送信:', {
+          url: requestUrl,
+          method: 'POST',
+          bodyLength: requestBody.length
+        });
+        
+        const response = await fetch(requestUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ code, state }),
+          body: requestBody,
+        });
+
+        console.log('📥 [DEBUG] AuthCallback - レスポンス受信:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const errorText = await response.text();
+          console.error('❌ [DEBUG] AuthCallback - HTTPエラー:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorText
+          });
+          throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
         }
 
         const authData = await response.json();
+        console.log('✅ [DEBUG] AuthCallback - 認証データ受信:', {
+          success: authData.success,
+          hasAccessToken: !!authData.accessToken,
+          hasUser: !!authData.user
+        });
 
         if (authData.success) {
           setAuthenticated?.(true);
           setStatus('success');
+          console.log('🎉 [DEBUG] AuthCallback - 認証成功、ダッシュボードに遷移');
           setTimeout(() => navigate('/dashboard'), 2000);
         } else {
           throw new Error(authData.error || '認証に失敗しました');
         }
       } catch (backendError) {
-        console.warn('[WARN] バックエンドサーバーが利用できません:', backendError);
+        console.warn('⚠️ [DEBUG] AuthCallback - バックエンドエラー:', backendError);
         
         // フロントエンドのみでの認証処理（デモモード）
-        console.log('[INFO] フロントエンド認証モードに切り替え');
+        console.log('🔄 [DEBUG] AuthCallback - フロントエンド認証モードに切り替え');
         
         // 認証コードを保存（後で使用可能）
         localStorage.setItem('instagram_auth_code', code);
         localStorage.setItem('instagram_auth_state', state || '');
         localStorage.setItem('instagram_auth_timestamp', Date.now().toString());
+        
+        console.log('💾 [DEBUG] AuthCallback - 認証情報をローカルストレージに保存');
         
         // デモモードで認証成功として処理
         setAuthenticated?.(true);
@@ -74,7 +113,7 @@ const AuthCallback: React.FC = () => {
         }, 2000);
       }
     } catch (error) {
-      console.error('認証コールバックエラー:', error);
+      console.error('💥 [DEBUG] AuthCallback - 致命的エラー:', error);
       setError?.(error instanceof Error ? error.message : '認証に失敗しました');
       setStatus('error');
       
@@ -87,6 +126,7 @@ const AuthCallback: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log('🚀 [DEBUG] AuthCallback - コンポーネントマウント');
     handleAuthCallback();
   }, []);
 
@@ -101,6 +141,10 @@ const AuthCallback: React.FC = () => {
           <p className="text-gray-600">
             認証情報を処理しています。しばらくお待ちください。
           </p>
+          <div className="mt-4 text-sm text-gray-500">
+            <p>URL: {window.location.href}</p>
+            <p>パス: {window.location.pathname}</p>
+          </div>
         </div>
       </div>
     );
