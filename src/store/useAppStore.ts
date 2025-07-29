@@ -87,7 +87,14 @@ export const useAppStore = create<AuthState>()(
           
           console.log('[DEBUG] ログイン開始:', { email });
           
-          const response = await fetch('/api/auth/login', {
+          // 環境に応じてAPI_BASE_URLを切り替え
+          const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:4000' 
+            : 'https://instagram-marketing-backend.onrender.com';
+          
+          console.log('[DEBUG] ログイン - API_BASE_URL:', API_BASE_URL);
+          
+          const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -147,7 +154,12 @@ export const useAppStore = create<AuthState>()(
         try {
           set({ isLoading: true });
           
-          const response = await fetch('/api/auth/signup', {
+          // 環境に応じてAPI_BASE_URLを切り替え
+          const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:4000' 
+            : 'https://instagram-marketing-backend.onrender.com';
+          
+          const response = await fetch(`${API_BASE_URL}/auth/signup`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
