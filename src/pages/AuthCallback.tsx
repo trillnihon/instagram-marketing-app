@@ -43,7 +43,7 @@ const AuthCallback: React.FC = () => {
         // 環境に応じてAPI_BASE_URLを切り替え
         const API_BASE_URL = window.location.hostname === 'localhost' 
           ? 'http://localhost:4000' 
-          : 'https://instagram-marketing-backend.onrender.com';
+          : 'https://instagram-marketing-backend-v2.onrender.com';
         
         console.log('🌐 [DEBUG] AuthCallback - API_BASE_URL:', API_BASE_URL);
         
