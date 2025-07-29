@@ -256,7 +256,7 @@ app.get('/auth/instagram', (req, res) => {
   
   // 本番環境と開発環境でリダイレクトURIを切り替え
   const redirectUri = process.env.NODE_ENV === 'production' 
-    ? 'https://instagram-marketing-r1lcfjlnz-trillnihons-projects.vercel.app/auth/instagram/callback'
+    ? 'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app/auth/instagram/callback'
     : 'https://localhost:4000/auth/instagram/callback';
     
   const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=public_profile,email,instagram_basic,instagram_manage_insights,pages_show_list,pages_read_engagement&response_type=code&state=${state}`;
