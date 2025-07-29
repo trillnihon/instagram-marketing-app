@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // APIのベースURL（環境変数から取得）
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (window.location.hostname === 'localhost' ? 'http://localhost:4000' : 'https://instagram-marketing-backend-v2.onrender.com');
 
 // axiosインスタンスの作成
 const apiClient = axios.create({
