@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 // CORS設定
 export const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.CORS_ORIGIN || 'https://instagram-marketing-app.vercel.app'] // 本番環境では指定されたドメインのみ
+    ? [process.env.CORS_ORIGIN || 'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app'] // 本番環境では指定されたドメインのみ
     : [
     'http://localhost:3000',
     'https://localhost:3000',

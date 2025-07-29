@@ -16,6 +16,9 @@ import { fileURLToPath } from 'url';
 import detect from 'detect-port';
 import { analyzePost } from './aiProviderRouter.js';
 
+// MongoDB非推奨警告を抑制
+process.env.MONGODB_SUPPRESS_DEPRECATION_WARNINGS = 'true';
+
 // 新しいミドルウェアとエラーハンドリングのインポート
 import { 
   corsOptions, 
@@ -53,20 +56,28 @@ import { authenticateToken } from './middleware/auth.js';
 if (process.env.NODE_ENV === 'production') {
   dotenv.config({ path: '.env.production' });
 } else {
-dotenv.config();
+  dotenv.config();
+  // 開発環境でMONGODB_URIが設定されていない場合はデモモード
+  if (!process.env.MONGODB_URI) {
+    process.env.DEMO_MODE = 'true';
+  }
 }
 
 logger.info('環境:', process.env.NODE_ENV || 'development');
 logger.info('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '読み込み成功' : '未設定');
+logger.info('デモモード:', process.env.DEMO_MODE === 'true' ? '有効' : '無効');
 
 const app = express();
 const DEFAULT_PORT = parseInt(process.env.PORT, 10) || 4000;
 
-// MongoDB接続（本番モード）
+// MongoDB接続（デモモード対応）
 let mongoConnected = false;
 connectDB().then(connected => {
   mongoConnected = connected;
   logger.info(`MongoDB接続状態: ${connected ? '接続済み' : 'デモモード'}`);
+}).catch(error => {
+  logger.info('MongoDB接続状態: デモモード');
+  mongoConnected = false;
 });
 
 const __filename = fileURLToPath(import.meta.url);
