@@ -4,5 +4,15 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
+  ],
+  "routes": [
+    {
+      "src": "/auth/instagram/callback",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/auth/instagram/callback(.*)",
+      "dest": "/index.html"
+    }
   ]
 } 

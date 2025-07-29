@@ -78,12 +78,40 @@ const App: React.FC = () => {
       hash: window.location.hash,
       origin: window.location.origin
     });
+    
+    // コールバックURLの特別チェック
+    if (window.location.pathname === '/auth/instagram/callback') {
+      console.log('🎯 [DEBUG] InstagramコールバックURLを検出！');
+      console.log('🔍 [DEBUG] クエリパラメータ:', window.location.search);
+    }
   }, []);
 
   return (
     <Router>
       <div className="App">
         <Routes>
+          {/* Instagramコールバックを最優先に配置 */}
+          <Route 
+            path="/auth/instagram/callback" 
+            element={
+              <React.Suspense fallback={
+                <div className="min-h-screen flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                      Instagram認証処理中...
+                    </h2>
+                    <p className="text-gray-600">
+                      認証情報を処理しています。しばらくお待ちください。
+                    </p>
+                  </div>
+                </div>
+              }>
+                <AuthCallback />
+              </React.Suspense>
+            } 
+          />
+          
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -162,14 +190,6 @@ const App: React.FC = () => {
               <ProtectedRoute>
                 <InstagramAuth />
               </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/auth/instagram/callback" 
-            element={
-              <React.Suspense fallback={<div>Loading...</div>}>
-                <AuthCallback />
-              </React.Suspense>
             } 
           />
           <Route 

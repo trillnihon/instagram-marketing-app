@@ -7,6 +7,12 @@ const AuthCallback: React.FC = () => {
   const { setAuthenticated, setLoading, setError } = useAppStore();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
+  // 即座にデバッグログを出力
+  console.log('🎯 [DEBUG] AuthCallbackコンポーネントが実行されました！');
+  console.log('📍 [DEBUG] AuthCallback - 現在のURL:', window.location.href);
+  console.log('🔍 [DEBUG] AuthCallback - パス名:', window.location.pathname);
+  console.log('📝 [DEBUG] AuthCallback - クエリ文字列:', window.location.search);
+
   const handleAuthCallback = async () => {
     try {
       console.log('🔄 [DEBUG] AuthCallback - 処理開始');
