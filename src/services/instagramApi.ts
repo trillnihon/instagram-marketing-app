@@ -11,7 +11,15 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (window.location.hostn
 
 // Instagram認証開始
 export const startInstagramAuth = (): void => {
-  window.location.href = `${API_BASE_URL}/auth/instagram`;
+  // バックエンドのInstagram認証エンドポイントにリダイレクト
+  const authUrl = `${API_BASE_URL}/auth/instagram`;
+  console.log('[DEBUG] Instagram認証開始:', {
+    API_BASE_URL,
+    authUrl,
+    hostname: window.location.hostname,
+    currentUrl: window.location.href
+  });
+  window.location.href = authUrl;
 };
 
 // Instagram認証コールバック処理

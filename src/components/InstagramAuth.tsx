@@ -69,6 +69,7 @@ const InstagramAuth: React.FC = () => {
   };
 
   const handleConnect = () => {
+    console.log('[DEBUG] Instagram連携ボタンがクリックされました');
     setIsLoading(true);
     setError(null);
     startInstagramAuth();
