@@ -1,206 +1,359 @@
-import axios from 'axios';
-import dotenv from 'dotenv';
+#!/usr/bin/env node
 
-dotenv.config();
+/**
+ * Instagram Business連携診断ツール
+ * 
+ * 使用方法:
+ * node instagram_connection_test.js <access_token>
+ * 
+ * 例:
+ * node instagram_connection_test.js EAAxxx...
+ */
 
-// Facebook API設定
-const FACEBOOK_APP_ID = '1003724798254754';
-const FACEBOOK_APP_SECRET = 'fd6a61c31a9f1f5798b4d48a927d8f0c';
+const https = require('https');
 
-async function testInstagramConnection(accessToken) {
-  console.log('🔍 Instagram連携診断を開始します...\n');
-  
-  const results = {
-    user: null,
-    pages: [],
-    permissions: [],
-    businessAccounts: [],
-    assets: [],
-    errors: []
-  };
-  
-  try {
-    // 1. ユーザー情報の確認
-    console.log('1️⃣ ユーザー情報を確認中...');
-    try {
-      const userRes = await axios.get('https://graph.facebook.com/v18.0/me', {
-        params: {
-          access_token: accessToken,
-          fields: 'id,name,email'
-        }
+class InstagramConnectionTester {
+  constructor(accessToken) {
+    this.accessToken = accessToken;
+    this.baseUrl = 'https://graph.facebook.com/v18.0';
+  }
+
+  // HTTPリクエストを実行
+  async makeRequest(endpoint, params = {}) {
+    return new Promise((resolve, reject) => {
+      const url = new URL(`${this.baseUrl}${endpoint}`);
+      
+      // パラメータを追加
+      Object.keys(params).forEach(key => {
+        url.searchParams.append(key, params[key]);
       });
-      results.user = userRes.data;
-      console.log('✅ ユーザー情報:', userRes.data);
-    } catch (error) {
-      results.errors.push({ step: 'user_info', error: error.response?.data || error.message });
-      console.log('❌ ユーザー情報取得エラー:', error.response?.data || error.message);
-    }
-    
-    // 2. Facebookページ一覧の詳細確認
-    console.log('\n2️⃣ Facebookページ一覧を確認中...');
-    try {
-      const pagesRes = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
-        params: {
-          access_token: accessToken,
-          fields: 'id,name,category,fan_count,verification_status,instagram_business_account{id,username,media_count}'
-        }
-      });
-      results.pages = pagesRes.data.data || [];
-      console.log('📄 ページ一覧:', JSON.stringify(pagesRes.data, null, 2));
-    } catch (error) {
-      results.errors.push({ step: 'pages', error: error.response?.data || error.message });
-      console.log('❌ ページ一覧取得エラー:', error.response?.data || error.message);
-    }
-    
-    // 3. 権限の確認
-    console.log('\n3️⃣ アプリ権限を確認中...');
-    try {
-      const permissionsRes = await axios.get('https://graph.facebook.com/v18.0/me/permissions', {
-        params: {
-          access_token: accessToken
-        }
-      });
-      results.permissions = permissionsRes.data.data || [];
-      console.log('🔐 権限一覧:', JSON.stringify(permissionsRes.data, null, 2));
-    } catch (error) {
-      results.errors.push({ step: 'permissions', error: error.response?.data || error.message });
-      console.log('❌ 権限取得エラー:', error.response?.data || error.message);
-    }
-    
-    // 4. ビジネスアカウントの確認（権限がある場合のみ）
-    console.log('\n4️⃣ ビジネスアカウント情報を確認中...');
-    try {
-      const businessRes = await axios.get('https://graph.facebook.com/v18.0/me/businesses', {
-        params: {
-          access_token: accessToken,
-          fields: 'id,name,verification_status'
-        }
-      });
-      results.businessAccounts = businessRes.data.data || [];
-      console.log('🏢 ビジネスアカウント:', JSON.stringify(businessRes.data, null, 2));
-    } catch (error) {
-      if (error.response?.data?.error?.code === 100) {
-        console.log('⚠️ ビジネスアカウント権限がありません（通常です）');
-      } else {
-        results.errors.push({ step: 'business', error: error.response?.data || error.message });
-        console.log('❌ ビジネスアカウント取得エラー:', error.response?.data || error.message);
-      }
-    }
-    
-    // 5. アセットの確認（ビジネスアカウントがある場合のみ）
-    if (results.businessAccounts.length > 0) {
-      console.log('\n5️⃣ ビジネスアセットを確認中...');
-      try {
-        const businessId = results.businessAccounts[0].id;
-        const assetsRes = await axios.get(`https://graph.facebook.com/v18.0/${businessId}/owned_pages`, {
-          params: {
-            access_token: accessToken,
-            fields: 'id,name,instagram_business_account{id,username,media_count}'
+      
+      // アクセストークンを追加
+      url.searchParams.append('access_token', this.accessToken);
+
+      console.log(`🔍 リクエスト: ${url.toString()}`);
+
+      https.get(url.toString(), (res) => {
+        let data = '';
+        
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        
+        res.on('end', () => {
+          try {
+            const jsonData = JSON.parse(data);
+            resolve(jsonData);
+          } catch (error) {
+            reject(new Error(`JSON解析エラー: ${error.message}`));
           }
         });
-        results.assets = assetsRes.data.data || [];
-        console.log('📦 ビジネスアセット:', JSON.stringify(assetsRes.data, null, 2));
-      } catch (error) {
-        results.errors.push({ step: 'assets', error: error.response?.data || error.message });
-        console.log('❌ アセット取得エラー:', error.response?.data || error.message);
+      }).on('error', (error) => {
+        reject(new Error(`HTTPリクエストエラー: ${error.message}`));
+      });
+    });
+  }
+
+  // ユーザー情報を取得
+  async getUserInfo() {
+    console.log('\n📋 1. ユーザー情報の取得');
+    console.log('=' .repeat(50));
+    
+    try {
+      const userInfo = await this.makeRequest('/me', {
+        fields: 'id,name,email'
+      });
+      
+      console.log('✅ ユーザー情報取得成功:');
+      console.log(`   ID: ${userInfo.id}`);
+      console.log(`   名前: ${userInfo.name}`);
+      console.log(`   メール: ${userInfo.email || 'N/A'}`);
+      
+      return userInfo;
+    } catch (error) {
+      console.log('❌ ユーザー情報取得失敗:');
+      console.log(`   エラー: ${error.message}`);
+      return null;
+    }
+  }
+
+  // 権限情報を取得
+  async getPermissions() {
+    console.log('\n🔐 2. 権限情報の取得');
+    console.log('=' .repeat(50));
+    
+    try {
+      const permissions = await this.makeRequest('/me/permissions');
+      
+      console.log('✅ 権限情報取得成功:');
+      
+      const requiredPermissions = [
+        'email',
+        'instagram_basic',
+        'instagram_manage_insights',
+        'public_profile',
+        'pages_show_list',
+        'pages_read_engagement'
+      ];
+      
+      requiredPermissions.forEach(permission => {
+        const perm = permissions.data.find(p => p.permission === permission);
+        const status = perm ? (perm.status === 'granted' ? '✅' : '⚠️') : '❌';
+        console.log(`   ${status} ${permission}: ${perm ? perm.status : 'not found'}`);
+      });
+      
+      return permissions;
+    } catch (error) {
+      console.log('❌ 権限情報取得失敗:');
+      console.log(`   エラー: ${error.message}`);
+      return null;
+    }
+  }
+
+  // Facebookページ一覧を取得
+  async getPages() {
+    console.log('\n📄 3. Facebookページ一覧の取得');
+    console.log('=' .repeat(50));
+    
+    try {
+      const pages = await this.makeRequest('/me/accounts', {
+        fields: 'id,name,access_token,instagram_business_account'
+      });
+      
+      if (pages.data && pages.data.length > 0) {
+        console.log('✅ Facebookページ取得成功:');
+        pages.data.forEach((page, index) => {
+          console.log(`   ${index + 1}. ${page.name} (ID: ${page.id})`);
+          console.log(`      Instagram連携: ${page.instagram_business_account ? '✅' : '❌'}`);
+          if (page.instagram_business_account) {
+            console.log(`      Instagram ID: ${page.instagram_business_account.id}`);
+          }
+        });
+      } else {
+        console.log('❌ Facebookページが見つかりません:');
+        console.log('   考えられる原因:');
+        console.log('   - ページがビジネスアセットに追加されていない');
+        console.log('   - ページの権限設定が不十分');
+        console.log('   - 認証時にページ選択でチェックが入っていない');
+      }
+      
+      return pages;
+    } catch (error) {
+      console.log('❌ Facebookページ取得失敗:');
+      console.log(`   エラー: ${error.message}`);
+      return null;
+    }
+  }
+
+  // Instagramビジネスアカウント情報を取得
+  async getInstagramAccount(instagramBusinessAccountId) {
+    if (!instagramBusinessAccountId) {
+      console.log('\n📸 4. Instagramビジネスアカウント情報の取得');
+      console.log('=' .repeat(50));
+      console.log('❌ InstagramビジネスアカウントIDがありません');
+      return null;
+    }
+
+    console.log('\n📸 4. Instagramビジネスアカウント情報の取得');
+    console.log('=' .repeat(50));
+    
+    try {
+      const instagramInfo = await this.makeRequest(`/${instagramBusinessAccountId}`, {
+        fields: 'id,username,media_count,followers_count,account_type'
+      });
+      
+      console.log('✅ Instagramアカウント情報取得成功:');
+      console.log(`   ID: ${instagramInfo.id}`);
+      console.log(`   ユーザー名: @${instagramInfo.username}`);
+      console.log(`   投稿数: ${instagramInfo.media_count}`);
+      console.log(`   フォロワー数: ${instagramInfo.followers_count}`);
+      console.log(`   アカウントタイプ: ${instagramInfo.account_type}`);
+      
+      return instagramInfo;
+    } catch (error) {
+      console.log('❌ Instagramアカウント情報取得失敗:');
+      console.log(`   エラー: ${error.message}`);
+      return null;
+    }
+  }
+
+  // 投稿一覧を取得
+  async getMedia(instagramBusinessAccountId) {
+    if (!instagramBusinessAccountId) {
+      console.log('\n📱 5. 投稿一覧の取得');
+      console.log('=' .repeat(50));
+      console.log('❌ InstagramビジネスアカウントIDがありません');
+      return null;
+    }
+
+    console.log('\n📱 5. 投稿一覧の取得');
+    console.log('=' .repeat(50));
+    
+    try {
+      const media = await this.makeRequest(`/${instagramBusinessAccountId}/media`, {
+        fields: 'id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count',
+        limit: 5
+      });
+      
+      if (media.data && media.data.length > 0) {
+        console.log('✅ 投稿一覧取得成功:');
+        media.data.forEach((post, index) => {
+          console.log(`   ${index + 1}. ${post.media_type} (ID: ${post.id})`);
+          console.log(`      投稿日時: ${post.timestamp}`);
+          console.log(`      いいね数: ${post.like_count || 0}`);
+          console.log(`      コメント数: ${post.comments_count || 0}`);
+          if (post.caption) {
+            console.log(`      キャプション: ${post.caption.substring(0, 50)}...`);
+          }
+        });
+      } else {
+        console.log('❌ 投稿が見つかりません');
+      }
+      
+      return media;
+    } catch (error) {
+      console.log('❌ 投稿一覧取得失敗:');
+      console.log(`   エラー: ${error.message}`);
+      return null;
+    }
+  }
+
+  // インサイト情報を取得
+  async getInsights(instagramBusinessAccountId) {
+    if (!instagramBusinessAccountId) {
+      console.log('\n📊 6. インサイト情報の取得');
+      console.log('=' .repeat(50));
+      console.log('❌ InstagramビジネスアカウントIDがありません');
+      return null;
+    }
+
+    console.log('\n📊 6. インサイト情報の取得');
+    console.log('=' .repeat(50));
+    
+    try {
+      const insights = await this.makeRequest(`/${instagramBusinessAccountId}/insights`, {
+        metric: 'impressions,reach,profile_views,follower_count',
+        period: 'day'
+      });
+      
+      if (insights.data && insights.data.length > 0) {
+        console.log('✅ インサイト情報取得成功:');
+        insights.data.forEach(insight => {
+          console.log(`   ${insight.name}: ${insight.values[0].value}`);
+        });
+      } else {
+        console.log('❌ インサイト情報が取得できません');
+      }
+      
+      return insights;
+    } catch (error) {
+      console.log('❌ インサイト情報取得失敗:');
+      console.log(`   エラー: ${error.message}`);
+      return null;
+    }
+  }
+
+  // 総合診断を実行
+  async runFullDiagnostic() {
+    console.log('🔍 Instagram Business連携診断を開始します...');
+    console.log('=' .repeat(60));
+    
+    // 1. ユーザー情報
+    const userInfo = await this.getUserInfo();
+    
+    // 2. 権限情報
+    const permissions = await this.getPermissions();
+    
+    // 3. Facebookページ一覧
+    const pages = await this.getPages();
+    
+    // 4. Instagramアカウント情報（最初のページから）
+    let instagramAccount = null;
+    if (pages && pages.data && pages.data.length > 0) {
+      const firstPage = pages.data[0];
+      if (firstPage.instagram_business_account) {
+        instagramAccount = await this.getInstagramAccount(firstPage.instagram_business_account.id);
       }
     }
     
-    // 6. 診断結果のまとめ
-    console.log('\n📊 診断結果まとめ:');
-    console.log('='.repeat(50));
+    // 5. 投稿一覧
+    if (instagramAccount) {
+      await this.getMedia(instagramAccount.id);
+    }
     
-    const pages = results.pages;
-    const hasPages = pages.length > 0;
-    const hasInstagramAccount = pages.some(page => page.instagram_business_account);
-    const hasBusinessAccount = results.businessAccounts.length > 0;
-    const hasAssets = results.assets.length > 0;
+    // 6. インサイト情報
+    if (instagramAccount) {
+      await this.getInsights(instagramAccount.id);
+    }
     
-    console.log(`👤 ユーザー: ${results.user?.name || '取得失敗'} (${results.user?.email || 'N/A'})`);
-    console.log(`📄 Facebookページ数: ${pages.length}`);
-    console.log(`📱 Instagram連携ページ数: ${pages.filter(p => p.instagram_business_account).length}`);
-    console.log(`🏢 ビジネスアカウント数: ${results.businessAccounts.length}`);
-    console.log(`📦 ビジネスアセット数: ${results.assets.length}`);
-    console.log(`🔐 権限数: ${results.permissions.length}`);
+    // 診断結果の要約
+    console.log('\n📋 診断結果サマリー');
+    console.log('=' .repeat(60));
     
-    console.log('\n✅ 状態チェック:');
-    console.log(`  ページ存在: ${hasPages ? '✅ YES' : '❌ NO'}`);
-    console.log(`  Instagram連携: ${hasInstagramAccount ? '✅ YES' : '❌ NO'}`);
-    console.log(`  ビジネスアカウント: ${hasBusinessAccount ? '✅ YES' : '⚠️ NO'}`);
-    console.log(`  ビジネスアセット: ${hasAssets ? '✅ YES' : '⚠️ NO'}`);
+    const results = {
+      userInfo: !!userInfo,
+      permissions: !!permissions,
+      pages: pages && pages.data && pages.data.length > 0,
+      instagramAccount: !!instagramAccount
+    };
     
-    // 権限の詳細確認
-    console.log('\n🔐 権限詳細:');
-    const requiredPermissions = ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'instagram_manage_insights'];
-    results.permissions.forEach(perm => {
-      const status = perm.status === 'granted' ? '✅' : '❌';
-      console.log(`  ${status} ${perm.permission}: ${perm.status}`);
+    Object.keys(results).forEach(key => {
+      const status = results[key] ? '✅' : '❌';
+      console.log(`${status} ${key}: ${results[key] ? '成功' : '失敗'}`);
     });
     
-    // 問題の特定と解決策
-    console.log('\n🔍 問題分析:');
-    if (!hasPages) {
-      console.log('\n❌ 問題1: Facebookページが見つかりません');
-      console.log('💡 解決策:');
-      console.log('   1. Facebookページを作成してください');
-      console.log('   2. ページをビジネスアセットに追加してください');
-      console.log('   3. 再度認証を試してください');
-    } else if (!hasInstagramAccount) {
-      console.log('\n❌ 問題2: Instagramビジネスアカウントが連携されていません');
-      console.log('💡 解決策:');
-      console.log('   1. Instagramアカウントをビジネスアカウントに変更してください');
-      console.log('   2. FacebookページとInstagramを連携してください');
-      console.log('   3. Meta Business Managerでアセットリンクを確認してください');
-    } else {
-      console.log('\n✅ すべて正常です！API連携が可能です。');
-      const instagramAccount = pages.find(p => p.instagram_business_account)?.instagram_business_account;
-      console.log(`📱 Instagram Business ID: ${instagramAccount.id}`);
-      console.log(`👤 Instagram Username: ${instagramAccount.username}`);
+    // 推奨アクション
+    console.log('\n💡 推奨アクション');
+    console.log('=' .repeat(60));
+    
+    if (!results.userInfo) {
+      console.log('❌ アクセストークンが無効です。新しいトークンを取得してください。');
     }
     
-    // エラーの詳細
-    if (results.errors.length > 0) {
-      console.log('\n⚠️ 発生したエラー:');
-      results.errors.forEach((error, index) => {
-        console.log(`   ${index + 1}. ${error.step}: ${JSON.stringify(error.error)}`);
-      });
+    if (!results.pages) {
+      console.log('❌ Facebookページが見つかりません。以下を確認してください:');
+      console.log('   - Meta Business Managerでページをビジネスアセットに追加');
+      console.log('   - ページの権限設定を確認');
+      console.log('   - 認証時にページ選択でチェックを入れる');
     }
     
-    // 次のステップの提案
-    console.log('\n🚀 次のステップ:');
-    if (!hasPages) {
-      console.log('   1. Facebookページを作成');
-      console.log('   2. ページをビジネスアセットに追加');
-      console.log('   3. 再度認証を実行');
-    } else if (!hasInstagramAccount) {
-      console.log('   1. Instagramビジネスアカウント設定を確認');
-      console.log('   2. Facebookページとの連携を再設定');
-      console.log('   3. Meta Business Managerでアセットリンクを確認');
-    } else {
-      console.log('   1. 長期アクセストークンを取得');
-      console.log('   2. API連携テストを実行');
-      console.log('   3. 本格運用開始');
+    if (!results.instagramAccount) {
+      console.log('❌ Instagramビジネスアカウントが連携されていません。以下を確認してください:');
+      console.log('   - Instagramアプリでビジネスアカウント設定を確認');
+      console.log('   - Facebookページとの連携を再実行');
+      console.log('   - Meta Business Managerでアセットリンクを確認');
     }
     
-    return results;
-    
-  } catch (error) {
-    console.error('❌ 診断中にエラーが発生しました:', error.response?.data || error.message);
-    results.errors.push({ step: 'general', error: error.response?.data || error.message });
-    return results;
+    if (results.userInfo && results.pages && results.instagramAccount) {
+      console.log('✅ すべての項目が正常です！本番運用を開始できます。');
+    }
   }
 }
 
-// 使用方法
-console.log('Instagram連携診断ツール');
-console.log('使用方法: node instagram_connection_test.js <access_token>');
-console.log('');
-
-if (process.argv.length < 3) {
-  console.log('アクセストークンを指定してください');
-  console.log('例: node instagram_connection_test.js EAAOQ4eQNXqIBP...');
-  process.exit(1);
+// メイン実行部分
+async function main() {
+  const accessToken = process.argv[2];
+  
+  if (!accessToken) {
+    console.log('❌ 使用方法: node instagram_connection_test.js <access_token>');
+    console.log('例: node instagram_connection_test.js EAAxxx...');
+    process.exit(1);
+  }
+  
+  const tester = new InstagramConnectionTester(accessToken);
+  
+  try {
+    await tester.runFullDiagnostic();
+  } catch (error) {
+    console.log('❌ 診断実行中にエラーが発生しました:');
+    console.log(error.message);
+    process.exit(1);
+  }
 }
 
-const accessToken = process.argv[2];
-testInstagramConnection(accessToken); 
+// スクリプトが直接実行された場合のみ実行
+if (require.main === module) {
+  main();
+}
+
+module.exports = InstagramConnectionTester; 

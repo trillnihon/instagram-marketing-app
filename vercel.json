@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 2,
   "builds": [
     {
       "src": "package.json",
@@ -29,7 +29,7 @@
   ],
   "env": {
     "VITE_API_BASE_URL": "https://instagram-marketing-backend-v2.onrender.com/api",
-    "VITE_FACEBOOK_APP_ID": "1193533602546658",
+    "VITE_FACEBOOK_APP_ID": "1003724798254754",
     "VITE_FACEBOOK_APP_SECRET": "5f337d6e7ad05fd7a74cd78f13d7d5c1",
     "VITE_INSTAGRAM_APP_ID": "25252287587694713",
     "VITE_INSTAGRAM_APP_SECRET": "14ad79e7973687a6e3f803024caaf5b9",
