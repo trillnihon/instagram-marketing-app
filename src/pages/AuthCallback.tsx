@@ -24,7 +24,14 @@ const AuthCallback: React.FC = () => {
 
       // バックエンドサーバーへのリクエストを試行
       try {
-        const response = await fetch('/api/auth/instagram/callback', {
+        // 環境に応じてAPI_BASE_URLを切り替え
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+          ? 'http://localhost:4000' 
+          : 'https://instagram-marketing-backend.onrender.com';
+        
+        console.log('[DEBUG] AuthCallback - API_BASE_URL:', API_BASE_URL);
+        
+        const response = await fetch(`${API_BASE_URL}/auth/instagram/callback`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
