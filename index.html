@@ -24,10 +24,27 @@
     <script>
       // Service Workerを完全に無効化
       if ('serviceWorker' in navigator) {
+        // 既存のService Workerを削除
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) {
             registration.unregister();
             console.log('[DEBUG] Service Worker unregistered:', registration);
+          }
+        });
+        
+        // Service Workerの登録を防止
+        navigator.serviceWorker.addEventListener('message', function(event) {
+          console.log('[DEBUG] Service Worker message blocked');
+          event.preventDefault();
+        });
+      }
+      
+      // キャッシュも削除
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          for (let name of names) {
+            caches.delete(name);
+            console.log('[DEBUG] Cache deleted:', name);
           }
         });
       }
