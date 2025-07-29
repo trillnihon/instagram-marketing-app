@@ -1,42 +1,8 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
   "rewrites": [
-    {
-      "source": "/api/auth/(.*)",
-      "destination": "https://instagram-marketing-backend-v2.onrender.com/api/auth/$1"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "https://instagram-marketing-backend-v2.onrender.com/api/$1"
-    },
-    {
-      "source": "/sw.js",
-      "destination": "/404"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "env": {
-    "VITE_API_BASE_URL": "https://instagram-marketing-backend-v2.onrender.com/api",
-    "VITE_FACEBOOK_APP_ID": "1003724798254754",
-    "VITE_FACEBOOK_APP_SECRET": "5f337d6e7ad05fd7a74cd78f13d7d5c1",
-    "VITE_INSTAGRAM_APP_ID": "25252287587694713",
-    "VITE_INSTAGRAM_APP_SECRET": "14ad79e7973687a6e3f803024caaf5b9",
-    "VITE_INSTAGRAM_REDIRECT_URI": "https://instagram-marketing-app.vercel.app/auth/callback"
-  },
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "installCommand": "npm install"
+  ]
 } 
