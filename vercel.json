@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "builds": [
     {
       "src": "package.json",
@@ -13,6 +13,10 @@
     {
       "source": "/api/(.*)",
       "destination": "https://instagram-marketing-backend-v2.onrender.com/api/$1"
+    },
+    {
+      "source": "/sw.js",
+      "destination": "/404"
     },
     {
       "source": "/(.*)",
