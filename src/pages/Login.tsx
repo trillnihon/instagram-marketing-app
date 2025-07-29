@@ -13,11 +13,23 @@ const Login: React.FC = () => {
 
   // 認証状態の変更を監視してページ遷移
   React.useEffect(() => {
+    console.log('[DEBUG] 認証状態監視:', { isAuthenticated, currentUser });
+    
     if (isAuthenticated && currentUser) {
       console.log('[DEBUG] 認証状態変更検知 - ダッシュボードに遷移:', { isAuthenticated, currentUser });
-      navigate('/dashboard');
+      
+      // 強制的に遷移を実行
+      setTimeout(() => {
+        console.log('[DEBUG] 強制遷移実行');
+        navigate('/dashboard', { replace: true });
+      }, 100);
     }
   }, [isAuthenticated, currentUser, navigate]);
+
+  // 初回レンダリング時の状態確認
+  React.useEffect(() => {
+    console.log('[DEBUG] Login コンポーネント初期化:', { isAuthenticated, currentUser });
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -35,10 +47,19 @@ const Login: React.FC = () => {
       return;
     }
 
+    console.log('[DEBUG] ログイン処理開始');
     const success = await login(formData.email, formData.password);
+    
     if (success) {
       console.log('[DEBUG] ログイン成功 - 状態更新完了');
-      // useEffectで認証状態の変更を監視しているので、ここでの遷移は不要
+      
+      // 追加の強制遷移
+      setTimeout(() => {
+        console.log('[DEBUG] ログイン成功後の強制遷移');
+        navigate('/dashboard', { replace: true });
+      }, 500);
+    } else {
+      console.log('[DEBUG] ログイン失敗');
     }
   };
 
