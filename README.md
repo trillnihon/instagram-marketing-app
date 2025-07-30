@@ -233,3 +233,4 @@ instagram-marketing-app/
 # Force Vercel deployment - 07/30/2025 13:15:26
 # Force deployment - 2025-07-30 13:22:34
 # Force deployment
+# Force deployment for callback fix
