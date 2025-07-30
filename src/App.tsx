@@ -97,6 +97,17 @@ const App: React.FC = () => {
       
       // AuthCallbackコンポーネントにリダイレクト
       window.location.href = `/auth/instagram/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state || '')}`;
+    } else if (authCallback === 'true' && urlParams.get('no_code') === 'true') {
+      console.log('⚠️ [DEBUG] 認証コードなしのコールバック処理');
+      
+      // 認証コードなしでもデモモードで継続
+      const { setAuthenticated } = useAppStore.getState();
+      setAuthenticated?.(true);
+      
+      // ダッシュボードにリダイレクト
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1000);
     }
   }, []);
 
