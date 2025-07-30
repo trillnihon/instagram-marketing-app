@@ -59,6 +59,20 @@
             white-space: pre-wrap;
             word-break: break-all;
         }
+        .status {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -67,6 +81,8 @@
         <h1>Instagram認証処理中...</h1>
         <p>認証情報を処理しています。しばらくお待ちください。</p>
         <p>このページが表示される場合は、認証コールバックの処理中です。</p>
+        
+        <div id="status" class="status"></div>
         
         <div class="debug-info">
             <strong>デバッグ情報:</strong>
@@ -90,21 +106,47 @@
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         const state = urlParams.get('state');
+        const error = urlParams.get('error');
         
-        if (code) {
+        const statusElement = document.getElementById('status');
+        
+        if (error) {
+            statusElement.textContent = `❌ エラー: ${error}`;
+            statusElement.className = 'status error';
+            console.error('Instagram認証エラー:', error);
+            
+            setTimeout(() => {
+                window.location.href = '/?auth_error=' + encodeURIComponent(error);
+            }, 3000);
+        } else if (code) {
+            statusElement.textContent = '✅ 認証コードを検出しました';
+            statusElement.className = 'status success';
             console.log('Instagram認証コードを検出:', code.substring(0, 10) + '...');
             
             // 認証処理を試行
             setTimeout(() => {
                 // メインアプリケーションにリダイレクト
-                window.location.href = '/?auth_callback=true&code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state || '');
+                const redirectUrl = '/?auth_callback=true&code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state || '');
+                console.log('リダイレクト先:', redirectUrl);
+                window.location.href = redirectUrl;
             }, 2000);
         } else {
+            statusElement.textContent = '⚠️ 認証コードが見つかりません';
+            statusElement.className = 'status error';
             console.log('認証コードが見つかりません');
+            
             setTimeout(() => {
                 window.location.href = '/';
             }, 3000);
         }
+        
+        // フォールバック処理（5秒後にメインページにリダイレクト）
+        setTimeout(() => {
+            if (window.location.pathname === '/auth/instagram/callback') {
+                console.log('フォールバック: メインページにリダイレクト');
+                window.location.href = '/';
+            }
+        }, 5000);
     </script>
 </body>
 </html> 
