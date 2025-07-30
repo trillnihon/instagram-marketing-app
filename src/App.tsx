@@ -102,7 +102,7 @@ const App: React.FC = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/analysis-history" element={<AnalysisHistory />} />
           
-          {/* Instagram OAuthコールバックルート - 修正版 */}
+          {/* Instagram OAuthコールバックルート - 最終修正版 */}
           <Route path="/auth/instagram/callback" element={<AuthCallback />} />
           <Route path="/auth/callback" element={<AuthCallback />} /> {/* フォールバック */}
           
