@@ -187,8 +187,8 @@ CORS_ORIGIN=https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.ve
 - **Facebook開発者コンソール**: https://developers.facebook.com/apps/1003724798254754
 
 ### テストアカウント
-- **メール**: test@example.com
-- **パスワード**: testpassword123
+- **メール**: trill.0310.0321@gmail.com
+- **パスワード**: password123
 
 ---
 
