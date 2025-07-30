@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/auth/instagram/callback",
-      "destination": "https://instagram-marketing-backend-v2.onrender.com/auth/instagram/callback"
+      "destination": "/index.html"
     },
     {
       "source": "/api/(.*)",

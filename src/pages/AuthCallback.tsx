@@ -13,7 +13,8 @@ const AuthCallback: React.FC = () => {
   // デバッグモード判定
   const isDebugMode = import.meta.env.VITE_DEBUG === 'true' || 
                       window.location.hostname === 'localhost' || 
-                      window.location.hostname.includes('127.0.0.1');
+                      window.location.hostname.includes('127.0.0.1') ||
+                      true; // 本番環境でもデバッグモードを有効化
 
   // ステップ別ログ関数
   const logStep = (step: number, message: string, data?: any) => {

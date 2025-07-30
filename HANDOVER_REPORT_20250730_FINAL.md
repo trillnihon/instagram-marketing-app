@@ -134,6 +134,45 @@
   ```
 - **ステータス**: ✅ 修正完了・デプロイ待ち
 
+### 12. Gitプッシュ成功（2025年7月30日）
+- **実行方法**: 手動でGitコマンドを実行
+- **実行コマンド**:
+  ```bash
+  git add .
+  git commit -m "🔧 Instagram OAuth 404エラー解決 - vercel.json APIルーティング修正"
+  git push origin main
+  ```
+- **実行結果**:
+  - **コミットハッシュ**: `32e6b84`
+  - **変更ファイル**: 4ファイル（66行追加、25行削除）
+  - **プッシュ状況**: GitHubに正常に反映済み
+  - **警告**: LF/CRLF変換警告（Windows環境のため正常）
+- **ステータス**: ✅ プッシュ完了・Vercelデプロイ開始
+
+### 13. Vercelデプロイ成功（2025年7月30日）
+- **デプロイメントID**: `hjra79ppz`
+- **コミットハッシュ**: `32e6b84`
+- **デプロイ時刻**: プッシュ後2分で完了
+- **ステータス**: ✅ Ready（正常完了）
+- **環境**: Production
+- **修正内容反映**: ✅ vercel.jsonのAPIルーティング修正が反映済み
+- **ステータス**: ✅ デプロイ完了・Instagram OAuth 404エラー解決済み
+
+### 14. Instagram OAuthコールバックルーティング修正（2025年7月30日）
+- **問題**: `/auth/instagram/callback`がバックエンドAPIに直接リダイレクトされ、ReactアプリケーションのAuthCallbackコンポーネントが実行されない
+- **解決策**: 
+  - ✅ `vercel.json`の`/auth/instagram/callback`を`/index.html`にルーティング
+  - ✅ AuthCallback.tsxのデバッグモードを本番環境でも有効化
+  - ✅ ステップ別ログが本番環境で出力されるように修正
+- **修正内容**:
+  ```json
+  {
+    "source": "/auth/instagram/callback",
+    "destination": "/index.html"
+  }
+  ```
+- **ステータス**: ✅ 修正完了・デプロイ待ち
+
 ---
 
 ## 🔧 技術的状況
