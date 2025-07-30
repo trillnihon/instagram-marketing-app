@@ -102,11 +102,11 @@ CORS_ORIGIN=https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.ve
   - より堅牢なエラーハンドリングとデバッグ機能の実装
 
 ### 🚧 進行中
-- **最新デプロイ**: 緊急対応コミット - Instagram認証コールバック404エラー最終解決（デプロイ中）
+- **最新デプロイ**: 21b7a99 - Vercel設定競合解決（デプロイ中）
 - Instagram連携の完全動作確認
 
 ### 📊 最新コミット状況
-- **最新コミット**: 8927744 - Instagram OAuthコールバック404エラー最終解決
+- **最新コミット**: 21b7a99 - Vercel設定競合解決 - redirectsセクション削除・_redirectsファイルのみ使用
 - **デプロイ状況**: Vercelでデプロイ中
 - **バックエンド**: Renderで稼働中
 
