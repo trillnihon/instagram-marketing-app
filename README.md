@@ -230,3 +230,4 @@ instagram-marketing-app/
 ---
 
 **注意**: このプロジェクトは開発中です。本番環境での使用前に十分なテストを行ってください。
+# Force Vercel deployment - 07/30/2025 13:15:26
