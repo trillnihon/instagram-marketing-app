@@ -6,6 +6,7 @@ const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const { setAuthenticated, setLoading, setError } = useAppStore();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [debugInfo, setDebugInfo] = useState<any>({});
 
   // 即座にデバッグログを出力
   console.log('🎯 [DEBUG] AuthCallbackコンポーネントが実行されました！');
@@ -24,13 +25,41 @@ const AuthCallback: React.FC = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       const state = urlParams.get('state');
+      const error = urlParams.get('error');
+      const error_reason = urlParams.get('error_reason');
+      const error_description = urlParams.get('error_description');
 
       console.log('🔍 [DEBUG] AuthCallback - URLパラメータ:', {
         code: code ? `${code.substring(0, 10)}...` : null,
         state,
+        error,
+        error_reason,
+        error_description,
         hasCode: !!code,
         hasState: !!state
       });
+
+      // デバッグ情報を更新
+      setDebugInfo({
+        url: window.location.href,
+        pathname: window.location.pathname,
+        search: window.location.search,
+        code: code ? `${code.substring(0, 10)}...` : null,
+        state,
+        error,
+        error_reason,
+        error_description
+      });
+
+      // Facebookからのエラーレスポンスをチェック
+      if (error) {
+        console.error('❌ [DEBUG] AuthCallback - Facebook認証エラー:', {
+          error,
+          error_reason,
+          error_description
+        });
+        throw new Error(`Facebook認証エラー: ${error} - ${error_description || error_reason || '不明なエラー'}`);
+      }
 
       if (!code) {
         throw new Error('認証コードが取得できませんでした');
@@ -150,6 +179,12 @@ const AuthCallback: React.FC = () => {
           <div className="mt-4 text-sm text-gray-500">
             <p>URL: {window.location.href}</p>
             <p>パス: {window.location.pathname}</p>
+            <details className="mt-2 text-left">
+              <summary className="cursor-pointer text-purple-600">デバッグ情報</summary>
+              <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto">
+                {JSON.stringify(debugInfo, null, 2)}
+              </pre>
+            </details>
           </div>
         </div>
       </div>
@@ -193,7 +228,13 @@ const AuthCallback: React.FC = () => {
         <p className="text-gray-600 mb-4">
           認証に失敗しました。もう一度お試しください。
         </p>
-        <p className="text-sm text-gray-500">
+        <details className="mt-4 text-left">
+          <summary className="cursor-pointer text-red-600">エラー詳細</summary>
+          <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto">
+            {JSON.stringify(debugInfo, null, 2)}
+          </pre>
+        </details>
+        <p className="text-sm text-gray-500 mt-4">
           ログインページにリダイレクトしています...
         </p>
       </div>

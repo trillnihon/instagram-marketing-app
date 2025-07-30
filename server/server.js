@@ -458,11 +458,15 @@ app.get('/auth/instagram/callback', async (req, res) => {
   
   try {
     // アクセストークン取得
+    const redirectUri = process.env.NODE_ENV === 'production' 
+      ? 'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app/auth/instagram/callback'
+      : 'https://localhost:4000/auth/instagram/callback';
+      
     const tokenRes = await axios.post(`https://graph.facebook.com/v18.0/oauth/access_token`, null, {
       params: {
         client_id: FACEBOOK_APP_ID,
         client_secret: FACEBOOK_APP_SECRET,
-        redirect_uri: 'https://localhost:4000/auth/instagram/callback',
+        redirect_uri: redirectUri,
         code
       }
     });
