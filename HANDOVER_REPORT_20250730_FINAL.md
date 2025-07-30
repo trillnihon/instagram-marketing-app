@@ -93,7 +93,7 @@ CORS_ORIGIN=https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.ve
 - **緊急対応：Instagram認証コールバック404エラーの最終解決**
   - Vercel設定の修正（functionsセクション削除・ビルドエラー解決）
   - Vercel設定の競合解決（routesセクション削除・rewritesのみ使用）
-  - Vercel設定の強化（redirectsセクション追加・確実なリダイレクト）
+  - Vercel設定の競合解決（redirectsセクション削除・_redirectsファイルのみ使用）
   - _redirectsファイルの作成（Vercelの確実なリダイレクト設定）
   - index.htmlの直接修正（コールバック処理を事前実行）
   - AuthCallbackコンポーネントの強化（認証コードなしでもデモモード継続）
