@@ -14,6 +14,8 @@ Instagram Marketing Appは、Instagram・Threadsの投稿分析と最適化を�
 - ✅ アルゴリズム対応アドバイス
 - ✅ PWA対応（オフライン対応）
 - ✅ Instagram Business連携
+- ✅ OAuth認証フロー（404エラー対応済み）
+- ✅ カスタム404ページ（認証コールバック自動処理）
 
 ## 🚀 デプロイ状況
 
@@ -147,10 +149,18 @@ instagram-marketing-app/
 - `vercel.json`では`rewrites`のみを使用
 - `routes`と`rewrites`の同時使用は禁止
 - InstagramコールバックURLの優先順位を適切に設定
+- カスタム404ページで認証コールバックを自動処理
 
 #### 3. API_BASE_URL設定
 - 本番環境では直接URLを設定
 - 環境変数依存を避ける
+
+#### 4. 標準作業手順
+改善・修正作業時は必ず以下の4ファイルを更新：
+- `HANDOVER_REPORT_20250730_FINAL.md` - 改善内容の詳細追記
+- `vercel.json` - フロントエンド構成変更の反映
+- `src/services/authService.ts` - 認証・API設定の同期
+- `README.md` - プロジェクト現状・セットアップ手順の更新
 
 ## 🧪 テスト
 
@@ -170,7 +180,10 @@ instagram-marketing-app/
 
 #### 1. 404エラー（Instagram連携）
 **原因**: Vercelルーティング設定の問題
-**解決**: `vercel.json`の`rewrites`設定を確認
+**解決**: 
+- `vercel.json`の`rewrites`設定を確認
+- カスタム404ページ（`public/404.html`）で自動処理
+- フォールバック処理でクエリパラメータから認証コードを処理
 
 #### 2. 認証エラー
 **原因**: API_BASE_URL設定の問題
