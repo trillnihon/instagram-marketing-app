@@ -8,6 +8,11 @@
     <!-- 基本的なメタタグのみ -->
     <meta name="theme-color" content="#3b82f6" />
     
+    <!-- キャッシュバスティング - 2025年7月30日 15:00 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    
     <!-- アイコン設定 -->
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
@@ -20,17 +25,23 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- Instagram OAuthコールバック処理 - 強化版 -->
+    <!-- Instagram OAuthコールバック処理 - 緊急修正版 (2025-07-30 15:00) -->
     <script>
-      // Instagram OAuthコールバックの事前処理（強化版）
+      // Instagram OAuthコールバックの事前処理（緊急修正版）
       (function() {
+        console.log('🚀 [DEBUG] index.html - Instagram OAuthコールバック処理開始');
+        console.log('📅 [DEBUG] 実行時刻:', new Date().toISOString());
+        
         const pathname = window.location.pathname;
         const search = window.location.search;
+        const href = window.location.href;
         
-        console.log('🔍 [DEBUG] index.html - パスチェック:', {
+        console.log('🔍 [DEBUG] index.html - 詳細URL情報:', {
           pathname,
           search,
-          href: window.location.href,
+          href,
+          hostname: window.location.hostname,
+          protocol: window.location.protocol,
           timestamp: new Date().toISOString()
         });
         
@@ -45,27 +56,30 @@
           const error_reason = urlParams.get('error_reason');
           const error_description = urlParams.get('error_description');
           
-          console.log('📝 [DEBUG] コールバックパラメータ:', {
+          console.log('📝 [DEBUG] コールバックパラメータ詳細:', {
             code: code ? `${code.substring(0, 10)}...` : null,
             state,
             error,
             error_reason,
             error_description,
             hasCode: !!code,
+            codeLength: code?.length || 0,
+            stateLength: state?.length || 0,
             timestamp: new Date().toISOString()
           });
           
           // エラーの場合
           if (error) {
-            console.error('❌ [DEBUG] Instagram認証エラー:', {
+            console.error('❌ [DEBUG] Instagram認証エラー検出:', {
               error,
               error_reason,
               error_description,
-              url: window.location.href,
+              url: href,
               timestamp: new Date().toISOString()
             });
             // エラーページにリダイレクト
             setTimeout(() => {
+              console.log('🔄 [DEBUG] エラーページにリダイレクト');
               window.location.href = '/?auth_error=' + encodeURIComponent(error);
             }, 1000);
             return;
@@ -73,7 +87,7 @@
           
           // 認証コードがある場合
           if (code) {
-            console.log('✅ [DEBUG] 認証コードを検出、処理を継続:', {
+            console.log('✅ [DEBUG] 認証コードを検出、Reactアプリケーションに処理を委譲:', {
               code: code.substring(0, 10) + '...',
               state,
               timestamp: new Date().toISOString()
@@ -88,6 +102,7 @@
             });
             // 認証コードなしでもデモモードで継続
             setTimeout(() => {
+              console.log('🔄 [DEBUG] デモモードでリダイレクト');
               window.location.href = '/?auth_callback=true&no_code=true';
             }, 1000);
           }
@@ -107,9 +122,12 @@
           console.log('⚠️ [DEBUG] 認証コードなしのコールバック処理');
           // デモモードで継続
           setTimeout(() => {
+            console.log('🔄 [DEBUG] ダッシュボードにリダイレクト');
             window.location.href = '/dashboard';
           }, 1000);
         }
+        
+        console.log('✅ [DEBUG] index.html - Instagram OAuthコールバック処理完了');
       })();
     </script>
     
