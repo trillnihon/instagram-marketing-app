@@ -9,14 +9,6 @@
       "destination": "/index.html"
     },
     {
-      "source": "/auth/instagram/callback?code=(.*)",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/auth/instagram/callback?state=(.*)&code=(.*)",
-      "destination": "/index.html"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
