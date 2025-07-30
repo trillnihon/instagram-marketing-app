@@ -84,14 +84,15 @@ CORS_ORIGIN=https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.ve
 - API_BASE_URLの直接設定 - 環境変数依存を排除
 - Instagram OAuthコールバックの404エラー解決
 - Vercel設定の競合解決 - routesセクション削除
+- **Vercel設定エラーの修正 - 無効なクエリパラメータパターンを削除**
 
 ### 🚧 進行中
-- ログイン機能のテスト - 最新修正（8f1fb92）のデプロイ待ち
+- **最新デプロイ**: `ef39ca4` - Vercel設定エラー修正（Queued状態）
 - Instagram連携の動作確認
 
 ### 📊 最新コミット状況
-- **最新コミット**: 8f1fb92 - Vercel設定の競合を解決
-- **デプロイ状況**: Vercelで進行中
+- **最新コミット**: ef39ca4 - Vercel設定エラー修正
+- **デプロイ状況**: VercelでQueued状態
 - **バックエンド**: Renderで稼働中
 
 ---
@@ -115,17 +116,51 @@ CORS_ORIGIN=https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.ve
 **原因**: rewritesとroutesの同時使用
 **解決**: routesセクションを削除、rewritesのみ使用
 
-#### 4. MongoDB接続エラー
+#### 4. Vercel設定パターンエラー
+**症状**: "Rewrite at index X has invalid 'source' pattern"
+**原因**: クエリパラメータを含む無効なパターン
+**解決**: vercel.jsonから無効なパターンを削除
+**禁止パターン例**:
+```json
+// ❌ 無効 - クエリパラメータを含む
+"/auth/instagram/callback?code=(.*)"
+"/auth/instagram/callback?state=(.*)&code=(.*)"
+```
+**有効パターン例**:
+```json
+// ✅ 有効
+"/auth/instagram/callback"
+"/auth/instagram/callback(.*)"
+"/(.*)"
+```
+
+#### 5. MongoDB接続エラー
 **症状**: ローカル開発時の接続拒否
 **原因**: MongoDBが起動していない
 **解決**: デモモードで動作継続
 
-#### 5. Vercelデプロイが更新されない
-**症状**: コード変更が反映されない
-**解決**:
-- ブラウザキャッシュクリア（Ctrl + Shift + R）
-- Vercelダッシュボードでデプロイ状況確認
-- 新しいコミットで強制デプロイ
+#### 6. Vercelデプロイが開始されない
+**症状**: コード変更が反映されない、新しいデプロイが表示されない
+**原因**: Vercelの自動デプロイが機能していない
+**解決手順**:
+1. **GitHubプッシュの確認**
+   ```bash
+   git log --oneline -3
+   git status
+   ```
+2. **Vercelダッシュボードの確認**
+   - 最新のコミットが表示されているか
+   - 新しいデプロイがQueued/Building状態か
+3. **手動デプロイの実行**
+   - Vercelダッシュボード → 右上の「...」ボタン
+   - 「Create Deployment」を選択
+   - 最新のコミットハッシュを入力
+   - 「Create Deployment」をクリック
+4. **強制デプロイの実行**
+   ```bash
+   echo "# Force deployment" >> README.md
+   git add . && git commit -m "🚀 Force: 強制デプロイ実行" && git push origin main
+   ```
 
 ### デバッグ手順
 
@@ -141,6 +176,11 @@ CORS_ORIGIN=https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.ve
 #### 3. Renderログ確認
 - Renderダッシュボードでログを確認
 - エラーメッセージを特定
+
+#### 4. Vercelデプロイログ確認
+- Vercelダッシュボード → Deployments
+- 該当デプロイの「View Build Logs」をクリック
+- エラーメッセージを確認
 
 ---
 
@@ -214,6 +254,15 @@ CORS_ORIGIN=https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.ve
 - **rewritesとroutesの同時使用禁止**: Vercelでは両方を同時に使用できない
 - **rewritesのみ使用**: 現在はrewritesが推奨されている
 - **設定の優先順位**: 具体的なルートを先に、汎用的なルートを後に配置
+- **クエリパラメータパターン禁止**: `?code=(.*)`のようなパターンは無効
+- **有効なパターンのみ使用**: `/auth/instagram/callback`、`/auth/instagram/callback(.*)`、`/(.*)`
+
+### デプロイ問題の解決手順
+1. **GitHubプッシュの確認**
+2. **Vercelダッシュボードの確認**
+3. **手動デプロイの実行**
+4. **強制デプロイの実行**
+5. **デプロイログの確認**
 
 ---
 
@@ -226,4 +275,5 @@ CORS_ORIGIN=https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.ve
 2. Vercel設定ルールを厳守する
 3. 段階的な修正を行う
 4. テストを重視する
-5. 申し送り書を常に最新に保つ 
+5. 申し送り書を常に最新に保つ
+6. デプロイ問題の解決手順を確実に実行する 
