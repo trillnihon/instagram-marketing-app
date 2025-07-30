@@ -91,7 +91,7 @@ CORS_ORIGIN=https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.ve
   - フロントエンドのフォールバック処理追加
   - バックエンドのリダイレクトURI環境別切り替え修正
 - **緊急対応：Instagram認証コールバック404エラーの最終解決**
-  - Vercel設定にroutesセクションを追加（rewritesと併用）
+  - Vercel設定の修正（functionsセクション削除・ビルドエラー解決）
   - AuthCallbackコンポーネントの強化（認証コードなしでもデモモード継続）
   - カスタム404ページの強化（エラーハンドリング・フォールバック処理追加）
   - より堅牢なエラーハンドリングとデバッグ機能の実装
@@ -266,6 +266,7 @@ CORS_ORIGIN=https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.ve
 - **設定の優先順位**: 具体的なルートを先に、汎用的なルートを後に配置
 - **クエリパラメータパターン禁止**: `?code=(.*)`のようなパターンは無効
 - **有効なパターンのみ使用**: `/auth/instagram/callback`、`/auth/instagram/callback(.*)`、`/(.*)`
+- **functionsセクション禁止**: React + ViteプロジェクトではServerless Functionsを使用しない
 - **カスタム404ページ**: `public/404.html`で認証コールバックを自動処理
 - **フォールバック処理**: クエリパラメータからの認証コード処理を実装
 

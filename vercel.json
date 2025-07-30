@@ -39,16 +39,5 @@
         }
       ]
     }
-  ],
-  "functions": {
-    "app/auth/instagram/callback": {
-      "maxDuration": 30
-    }
-  },
-  "routes": [
-    {
-      "src": "/auth/instagram/callback",
-      "dest": "/index.html"
-    }
   ]
 } 
