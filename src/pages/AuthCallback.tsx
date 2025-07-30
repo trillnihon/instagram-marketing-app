@@ -7,12 +7,15 @@ const AuthCallback: React.FC = () => {
   const { setAuthenticated, setLoading, setError } = useAppStore();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [debugInfo, setDebugInfo] = useState<any>({});
+  const [errorDetails, setErrorDetails] = useState<string>('');
 
   // 即座にデバッグログを出力
   console.log('🎯 [DEBUG] AuthCallbackコンポーネントが実行されました！');
   console.log('📍 [DEBUG] AuthCallback - 現在のURL:', window.location.href);
   console.log('🔍 [DEBUG] AuthCallback - パス名:', window.location.pathname);
   console.log('📝 [DEBUG] AuthCallback - クエリ文字列:', window.location.search);
+  console.log('🌐 [DEBUG] AuthCallback - ホスト名:', window.location.hostname);
+  console.log('🔗 [DEBUG] AuthCallback - プロトコル:', window.location.protocol);
 
   const handleAuthCallback = async () => {
     try {
@@ -29,14 +32,17 @@ const AuthCallback: React.FC = () => {
       const error_reason = urlParams.get('error_reason');
       const error_description = urlParams.get('error_description');
 
-      console.log('🔍 [DEBUG] AuthCallback - URLパラメータ:', {
+      console.log('🔍 [DEBUG] AuthCallback - 詳細URLパラメータ:', {
         code: code ? `${code.substring(0, 10)}...` : null,
         state,
         error,
         error_reason,
         error_description,
         hasCode: !!code,
-        hasState: !!state
+        hasState: !!state,
+        codeLength: code?.length || 0,
+        stateLength: state?.length || 0,
+        timestamp: new Date().toISOString()
       });
 
       // デバッグ情報を更新
@@ -44,37 +50,59 @@ const AuthCallback: React.FC = () => {
         url: window.location.href,
         pathname: window.location.pathname,
         search: window.location.search,
+        hash: window.location.hash,
+        hostname: window.location.hostname,
+        protocol: window.location.protocol,
         code: code ? `${code.substring(0, 10)}...` : null,
         state,
         error,
         error_reason,
         error_description,
+        userAgent: navigator.userAgent,
         timestamp: new Date().toISOString()
       });
 
       // Facebookからのエラーレスポンスをチェック
       if (error) {
+        const errorMessage = `Facebook認証エラー: ${error} - ${error_description || error_reason || '不明なエラー'}`;
         console.error('❌ [DEBUG] AuthCallback - Facebook認証エラー:', {
           error,
           error_reason,
-          error_description
+          error_description,
+          url: window.location.href,
+          timestamp: new Date().toISOString()
         });
-        throw new Error(`Facebook認証エラー: ${error} - ${error_description || error_reason || '不明なエラー'}`);
+        setErrorDetails(errorMessage);
+        setStatus('error');
+        setError?.(errorMessage);
+        return;
       }
 
       if (!code) {
         console.warn('⚠️ [DEBUG] AuthCallback - 認証コードが見つかりません');
+        console.log('🔍 [DEBUG] AuthCallback - 詳細調査:', {
+          searchParams: window.location.search,
+          urlParams: Array.from(urlParams.entries()),
+          referrer: document.referrer,
+          timestamp: new Date().toISOString()
+        });
+        
         // 認証コードがない場合でも、デモモードで処理を継続
         setAuthenticated?.(true);
         setStatus('success');
+        setErrorDetails('認証コードが見つかりませんでしたが、デモモードでアプリケーションを使用できます。');
         setTimeout(() => {
           alert('認証コードが見つかりませんでしたが、デモモードでアプリケーションを使用できます。');
           navigate('/dashboard');
-        }, 2000);
+        }, 3000);
         return;
       }
 
-      console.log('✅ [DEBUG] 認証コード取得成功:', code.substring(0, 10) + '...');
+      console.log('✅ [DEBUG] 認証コード取得成功:', {
+        code: code.substring(0, 10) + '...',
+        fullLength: code.length,
+        timestamp: new Date().toISOString()
+      });
 
       // バックエンドサーバーへのリクエストを試行
       try {
@@ -91,7 +119,11 @@ const AuthCallback: React.FC = () => {
         console.log('📤 [DEBUG] AuthCallback - リクエスト送信:', {
           url: requestUrl,
           method: 'POST',
-          bodyLength: requestBody.length
+          bodyLength: requestBody.length,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timestamp: new Date().toISOString()
         });
         
         const response = await fetch(requestUrl, {
@@ -105,147 +137,159 @@ const AuthCallback: React.FC = () => {
         console.log('📥 [DEBUG] AuthCallback - レスポンス受信:', {
           status: response.status,
           statusText: response.statusText,
-          ok: response.ok
+          ok: response.ok,
+          headers: Object.fromEntries(response.headers.entries()),
+          timestamp: new Date().toISOString()
         });
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('❌ [DEBUG] AuthCallback - HTTPエラー:', {
+          console.error('❌ [DEBUG] AuthCallback - バックエンドエラー:', {
             status: response.status,
             statusText: response.statusText,
-            errorText
+            errorText,
+            url: requestUrl,
+            timestamp: new Date().toISOString()
           });
-          throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+          throw new Error(`バックエンドエラー: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
-        const authData = await response.json();
-        console.log('✅ [DEBUG] AuthCallback - 認証データ受信:', {
-          success: authData.success,
-          hasAccessToken: !!authData.accessToken,
-          hasUser: !!authData.user
+        const data = await response.json();
+        console.log('✅ [DEBUG] AuthCallback - 認証成功:', {
+          hasToken: !!data.token,
+          hasUser: !!data.user,
+          timestamp: new Date().toISOString()
         });
 
-        if (authData.success) {
-          setAuthenticated?.(true);
-          setStatus('success');
-          console.log('🎉 [DEBUG] AuthCallback - 認証成功、ダッシュボードに遷移');
-          setTimeout(() => navigate('/dashboard'), 2000);
-        } else {
-          throw new Error(authData.error || '認証に失敗しました');
+        // トークンを保存
+        if (data.token) {
+          localStorage.setItem('auth_token', data.token);
+          console.log('💾 [DEBUG] AuthCallback - トークン保存完了');
         }
-      } catch (backendError) {
-        console.warn('⚠️ [DEBUG] AuthCallback - バックエンドエラー:', backendError);
-        
-        // フロントエンドのみでの認証処理（デモモード）
-        console.log('🔄 [DEBUG] AuthCallback - フロントエンド認証モードに切り替え');
-        
-        // 認証コードを保存（後で使用可能）
-        localStorage.setItem('instagram_auth_code', code);
-        localStorage.setItem('instagram_auth_state', state || '');
-        localStorage.setItem('instagram_auth_timestamp', Date.now().toString());
-        
-        console.log('💾 [DEBUG] AuthCallback - 認証情報をローカルストレージに保存');
-        
-        // デモモードで認証成功として処理
+
         setAuthenticated?.(true);
         setStatus('success');
+        setErrorDetails('Instagram認証が完了しました！');
         
-        // ユーザーに情報を表示
+        // ダッシュボードにリダイレクト
         setTimeout(() => {
-          alert('バックエンドサーバーが一時的に利用できません。\nデモモードでアプリケーションを使用できます。\n\n後でバックエンドサーバーが復旧した際に、完全な機能が利用可能になります。');
+          console.log('🔄 [DEBUG] AuthCallback - ダッシュボードにリダイレクト');
           navigate('/dashboard');
         }, 2000);
+
+      } catch (fetchError) {
+        console.error('❌ [DEBUG] AuthCallback - フェッチエラー:', {
+          error: fetchError,
+          message: fetchError instanceof Error ? fetchError.message : '不明なエラー',
+          stack: fetchError instanceof Error ? fetchError.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
+        
+        const errorMessage = fetchError instanceof Error ? fetchError.message : 'バックエンドとの通信に失敗しました';
+        setErrorDetails(errorMessage);
+        setStatus('error');
+        setError?.(errorMessage);
+        
+        // エラーが発生してもデモモードで継続
+        setTimeout(() => {
+          console.log('🔄 [DEBUG] AuthCallback - エラー後デモモードで継続');
+          setAuthenticated?.(true);
+          navigate('/dashboard');
+        }, 5000);
       }
+
     } catch (error) {
-      console.error('💥 [DEBUG] AuthCallback - 致命的エラー:', error);
-      setError?.(error instanceof Error ? error.message : '認証に失敗しました');
-      setStatus('error');
+      console.error('❌ [DEBUG] AuthCallback - 予期しないエラー:', {
+        error,
+        message: error instanceof Error ? error.message : '不明なエラー',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
       
+      const errorMessage = error instanceof Error ? error.message : '予期しないエラーが発生しました';
+      setErrorDetails(errorMessage);
+      setStatus('error');
+      setError?.(errorMessage);
+      
+      // エラーが発生してもデモモードで継続
       setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+        console.log('🔄 [DEBUG] AuthCallback - 予期しないエラー後デモモードで継続');
+        setAuthenticated?.(true);
+        navigate('/dashboard');
+      }, 5000);
     } finally {
       setLoading?.(false);
     }
   };
 
   useEffect(() => {
-    console.log('🚀 [DEBUG] AuthCallback - コンポーネントマウント');
+    console.log('🔄 [DEBUG] AuthCallback - useEffect実行');
     handleAuthCallback();
   }, []);
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Instagram認証中...
-          </h2>
-          <p className="text-gray-600">
-            認証情報を処理しています。しばらくお待ちください。
-          </p>
-          <div className="mt-4 text-sm text-gray-500">
-            <p>URL: {window.location.href}</p>
-            <p>パス: {window.location.pathname}</p>
-            <details className="mt-2 text-left">
-              <summary className="cursor-pointer text-purple-600">デバッグ情報</summary>
-              <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto">
+  // デバッグ情報表示
+  const renderDebugInfo = () => {
+    // 開発環境判定（process.env.NODE_ENVの代わりにwindow.location.hostnameを使用）
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
+    
+    if (isDevelopment) {
+      return (
+        <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2">🔍 デバッグ情報</h3>
+          <div className="text-sm">
+            <p><strong>ステータス:</strong> {status}</p>
+            <p><strong>エラー詳細:</strong> {errorDetails || 'なし'}</p>
+            <details className="mt-2">
+              <summary className="cursor-pointer font-semibold">詳細情報</summary>
+              <pre className="mt-2 text-xs bg-white p-2 rounded overflow-auto max-h-40">
                 {JSON.stringify(debugInfo, null, 2)}
               </pre>
             </details>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  if (status === 'success') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            認証成功！
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Instagramアカウントの認証が完了しました。
-          </p>
-          <p className="text-sm text-gray-500">
-            ダッシュボードにリダイレクトしています...
-          </p>
-        </div>
-      </div>
-    );
-  }
+      );
+    }
+    return null;
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
-      <div className="text-center">
-        <div className="mx-auto h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-          <svg className="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+        <div className="text-center">
+          {status === 'loading' && (
+            <>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">Instagram認証処理中...</h2>
+              <p className="text-gray-600">認証情報を処理しています。しばらくお待ちください。</p>
+            </>
+          )}
+          
+          {status === 'success' && (
+            <>
+              <div className="text-green-500 text-4xl mb-4">✅</div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">認証完了！</h2>
+              <p className="text-gray-600">{errorDetails || 'Instagram認証が正常に完了しました。'}</p>
+            </>
+          )}
+          
+          {status === 'error' && (
+            <>
+              <div className="text-red-500 text-4xl mb-4">❌</div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">認証エラー</h2>
+              <p className="text-gray-600">{errorDetails}</p>
+              <div className="mt-4">
+                <button 
+                  onClick={() => navigate('/dashboard')}
+                  className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors"
+                >
+                  デモモードで続行
+                </button>
+              </div>
+            </>
+          )}
         </div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
-          認証エラー
-        </h2>
-        <p className="text-gray-600 mb-4">
-          認証に失敗しました。もう一度お試しください。
-        </p>
-        <details className="mt-4 text-left">
-          <summary className="cursor-pointer text-red-600">エラー詳細</summary>
-          <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto">
-            {JSON.stringify(debugInfo, null, 2)}
-          </pre>
-        </details>
-        <p className="text-sm text-gray-500 mt-4">
-          ログインページにリダイレクトしています...
-        </p>
+        
+        {renderDebugInfo()}
       </div>
     </div>
   );
