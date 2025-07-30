@@ -1,11 +1,11 @@
 {
   "rewrites": [
     {
-      "source": "/auth/instagram/callback",
+      "source": "/auth/instagram/callback(.*)",
       "destination": "/index.html"
     },
     {
-      "source": "/auth/instagram/callback(.*)",
+      "source": "/auth/instagram/callback",
       "destination": "/index.html"
     },
     {
