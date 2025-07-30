@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// APIのベースURL（直接設定）
+// APIのベースURL（完全に直接設定）
 const API_BASE_URL = 'https://instagram-marketing-backend-v2.onrender.com';
 
 // axiosインスタンスの作成
@@ -66,7 +66,18 @@ export const login = async (credentials: {
   password: string;
 }) => {
   try {
+    console.log('[DEBUG] ログイン処理開始:', {
+      API_BASE_URL,
+      requestURL: `${API_BASE_URL}/api/auth/login`,
+      credentials: { email: credentials.email }
+    });
+    
     const response = await apiClient.post('/api/auth/login', credentials);
+    
+    console.log('[DEBUG] ログイン成功:', {
+      status: response.status,
+      hasToken: !!response.data.token
+    });
     
     if (response.data.token) {
       localStorage.setItem('auth_token', response.data.token);
@@ -74,6 +85,12 @@ export const login = async (credentials: {
     
     return response.data;
   } catch (error) {
+    console.error('[DEBUG] ログインエラー:', {
+      error: error,
+      isAxiosError: axios.isAxiosError(error),
+      response: axios.isAxiosError(error) ? error.response?.data : null
+    });
+    
     if (axios.isAxiosError(error)) {
       throw new Error(error.response?.data?.error || 'ログインに失敗しました');
     }
