@@ -8,9 +8,37 @@ const AuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [debugInfo, setDebugInfo] = useState<any>({});
   const [errorDetails, setErrorDetails] = useState<string>('');
+  const [currentStep, setCurrentStep] = useState<number>(0);
+
+  // デバッグモード判定
+  const isDebugMode = import.meta.env.VITE_DEBUG === 'true' || 
+                      window.location.hostname === 'localhost' || 
+                      window.location.hostname.includes('127.0.0.1');
+
+  // ステップ別ログ関数
+  const logStep = (step: number, message: string, data?: any) => {
+    setCurrentStep(step);
+    const timestamp = new Date().toISOString();
+    
+    // デバッグモードの場合のみログを出力
+    if (isDebugMode) {
+      console.log(`🎯 [STEP ${step}] ${message}`, data ? data : '');
+      console.log(`⏰ [STEP ${step}] タイムスタンプ: ${timestamp}`);
+    }
+    
+    // デバッグ情報を更新
+    setDebugInfo((prev: any) => ({
+      ...prev,
+      currentStep: step,
+      lastStepMessage: message,
+      lastStepTimestamp: timestamp,
+      stepHistory: [...(prev.stepHistory || []), { step, message, timestamp, data }],
+      isDebugMode
+    }));
+  };
 
   // 即座にデバッグログを出力
-  console.log('🎯 [DEBUG] AuthCallbackコンポーネントが実行されました！');
+  logStep(0, 'AuthCallbackコンポーネントが実行されました');
   console.log('📍 [DEBUG] AuthCallback - 現在のURL:', window.location.href);
   console.log('🔍 [DEBUG] AuthCallback - パス名:', window.location.pathname);
   console.log('📝 [DEBUG] AuthCallback - クエリ文字列:', window.location.search);
@@ -19,9 +47,7 @@ const AuthCallback: React.FC = () => {
 
   const handleAuthCallback = async () => {
     try {
-      console.log('🔄 [DEBUG] AuthCallback - 処理開始');
-      console.log('📍 [DEBUG] AuthCallback - 現在のURL:', window.location.href);
-      
+      logStep(1, '認証コールバック処理開始');
       setLoading?.(true);
       setError?.(null);
 
@@ -32,7 +58,7 @@ const AuthCallback: React.FC = () => {
       const error_reason = urlParams.get('error_reason');
       const error_description = urlParams.get('error_description');
 
-      console.log('🔍 [DEBUG] AuthCallback - 詳細URLパラメータ:', {
+      logStep(2, 'URLパラメータ解析完了', {
         code: code ? `${code.substring(0, 10)}...` : null,
         state,
         error,
@@ -41,12 +67,12 @@ const AuthCallback: React.FC = () => {
         hasCode: !!code,
         hasState: !!state,
         codeLength: code?.length || 0,
-        stateLength: state?.length || 0,
-        timestamp: new Date().toISOString()
+        stateLength: state?.length || 0
       });
 
       // デバッグ情報を更新
-      setDebugInfo({
+      setDebugInfo((prev: any) => ({
+        ...prev,
         url: window.location.href,
         pathname: window.location.pathname,
         search: window.location.search,
@@ -58,12 +84,12 @@ const AuthCallback: React.FC = () => {
         error,
         error_reason,
         error_description,
-        userAgent: navigator.userAgent,
-        timestamp: new Date().toISOString()
-      });
+        userAgent: navigator.userAgent
+      }));
 
       // Facebookからのエラーレスポンスをチェック
       if (error) {
+        logStep(3, 'Facebook認証エラーを検出', { error, error_reason, error_description });
         const errorMessage = `Facebook認証エラー: ${error} - ${error_description || error_reason || '不明なエラー'}`;
         console.error('❌ [DEBUG] AuthCallback - Facebook認証エラー:', {
           error,
@@ -79,6 +105,7 @@ const AuthCallback: React.FC = () => {
       }
 
       if (!code) {
+        logStep(4, '認証コードが見つからないためデモモードで継続');
         console.warn('⚠️ [DEBUG] AuthCallback - 認証コードが見つかりません');
         console.log('🔍 [DEBUG] AuthCallback - 詳細調査:', {
           searchParams: window.location.search,
@@ -92,20 +119,21 @@ const AuthCallback: React.FC = () => {
         setStatus('success');
         setErrorDetails('認証コードが見つかりませんでしたが、デモモードでアプリケーションを使用できます。');
         setTimeout(() => {
+          logStep(5, 'デモモードでダッシュボードにリダイレクト');
           alert('認証コードが見つかりませんでしたが、デモモードでアプリケーションを使用できます。');
           navigate('/dashboard');
         }, 3000);
         return;
       }
 
-      console.log('✅ [DEBUG] 認証コード取得成功:', {
+      logStep(6, '認証コード取得成功', {
         code: code.substring(0, 10) + '...',
-        fullLength: code.length,
-        timestamp: new Date().toISOString()
+        fullLength: code.length
       });
 
       // バックエンドサーバーへのリクエストを試行
       try {
+        logStep(7, 'バックエンドAPI設定確認');
         // 環境に応じてAPI_BASE_URLを切り替え
         const API_BASE_URL = window.location.hostname === 'localhost' 
           ? 'http://localhost:4000' 
@@ -116,14 +144,13 @@ const AuthCallback: React.FC = () => {
         const requestUrl = `${API_BASE_URL}/auth/instagram/callback`;
         const requestBody = JSON.stringify({ code, state });
         
-        console.log('📤 [DEBUG] AuthCallback - リクエスト送信:', {
+        logStep(8, 'バックエンドへのリクエスト送信準備完了', {
           url: requestUrl,
           method: 'POST',
           bodyLength: requestBody.length,
           headers: {
             'Content-Type': 'application/json'
-          },
-          timestamp: new Date().toISOString()
+          }
         });
         
         const response = await fetch(requestUrl, {
@@ -134,16 +161,20 @@ const AuthCallback: React.FC = () => {
           body: requestBody,
         });
 
-        console.log('📥 [DEBUG] AuthCallback - レスポンス受信:', {
+        logStep(9, 'バックエンドからのレスポンス受信', {
           status: response.status,
           statusText: response.statusText,
           ok: response.ok,
-          headers: Object.fromEntries(response.headers.entries()),
-          timestamp: new Date().toISOString()
+          headers: Object.fromEntries(response.headers.entries())
         });
 
         if (!response.ok) {
           const errorText = await response.text();
+          logStep(10, 'バックエンドエラーを検出', {
+            status: response.status,
+            statusText: response.statusText,
+            errorText
+          });
           console.error('❌ [DEBUG] AuthCallback - バックエンドエラー:', {
             status: response.status,
             statusText: response.statusText,
@@ -155,16 +186,20 @@ const AuthCallback: React.FC = () => {
         }
 
         const data = await response.json();
-        console.log('✅ [DEBUG] AuthCallback - 認証成功:', {
+        logStep(11, '認証成功 - レスポンスデータ解析完了', {
           hasToken: !!data.token,
           hasUser: !!data.user,
-          timestamp: new Date().toISOString()
+          userInfo: data.user ? {
+            id: data.user.id,
+            username: data.user.username,
+            media_count: data.user.media_count
+          } : null
         });
 
         // トークンを保存
         if (data.token) {
           localStorage.setItem('auth_token', data.token);
-          console.log('💾 [DEBUG] AuthCallback - トークン保存完了');
+          logStep(12, 'トークン保存完了');
         }
 
         setAuthenticated?.(true);
@@ -173,11 +208,17 @@ const AuthCallback: React.FC = () => {
         
         // ダッシュボードにリダイレクト
         setTimeout(() => {
+          logStep(13, 'ダッシュボードにリダイレクト');
           console.log('🔄 [DEBUG] AuthCallback - ダッシュボードにリダイレクト');
           navigate('/dashboard');
         }, 2000);
 
       } catch (fetchError) {
+        logStep(14, 'フェッチエラー発生', {
+          error: fetchError,
+          message: fetchError instanceof Error ? fetchError.message : '不明なエラー',
+          stack: fetchError instanceof Error ? fetchError.stack : undefined
+        });
         console.error('❌ [DEBUG] AuthCallback - フェッチエラー:', {
           error: fetchError,
           message: fetchError instanceof Error ? fetchError.message : '不明なエラー',
@@ -192,6 +233,7 @@ const AuthCallback: React.FC = () => {
         
         // エラーが発生してもデモモードで継続
         setTimeout(() => {
+          logStep(15, 'エラー後デモモードで継続');
           console.log('🔄 [DEBUG] AuthCallback - エラー後デモモードで継続');
           setAuthenticated?.(true);
           navigate('/dashboard');
@@ -199,6 +241,11 @@ const AuthCallback: React.FC = () => {
       }
 
     } catch (error) {
+      logStep(16, '予期しないエラー発生', {
+        error,
+        message: error instanceof Error ? error.message : '不明なエラー',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       console.error('❌ [DEBUG] AuthCallback - 予期しないエラー:', {
         error,
         message: error instanceof Error ? error.message : '不明なエラー',
@@ -213,6 +260,7 @@ const AuthCallback: React.FC = () => {
       
       // エラーが発生してもデモモードで継続
       setTimeout(() => {
+        logStep(17, '予期しないエラー後デモモードで継続');
         console.log('🔄 [DEBUG] AuthCallback - 予期しないエラー後デモモードで継続');
         setAuthenticated?.(true);
         navigate('/dashboard');
@@ -237,6 +285,7 @@ const AuthCallback: React.FC = () => {
         <div className="mt-4 p-4 bg-gray-100 rounded-lg">
           <h3 className="text-lg font-semibold mb-2">🔍 デバッグ情報</h3>
           <div className="text-sm">
+            <p><strong>現在のステップ:</strong> {currentStep}</p>
             <p><strong>ステータス:</strong> {status}</p>
             <p><strong>エラー詳細:</strong> {errorDetails || 'なし'}</p>
             <details className="mt-2">

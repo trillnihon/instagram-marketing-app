@@ -596,16 +596,36 @@ app.get('/auth/instagram/callback', async (req, res) => {
 // Instagram認証コールバック (POST - フロントエンドからのリクエスト用)
 app.post('/auth/instagram/callback', async (req, res) => {
   const { code, state } = req.body;
+  
+  // デバッグモード判定
+  const isDebugMode = process.env.DEBUG === 'true' || process.env.NODE_ENV !== 'production';
+  
+  // ステップ別ログ関数
+  const logStep = (step, message, data = null) => {
+    const timestamp = new Date().toISOString();
+    
+    // デバッグモードの場合のみログを出力
+    if (isDebugMode) {
+      console.log(`🎯 [SERVER STEP ${step}] ${message}`, data ? data : '');
+      console.log(`⏰ [SERVER STEP ${step}] タイムスタンプ: ${timestamp}`);
+    }
+  };
+  
+  logStep(1, 'Instagram認証 POST リクエスト受信開始');
   console.log('[DEBUG] Instagram認証 POST - 受信したcode:', code);
   console.log('[DEBUG] Instagram認証 POST - 受信したstate:', state);
   console.log('[DEBUG] Instagram認証 POST - セッションのstate:', req.session.instagramOauthState);
   
   if (!code || !state) {
+    logStep(2, '認証コードまたはstateが不足 - エラーレスポンス');
     return res.status(400).json({ error: 'Missing code or state' });
   }
   
+  logStep(3, '認証コードとstateの検証完了');
+  
   // 認証コードの重複使用を防ぐ
   if (req.session.usedCode === code) {
+    logStep(4, '認証コード重複使用エラー');
     console.warn('[WARNING] 認証コードが既に使用されています:', code);
     return res.status(400).json({ 
       error: 'この認証コードは既に使用されています。新しい認証を開始してください。',
@@ -613,25 +633,36 @@ app.post('/auth/instagram/callback', async (req, res) => {
     });
   }
   
+  logStep(5, '認証コード重複チェック完了');
+  
   // 開発環境ではstate検証をスキップ
   if (process.env.NODE_ENV === 'production') {
     if (state !== req.session.instagramOauthState) {
+      logStep(6, 'state検証失敗 - エラーレスポンス');
       return res.status(400).json({ error: 'Invalid state' });
     }
+    logStep(6, 'state検証完了（本番環境）');
   } else {
+    logStep(6, 'state検証スキップ（開発環境）');
     console.warn('[DEBUG] 開発環境のためstate検証をスキップします');
   }
   
   // 使用済みコードとしてマーク
   req.session.usedCode = code;
+  logStep(7, '認証コードを使用済みとしてマーク');
   
   try {
+    logStep(8, 'Facebook API認証処理開始');
+    
     // 環境に応じてリダイレクトURIを切り替え
     const redirectUri = process.env.NODE_ENV === 'production' 
       ? 'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app/auth/instagram/callback'
       : 'https://localhost:4000/auth/instagram/callback';
     
+    logStep(9, 'リダイレクトURI設定完了', { redirectUri });
+    
     // アクセストークン取得
+    logStep(10, 'Facebook API アクセストークン取得開始');
     const tokenRes = await axios.post(`https://graph.facebook.com/v18.0/oauth/access_token`, null, {
       params: {
         client_id: FACEBOOK_APP_ID,
@@ -642,9 +673,14 @@ app.post('/auth/instagram/callback', async (req, res) => {
     });
     
     const accessToken = tokenRes.data.access_token;
+    logStep(11, 'アクセストークン取得成功', { 
+      accessToken: accessToken.substring(0, 10) + '...',
+      tokenLength: accessToken.length 
+    });
     console.log('[DEBUG] Instagram認証 POST - アクセストークン取得成功');
     
     // Facebookページ一覧取得
+    logStep(12, 'Facebookページ一覧取得開始');
     const pagesRes = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
       params: {
         access_token: accessToken,
@@ -652,13 +688,19 @@ app.post('/auth/instagram/callback', async (req, res) => {
       }
     });
     
+    logStep(13, 'Facebookページ一覧取得成功', { 
+      pageCount: pagesRes.data.data?.length || 0 
+    });
     console.log('[DEBUG] Instagram認証 POST - ページ一覧取得レスポンス:', JSON.stringify(pagesRes.data, null, 2));
     
     const pages = pagesRes.data.data || [];
     let instagramBusinessAccount = null;
     
+    logStep(14, 'Instagramビジネスアカウント検索開始', { pageCount: pages.length });
+    
     // ページが存在しない場合の詳細情報を取得
     if (pages.length === 0) {
+      logStep(15, 'Facebookページが見つからないため詳細情報を取得');
       console.log('[DEBUG] Facebookページが見つかりません。ユーザー情報を確認します。');
       
       // ユーザー情報を取得
@@ -669,6 +711,10 @@ app.post('/auth/instagram/callback', async (req, res) => {
         }
       });
       
+      logStep(16, 'ユーザー情報取得成功', { 
+        userId: userRes.data.id,
+        userName: userRes.data.name 
+      });
       console.log('[DEBUG] ユーザー情報:', JSON.stringify(userRes.data, null, 2));
       
       // ユーザーのページ一覧を取得（より詳細な情報）
@@ -679,10 +725,17 @@ app.post('/auth/instagram/callback', async (req, res) => {
         }
       });
       
+      logStep(17, '詳細なページ情報取得成功', { 
+        detailedPageCount: userPagesRes.data.data?.length || 0 
+      });
       console.log('[DEBUG] 詳細なページ情報:', JSON.stringify(userPagesRes.data, null, 2));
     }
     
     for (const page of pages) {
+      logStep(18, `ページ確認中: ${page.name}`, { 
+        pageId: page.id,
+        hasInstagramAccount: !!(page.instagram_business_account && page.instagram_business_account.id)
+      });
       console.log(`[DEBUG] ページ名: ${page.name}, ページID: ${page.id}, Instagramビジネスアカウント:`, page.instagram_business_account);
       if (page.instagram_business_account && page.instagram_business_account.id) {
         instagramBusinessAccount = {
@@ -692,11 +745,17 @@ app.post('/auth/instagram/callback', async (req, res) => {
           page_id: page.id,
           page_name: page.name
         };
+        logStep(19, 'Instagramビジネスアカウント発見', {
+          instagramId: instagramBusinessAccount.id,
+          username: instagramBusinessAccount.username,
+          pageName: instagramBusinessAccount.page_name
+        });
         break;
       }
     }
     
     if (!instagramBusinessAccount) {
+      logStep(20, 'Instagramビジネスアカウントが見つからない - エラーレスポンス');
       const debugInfo = {
         pages,
         accessToken: accessToken.substring(0, 10) + '...',
@@ -725,6 +784,7 @@ app.post('/auth/instagram/callback', async (req, res) => {
     }
     
     // 投稿データ取得（最新5件）
+    logStep(21, 'Instagram投稿データ取得開始');
     const mediaRes = await axios.get(`https://graph.facebook.com/v18.0/${instagramBusinessAccount.id}/media`, {
       params: {
         access_token: accessToken,
@@ -733,9 +793,13 @@ app.post('/auth/instagram/callback', async (req, res) => {
       }
     });
     
+    logStep(22, 'Instagram投稿データ取得成功', { 
+      postCount: mediaRes.data.data?.length || 0 
+    });
     console.log('[DEBUG] Instagram認証 POST - 投稿データ取得レスポンス:', JSON.stringify(mediaRes.data, null, 2));
     
     // 成功レスポンス
+    logStep(23, '認証処理完了 - 成功レスポンス送信');
     res.json({
       success: true,
       accessToken: accessToken,
@@ -755,6 +819,10 @@ app.post('/auth/instagram/callback', async (req, res) => {
     });
     
   } catch (err) {
+    logStep(24, 'Instagram認証処理でエラー発生', {
+      error: err.response?.data || err.message,
+      status: err.response?.status
+    });
     const debugInfo = {
       error: err.response?.data || err.message,
       stack: err.stack

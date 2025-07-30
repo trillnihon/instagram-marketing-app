@@ -18,6 +18,7 @@ Instagram Marketing Appは、Instagram・Threadsの投稿分析と最適化を�
 - ✅ カスタム404ページ（認証コールバック自動処理）
 - ✅ 緊急対応：Instagram認証コールバック404エラーの最終解決
 - ✅ Vercel設定競合解決（_redirectsファイルによる確実なリダイレクト）
+- ✅ デバッグ機能強化（ステップ別ログ・デバッグモード制御）
 
 ## 🚀 デプロイ状況
 
@@ -85,6 +86,9 @@ VITE_API_BASE_URL=http://localhost:4000/api
 NEXT_PUBLIC_API_URL=http://localhost:4000
 VITE_INSTAGRAM_REDIRECT_URI=http://localhost:3000/auth/instagram/callback
 CORS_ORIGIN=http://localhost:3000
+
+# デバッグ設定
+VITE_DEBUG=true
 ```
 
 #### バックエンド (server/.env)
@@ -100,6 +104,9 @@ INSTAGRAM_REDIRECT_URI=http://localhost:3000/auth/instagram/callback
 OPENAI_API_KEY=your_openai_api_key
 JWT_SECRET=your_jwt_secret
 CORS_ORIGIN=http://localhost:3000
+
+# デバッグ設定
+DEBUG=true
 ```
 
 ### 4. 開発サーバーの起動
@@ -203,9 +210,22 @@ git push origin main
 **解決**: 環境変数の設定を確認
 
 ### デバッグ手順
-1. ブラウザ開発者ツールでエラーログを確認
-2. NetworkタブでAPIリクエストを確認
-3. Renderダッシュボードでバックエンドログを確認
+1. **ブラウザ開発者ツールでエラーログを確認**
+   - F12キーで開発者ツールを開く
+   - Consoleタブでステップ別ログを確認（`[STEP X]`形式）
+   - 現在のステップ番号と処理状況を確認
+
+2. **NetworkタブでAPIリクエストを確認**
+   - リクエストの送信先とレスポンスを確認
+   - ステータスコードとエラー内容を確認
+
+3. **Renderダッシュボードでバックエンドログを確認**
+   - サーバー側のステップ別ログ（`[SERVER STEP X]`形式）を確認
+   - エラーの詳細情報を確認
+
+4. **デバッグモード制御**
+   - 環境変数`DEBUG=true`でログ出力を制御
+   - 本番環境では必要に応じてデバッグモードを有効化
 
 ## 📚 ドキュメント
 
