@@ -20,6 +20,62 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
+    <!-- Instagram OAuthコールバック処理 -->
+    <script>
+      // Instagram OAuthコールバックの事前処理
+      (function() {
+        const pathname = window.location.pathname;
+        const search = window.location.search;
+        
+        console.log('🔍 [DEBUG] index.html - パスチェック:', {
+          pathname,
+          search,
+          href: window.location.href,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Instagram OAuthコールバックURLの場合
+        if (pathname === '/auth/instagram/callback') {
+          console.log('🎯 [DEBUG] InstagramコールバックURLを検出！');
+          
+          const urlParams = new URLSearchParams(search);
+          const code = urlParams.get('code');
+          const state = urlParams.get('state');
+          const error = urlParams.get('error');
+          
+          console.log('📝 [DEBUG] コールバックパラメータ:', {
+            code: code ? `${code.substring(0, 10)}...` : null,
+            state,
+            error,
+            hasCode: !!code
+          });
+          
+          // エラーの場合
+          if (error) {
+            console.error('❌ [DEBUG] Instagram認証エラー:', error);
+            // エラーページにリダイレクト
+            setTimeout(() => {
+              window.location.href = '/?auth_error=' + encodeURIComponent(error);
+            }, 1000);
+            return;
+          }
+          
+          // 認証コードがある場合
+          if (code) {
+            console.log('✅ [DEBUG] 認証コードを検出、処理を継続');
+            // Reactアプリケーションに処理を委譲
+            // 何もしない（Reactアプリケーションが処理する）
+          } else {
+            console.log('⚠️ [DEBUG] 認証コードなし、デモモードで継続');
+            // 認証コードなしでもデモモードで継続
+            setTimeout(() => {
+              window.location.href = '/?auth_callback=true&no_code=true';
+            }, 1000);
+          }
+        }
+      })();
+    </script>
+    
     <!-- Service Worker完全無効化 -->
     <script>
       // Service Workerを完全に無効化
