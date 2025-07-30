@@ -279,3 +279,4 @@ instagram-marketing-app/
 ---
 
 **このREADMEは、Instagram Business連携の完了と本番運用開始のためのガイドラインです。**
+# Force Vercel deployment 07/30/2025 11:49:55
