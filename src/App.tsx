@@ -84,6 +84,20 @@ const App: React.FC = () => {
       console.log('🎯 [DEBUG] InstagramコールバックURLを検出！');
       console.log('🔍 [DEBUG] クエリパラメータ:', window.location.search);
     }
+    
+    // クエリパラメータからのコールバック処理
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCallback = urlParams.get('auth_callback');
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    
+    if (authCallback === 'true' && code) {
+      console.log('🔄 [DEBUG] クエリパラメータからのコールバック処理を開始');
+      console.log('📝 [DEBUG] 認証コード:', code.substring(0, 10) + '...');
+      
+      // AuthCallbackコンポーネントにリダイレクト
+      window.location.href = `/auth/instagram/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state || '')}`;
+    }
   }, []);
 
   return (

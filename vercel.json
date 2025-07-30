@@ -39,5 +39,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "app/auth/instagram/callback": {
+      "maxDuration": 30
+    }
+  }
 } 
