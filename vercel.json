@@ -1,18 +1,16 @@
 {
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/auth/instagram/callback",
       "destination": "/index.html"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/auth/instagram/callback",
-      "dest": "/index.html"
     },
     {
-      "src": "/auth/instagram/callback(.*)",
-      "dest": "/index.html"
+      "source": "/auth/instagram/callback(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 } 
