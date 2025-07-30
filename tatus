@@ -1,0 +1,5 @@
+[33mdade592[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m 📝 Update: 開発継続・改善状況の記録 - ステップ別ログ機能とデバッグ機能の実装状況を追記
+[33me02ef90[m 🔧 デバッグ機能強化: ステップ別ログ追加・デバッグモード制御実装 - Instagram連携問題特定のための詳細ログ機能
+[33m60f1386[m 🚨 緊急修正: index.htmlのInstagram OAuthコールバック処理完全復旧 - 404エラーの根本的解決
+[33m923c2c1[m 🚨 最終修正: index.htmlとApp.tsxのInstagram OAuthコールバック処理完全修正 - 404エラーの根本的解決
+[33m86a2e14[m 🚨 緊急修正: App.tsxのInstagram OAuthコールバックルート修正 - 404エラーの根本原因解決

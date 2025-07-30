@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/auth/instagram/callback",
-      "destination": "/index.html"
+      "destination": "https://instagram-marketing-backend-v2.onrender.com/auth/instagram/callback"
     },
     {
-      "source": "/auth/instagram/callback(.*)",
-      "destination": "/index.html"
+      "source": "/api/(.*)",
+      "destination": "https://instagram-marketing-backend-v2.onrender.com/api/$1"
     },
     {
       "source": "/auth/instagram",

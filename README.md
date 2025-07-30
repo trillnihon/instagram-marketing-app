@@ -14,10 +14,10 @@ Instagram Marketing Appは、Instagram・Threadsの投稿分析と最適化を�
 - ✅ アルゴリズム対応アドバイス
 - ✅ PWA対応（オフライン対応）
 - ✅ Instagram Business連携
-- ✅ OAuth認証フロー（404エラー対応済み）
-- ✅ カスタム404ページ（認証コールバック自動処理）
+- ✅ OAuth認証フロー（404エラー解決済み）
+- ✅ カスタム404ページ（認証コールバック自動処理機能）
 - ✅ 緊急対応：Instagram認証コールバック404エラーの最終解決
-- ✅ Vercel設定競合解決（_redirectsファイルによる確実なリダイレクト）
+- ✅ Vercel設定競合解決（APIルーティング修正）
 - ✅ デバッグ機能強化（ステップ別ログ・デバッグモード制御）
 
 ## 🚀 デプロイ状況
@@ -145,7 +145,7 @@ instagram-marketing-app/
 - `src/services/authService.ts` - 認証サービス
 - `src/services/instagramApi.ts` - Instagram API連携
 - `server/server.js` - バックエンドサーバー
-- `vercel.json` - Vercel設定
+- `vercel.json` - Vercel設定（APIルーティング含む）
 
 ### 開発時の注意事項
 
@@ -158,6 +158,7 @@ instagram-marketing-app/
 - `vercel.json`では`rewrites`のみを使用
 - `routes`と`rewrites`の同時使用は禁止
 - InstagramコールバックURLの優先順位を適切に設定
+- APIルーティングをバックエンドに直接設定
 - カスタム404ページで認証コールバックを自動処理
 
 #### 3. API_BASE_URL設定
@@ -198,6 +199,7 @@ git push origin main
 **原因**: Vercelルーティング設定の問題
 **解決**: 
 - `vercel.json`の`rewrites`設定を確認
+- APIルーティングがバックエンドに正しく設定されているか確認
 - カスタム404ページ（`public/404.html`）で自動処理
 - フォールバック処理でクエリパラメータから認証コードを処理
 
@@ -276,3 +278,4 @@ git push origin main
 # Force deployment - 2025-07-30 13:22:34
 # Force deployment
 # Force deployment for callback fix
+# Instagram OAuth 404エラー解決 - vercel.json APIルーティング修正完了
