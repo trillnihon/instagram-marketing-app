@@ -1,98 +1,60 @@
-# Instagram Marketing Dashboard
+# 📱 Instagram Marketing App
 
-Instagram Businessアカウントと連携し、投稿分析・インサイト取得・ハッシュタグ分析を行うマーケティングダッシュボードアプリケーションです。
+AIがあなたのSNS投稿を分析・最適化するWebアプリケーション
 
-## 🚨 絶対に変更してはいけない設定
+## 🎯 プロジェクト概要
 
-### ⚠️ 統一URL設定（最重要）
-**すべての設定で以下のURLを統一して使用すること**
+Instagram Marketing Appは、Instagram・Threadsの投稿分析と最適化を支援するSaaSアプリケーションです。AI技術を活用して、投稿の効果を分析し、改善提案を提供します。
 
-```
-https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app
-```
+### 主要機能
+- ✅ AI投稿分析・改善提案
+- ✅ Threadsトレンド分析
+- ✅ 投稿履歴管理
+- ✅ AI投稿文自動生成
+- ✅ アルゴリズム対応アドバイス
+- ✅ PWA対応（オフライン対応）
+- ✅ Instagram Business連携
 
-#### 変更禁止箇所一覧
+## 🚀 デプロイ状況
 
-##### 1. Facebook開発者コンソール
-- **有効なOAuthリダイレクトURI**: 
-  ```
-  https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app/auth/instagram/callback
-  ```
-- **アプリドメイン**: 
-  ```
-  instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app
-  ```
-- **サイトURL**: 
-  ```
-  https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app/
-  ```
+### 本番環境
+- **フロントエンド**: [Vercel](https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app)
+- **バックエンド**: [Render](https://instagram-marketing-backend-v2.onrender.com)
+- **データベース**: MongoDB Atlas
 
-##### 2. バックエンド設定
-- **server/server.js** (258行目):
-  ```javascript
-  const redirectUri = process.env.NODE_ENV === 'production' 
-    ? 'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app/auth/instagram/callback'
-    : 'https://localhost:4000/auth/instagram/callback';
-  ```
+### 開発環境
+- **フロントエンド**: http://localhost:3000
+- **バックエンド**: http://localhost:4000
 
-##### 3. フロントエンド設定
-- **src/services/instagramApi.ts** (10行目):
-  ```javascript
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (window.location.hostname === 'localhost' ? 'http://localhost:4000' : 'https://instagram-marketing-backend.onrender.com');
-  ```
-
-##### 4. 環境変数
-- **env.production**:
-  ```
-  VITE_API_BASE_URL=https://instagram-marketing-backend.onrender.com/api
-  ```
-
-### 🔒 統一ルール（全チャット共通認識）
-1. **すべての設定で同じURLを使用**
-2. **新しいURL変更時は全箇所を同時に更新**
-3. **テスト前に設定の整合性を確認**
-
----
-
-## 🚀 主要機能
-
-- **Instagram Business連携**: Meta Graph APIを使用した公式連携
-- **投稿分析**: 投稿データの取得と分析
-- **インサイト取得**: エンゲージメント率、リーチ数などの詳細分析
-- **ハッシュタグ分析**: ハッシュタグの効果測定
-- **投稿スケジューリング**: 投稿の予約機能
-- **アナリティクスダッシュボード**: 総合的な分析レポート
-
-## 🛠 技術スタック
+## 🛠️ 技術スタック
 
 ### フロントエンド
-- **React 18**: UIフレームワーク
-- **TypeScript**: 型安全性
-- **Vite**: ビルドツール
-- **React Router**: ルーティング
-- **Zustand**: 状態管理
-- **Tailwind CSS**: スタイリング
+- **React 18** + **TypeScript**
+- **Vite** (ビルドツール)
+- **Tailwind CSS** (スタイリング)
+- **React Router** (ルーティング)
+- **Zustand** (状態管理)
+- **Axios** (HTTP通信)
 
 ### バックエンド
-- **Node.js**: ランタイム
-- **Express**: Webフレームワーク
-- **MongoDB**: データベース
-- **JWT**: 認証
-- **Axios**: HTTP通信
+- **Node.js** + **Express**
+- **MongoDB** + **Mongoose**
+- **JWT** (認証)
+- **Passport** (OAuth認証)
+- **OpenAI API** (AI機能)
 
-### デプロイ
-- **Vercel**: フロントエンドホスティング
-- **Render**: バックエンドホスティング
-- **MongoDB Atlas**: クラウドデータベース
+### インフラ
+- **Vercel** (フロントエンドホスティング)
+- **Render** (バックエンドホスティング)
+- **MongoDB Atlas** (データベース)
 
----
-
-## 📦 インストール・セットアップ
+## 📦 セットアップ
 
 ### 前提条件
 - Node.js 18以上
 - npm または yarn
-- MongoDB（開発環境）
+- MongoDB Atlas アカウント
+- Facebook開発者アカウント
 
 ### 1. リポジトリのクローン
 ```bash
@@ -108,175 +70,163 @@ npm install
 # バックエンド
 cd server
 npm install
+cd ..
 ```
 
 ### 3. 環境変数の設定
-```bash
-# フロントエンド
-cp .env.example .env.local
 
-# バックエンド
-cd server
-cp .env.example .env
+#### フロントエンド (.env.local)
+```env
+VITE_API_BASE_URL=http://localhost:4000/api
+NEXT_PUBLIC_API_URL=http://localhost:4000
+VITE_INSTAGRAM_REDIRECT_URI=http://localhost:3000/auth/instagram/callback
+CORS_ORIGIN=http://localhost:3000
+```
+
+#### バックエンド (server/.env)
+```env
+NODE_ENV=development
+PORT=4000
+MONGODB_URI=your_mongodb_connection_string
+FACEBOOK_APP_ID=your_facebook_app_id
+FACEBOOK_APP_SECRET=your_facebook_app_secret
+INSTAGRAM_APP_ID=your_instagram_app_id
+INSTAGRAM_APP_SECRET=your_instagram_app_secret
+INSTAGRAM_REDIRECT_URI=http://localhost:3000/auth/instagram/callback
+OPENAI_API_KEY=your_openai_api_key
+JWT_SECRET=your_jwt_secret
+CORS_ORIGIN=http://localhost:3000
 ```
 
 ### 4. 開発サーバーの起動
 ```bash
-# フロントエンド（ターミナル1）
+# フロントエンド
 npm run dev
 
-# バックエンド（ターミナル2）
+# バックエンド（別ターミナル）
 cd server
-npm start
+npm run dev
 ```
 
----
+## 🔧 開発ガイド
 
-## 🔧 設定
-
-### Facebook開発者コンソール設定
-
-1. **アプリの作成**
-   - Facebook開発者コンソールでアプリを作成
-   - アプリID: `1003724798254754`
-
-2. **権限の設定**
-   - `public_profile`
-   - `email`
-   - `instagram_basic`
-   - `instagram_manage_insights`
-   - `pages_show_list`
-   - `pages_read_engagement`
-
-3. **OAuth設定**
-   - 有効なOAuthリダイレクトURI: 上記の統一URL設定を参照
-   - アプリドメイン: 上記の統一URL設定を参照
-
-### 環境変数
-
-#### フロントエンド（.env.local）
-```env
-VITE_API_BASE_URL=http://localhost:4000/api
-VITE_FACEBOOK_APP_ID=1003724798254754
-```
-
-#### バックエンド（.env）
-```env
-MONGODB_URI=mongodb://localhost:27017/instagram-marketing
-FACEBOOK_APP_ID=1003724798254754
-FACEBOOK_APP_SECRET=your_app_secret
-SESSION_SECRET=your_session_secret
-```
-
----
-
-## 🚀 デプロイ
-
-### フロントエンド（Vercel）
-```bash
-# Vercel CLIのインストール
-npm i -g vercel
-
-# デプロイ
-vercel --prod
-```
-
-### バックエンド（Render）
-1. Renderダッシュボードで新しいWebサービスを作成
-2. GitHubリポジトリを接続
-3. 環境変数を設定
-4. 自動デプロイを有効化
-
----
-
-## 📝 使用方法
-
-### 1. ログイン
-- テスト用アカウント: `trill.0310.0321@gmail.com`
-- パスワード: `password123`
-
-### 2. Instagram連携
-1. 「Instagram連携」タブをクリック
-2. 「Instagramと連携する」ボタンをクリック
-3. Facebook認証を完了
-4. Instagram Businessアカウントの選択
-
-### 3. データ分析
-- 投稿データの自動取得
-- インサイトの表示
-- ハッシュタグ分析の実行
-
----
-
-## 🚨 重要な注意事項
-
-### URL変更時のチェックリスト
-- [ ] Facebook開発者コンソールのOAuthリダイレクトURI
-- [ ] Facebook開発者コンソールのアプリドメイン
-- [ ] Facebook開発者コンソールのサイトURL
-- [ ] バックエンドのserver.js
-- [ ] フロントエンドのinstagramApi.ts
-- [ ] 環境変数ファイル
-- [ ] デプロイ後の動作確認
-
-### トラブルシューティング
-- **OAuth認証エラー**: リダイレクトURIの整合性確認
-- **404エラー**: ルーティング設定の確認
-- **接続エラー**: API_BASE_URLの確認
-
----
-
-## 📁 プロジェクト構造
-
+### プロジェクト構造
 ```
 instagram-marketing-app/
 ├── src/
 │   ├── components/          # Reactコンポーネント
 │   ├── pages/              # ページコンポーネント
-│   ├── services/           # APIサービス
-│   ├── store/              # 状態管理
+│   ├── services/           # API通信サービス
+│   ├── store/              # Zustand状態管理
 │   ├── types/              # TypeScript型定義
-│   └── utils/              # ユーティリティ
-├── server/                 # バックエンド
-│   ├── config/             # 設定ファイル
-│   ├── routes/             # APIルート
-│   ├── services/           # ビジネスロジック
-│   └── utils/              # ユーティリティ
+│   └── utils/              # ユーティリティ関数
+├── server/
+│   ├── models/             # MongoDBモデル
+│   ├── routes/             # Expressルート
+│   ├── middleware/         # ミドルウェア
+│   └── services/           # バックエンドサービス
 ├── public/                 # 静的ファイル
 └── docs/                   # ドキュメント
 ```
 
----
+### 重要なファイル
+- `src/App.tsx` - メインアプリケーション
+- `src/services/authService.ts` - 認証サービス
+- `src/services/instagramApi.ts` - Instagram API連携
+- `server/server.js` - バックエンドサーバー
+- `vercel.json` - Vercel設定
+
+### 開発時の注意事項
+
+#### 1. 統一URL設定
+以下のURL設定は絶対に変更しないでください：
+- フロントエンド: `https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app`
+- バックエンド: `https://instagram-marketing-backend-v2.onrender.com`
+
+#### 2. Vercel設定ルール
+- `vercel.json`では`rewrites`のみを使用
+- `routes`と`rewrites`の同時使用は禁止
+- InstagramコールバックURLの優先順位を適切に設定
+
+#### 3. API_BASE_URL設定
+- 本番環境では直接URLを設定
+- 環境変数依存を避ける
+
+## 🧪 テスト
+
+### テストアカウント
+- **メール**: test@example.com
+- **パスワード**: testpassword123
+
+### テスト手順
+1. フロントエンドにアクセス
+2. テストアカウントでログイン
+3. Instagram連携ページにアクセス
+4. デモモードまたは実際の連携をテスト
+
+## 🚨 トラブルシューティング
+
+### よくある問題
+
+#### 1. 404エラー（Instagram連携）
+**原因**: Vercelルーティング設定の問題
+**解決**: `vercel.json`の`rewrites`設定を確認
+
+#### 2. 認証エラー
+**原因**: API_BASE_URL設定の問題
+**解決**: `src/services/authService.ts`の設定を確認
+
+#### 3. MongoDB接続エラー
+**原因**: 接続文字列の問題
+**解決**: 環境変数の設定を確認
+
+### デバッグ手順
+1. ブラウザ開発者ツールでエラーログを確認
+2. NetworkタブでAPIリクエストを確認
+3. Renderダッシュボードでバックエンドログを確認
+
+## 📚 ドキュメント
+
+### 関連ドキュメント
+- [申し送り書](./HANDOVER_REPORT_20250730_FINAL.md) - 詳細な運用ガイド
+- [セットアップガイド](./SETUP.md) - 詳細なセットアップ手順
+- [API仕様書](./docs/API.md) - APIエンドポイント仕様
+
+### 外部リンク
+- [Facebook開発者コンソール](https://developers.facebook.com/apps/1003724798254754)
+- [Vercelダッシュボード](https://vercel.com/dashboard)
+- [Renderダッシュボード](https://dashboard.render.com)
+- [MongoDB Atlas](https://cloud.mongodb.com)
 
 ## 🤝 コントリビューション
 
-1. このリポジトリをフォーク
-2. 機能ブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add amazing feature'`)
-4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
-5. プルリクエストを作成
+### 開発フロー
+1. 新しいブランチを作成
+2. 機能開発・修正
+3. テスト実行
+4. プルリクエスト作成
+5. コードレビュー
+6. マージ
 
----
+### コーディング規約
+- TypeScriptを使用
+- ESLint・Prettierの設定に従う
+- コミットメッセージは日本語で記述
+- 重要な変更は申し送り書を更新
 
 ## 📄 ライセンス
 
 このプロジェクトはMITライセンスの下で公開されています。
 
----
-
 ## 📞 サポート
 
-### 開発者情報
-- **プロジェクト**: Instagram Marketing App
-- **リポジトリ**: `https://github.com/trillnihon/instagram-marketing-app`
-- **最終更新**: 2025年7月29日
+### 連絡先
+- **GitHub Issues**: [プロジェクトのIssues](https://github.com/trillnihon/instagram-marketing-app/issues)
+- **開発者**: [連絡先情報]
 
-### 緊急時の対応
-1. **設定変更禁止**: 上記の統一URL設定は絶対に変更しない
-2. **ロールバック**: 問題発生時は前回の正常動作バージョンに戻す
-3. **ログ確認**: ブラウザの開発者ツールでエラーログを確認
+### 緊急時
+問題が発生した場合は、まず[申し送り書](./HANDOVER_REPORT_20250730_FINAL.md)を確認してください。
 
 ---
 
-**このREADMEは、Instagram Business連携の完了と本番運用開始のためのガイドラインです。**
-# Force Vercel deployment 07/30/2025 11:49:55
+**注意**: このプロジェクトは開発中です。本番環境での使用前に十分なテストを行ってください。
