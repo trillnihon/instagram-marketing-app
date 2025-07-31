@@ -297,6 +297,26 @@
 - **配置確認**: ✅ vercel.jsonはプロジェクトルート直下に正しく配置
 - **ステータス**: ✅ 修正完了・デプロイ待ち
 
+### 22. _redirectsファイル削除・vercel.json最適化（2025年7月30日）
+- **問題**: `/auth/instagram/callback`でReactアプリがマウントされず404エラーが発生
+- **根本原因**: `public/_redirects`ファイルがvercel.jsonと競合していた
+- **解決策**: 
+  - ✅ `public/_redirects`ファイルを削除
+  - ✅ vercel.jsonのdestinationを`/index.html`に修正
+  - ✅ 不要なheaders設定を削除して最適化
+- **修正内容**:
+  ```json
+  // vercel.json
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"  // React SPA用の正しい設定
+    }
+  ]
+  ```
+- **削除ファイル**: `public/_redirects`（競合の原因）
+- **ステータス**: ✅ 修正完了・デプロイ待ち
+
 ---
 
 ## 🔧 技術的状況
