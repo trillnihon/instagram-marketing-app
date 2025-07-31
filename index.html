@@ -8,7 +8,7 @@
     <!-- 基本的なメタタグのみ -->
     <meta name="theme-color" content="#3b82f6" />
     
-    <!-- キャッシュバスティング - 2025年7月30日 15:45 -->
+    <!-- キャッシュバスティング - 2025年7月31日 修正版 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -22,10 +22,33 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- ローディング表示 -->
+      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
+        <div style="text-align: center;">
+          <h1>Instagram Marketing App</h1>
+          <p>アプリケーションを読み込み中...</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Reactアプリケーションの初期化 -->
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- Instagram OAuthコールバック処理 - 最終修正版 (2025-07-30 15:45) -->
+    <!-- フォールバック処理 -->
+    <script>
+      // Reactアプリケーションの初期化を確認
+      setTimeout(() => {
+        const root = document.getElementById('root');
+        if (root && root.children.length === 1) {
+          console.log('⚠️ [DEBUG] Reactアプリケーションが初期化されていません');
+          // フォールバック処理
+          window.location.href = '/';
+        }
+      }, 5000);
+    </script>
+    
+    <!-- Instagram OAuthコールバック処理 - 最終修正版 -->
     <script>
       // Instagram OAuthコールバックの事前処理（最終修正版）
       (function() {
