@@ -8,25 +8,9 @@ const AccountAnalytics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🔍 [DEBUG] AccountAnalytics - データ状態:', {
-      currentUser: currentUser ? {
-        userId: currentUser.userId,
-        hasAccessToken: !!currentUser.accessToken,
-        accessTokenLength: currentUser.accessToken?.length || 0,
-        instagramBusinessAccountId: currentUser.instagramBusinessAccountId
-      } : null,
-      accountAnalytics: accountAnalytics ? {
-        username: accountAnalytics.username,
-        totalPosts: accountAnalytics.totalPosts,
-        averageEngagement: accountAnalytics.averageEngagement
-      } : null
-    });
-
-    // デモユーザーならストアのダミーデータを直接表示
-    if (currentUser?.userId === 'demo_user') {
-      console.log('🎭 [DEBUG] AccountAnalytics - デモユーザーデータ設定');
-      setAccount(accountAnalytics);
-      setError(null);
+    // デモユーザーの場合はアクセストークンチェックをスキップ
+    if (currentUser?.userId === 'demo_user' || currentUser?.username === 'demo_user') {
+      console.log('🎭 [DEBUG] AccountAnalytics - デモユーザー、アクセストークンチェックをスキップ');
       setLoading(false);
       return;
     }

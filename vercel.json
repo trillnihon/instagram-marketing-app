@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/auth/instagram/callback", "destination": "/" },
     { "source": "/auth/(.*)", "destination": "/" },
     { "source": "/(.*)", "destination": "/" }
   ],
