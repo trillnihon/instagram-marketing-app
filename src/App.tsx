@@ -72,6 +72,15 @@ const App: React.FC = () => {
       timestamp: new Date().toISOString()
     });
 
+    // ルーティングデバッグ情報を追加
+    console.log('🎯 [DEBUG] 現在のルーティング状況:', {
+      pathname: window.location.pathname,
+      search: window.location.search,
+      hash: window.location.hash,
+      fullUrl: window.location.href,
+      isInstagramCallback: window.location.pathname === '/auth/instagram/callback'
+    });
+
     // Instagram OAuthコールバックのフォールバック処理
     const urlParams = new URLSearchParams(window.location.search);
     const authCallback = urlParams.get('auth_callback');

@@ -125,6 +125,14 @@ const AuthCallback: React.FC = () => {
     console.log('🌐 [STEP 1] ホスト名:', window.location.hostname);
     console.log('🔗 [STEP 1] プロトコル:', window.location.protocol);
     
+    // 追加のデバッグ情報
+    console.log('🎯 [STEP 1] React Router ルート確認:', {
+      pathname: window.location.pathname,
+      search: window.location.search,
+      hash: window.location.hash,
+      fullPath: window.location.pathname + window.location.search + window.location.hash
+    });
+    
     // ログステップ関数で記録
     logStep(1, 'AuthCallback マウント完了');
     

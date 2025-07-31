@@ -1,8 +1,8 @@
 {
   "rewrites": [
-    { "source": "/auth/instagram/callback", "destination": "/" },
-    { "source": "/auth/(.*)", "destination": "/" },
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/auth/instagram/callback", "destination": "/index.html" },
+    { "source": "/auth/(.*)", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
