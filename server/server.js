@@ -247,6 +247,51 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// 新規登録エンドポイント（デモ用）
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    console.log('[DEBUG] 新規登録リクエスト受信');
+    console.log('[DEBUG] リクエストボディ:', req.body);
+    
+    const { username, email, password } = req.body;
+    
+    // バリデーション
+    if (!username || !email || !password) {
+      console.log('[DEBUG] バリデーションエラー: 必須項目が不足');
+      return res.status(400).json({
+        success: false,
+        error: 'ユーザー名、メールアドレス、パスワードは必須です'
+      });
+    }
+    
+    console.log('[DEBUG] 新規登録処理開始:', { username, email, password: password ? '***' : 'undefined' });
+    
+    // デモ用の簡易新規登録（実際のDB保存は行わない）
+    const response = {
+      success: true,
+      message: '新規登録に成功しました',
+      user: {
+        id: 'demo-user-' + Date.now(),
+        username: username,
+        email: email,
+        isAdmin: false
+      },
+      token: 'demo-token-' + Date.now()
+    };
+    
+    console.log('[DEBUG] 新規登録成功:', response);
+    res.json(response);
+    
+  } catch (error) {
+    console.error('[ERROR] 新規登録エラー:', error);
+    res.status(500).json({
+      success: false,
+      error: '新規登録に失敗しました',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // /healthエンドポイント
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });

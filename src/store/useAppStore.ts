@@ -94,7 +94,7 @@ export const useAppStore = create<AuthState>()(
           
           console.log('[DEBUG] ログイン - API_BASE_URL:', API_BASE_URL);
           
-          const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -159,7 +159,7 @@ export const useAppStore = create<AuthState>()(
             ? 'http://localhost:4000' 
             : 'https://instagram-marketing-backend.onrender.com';
           
-          const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+          const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
