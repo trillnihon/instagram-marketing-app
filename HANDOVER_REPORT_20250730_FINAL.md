@@ -277,6 +277,26 @@
   ```
 - **ステータス**: ✅ 修正完了・デプロイ待ち
 
+### 21. vercel.json最終修正（2025年7月30日）
+- **問題**: `/auth/instagram/callback`でReactルーティングが機能せず404エラーが発生
+- **原因**: vercel.jsonのdestination設定が不適切
+- **解決策**: 
+  - ✅ vercel.jsonのdestinationを`/`に修正（SPA用設定）
+  - ✅ プロジェクトルート直下の配置を確認済み
+  - ✅ AuthCallback.tsxのログ出力は強化済み
+- **修正内容**:
+  ```json
+  // vercel.json
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"  // SPA用の正しい設定
+    }
+  ]
+  ```
+- **配置確認**: ✅ vercel.jsonはプロジェクトルート直下に正しく配置
+- **ステータス**: ✅ 修正完了・デプロイ待ち
+
 ---
 
 ## 🔧 技術的状況
