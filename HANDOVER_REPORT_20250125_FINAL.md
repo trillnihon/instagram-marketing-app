@@ -1,255 +1,161 @@
-# 📋 Instagram/Threads分析アプリ - 最終申し送り書
-**作成日**: 2025年1月25日  
-**更新日**: 2025年7月28日  
-**作成者**: Cursor AI Assistant  
-**プロジェクト**: Instagram/Threads投稿分析・AI提案SaaS  
-**ステータス**: 本番デプロイ完了・ログイン機能動作確認済み
+# Instagram Marketing App 申し送り書
 
----
+## 📋 プロジェクト概要
+- **プロジェクト名**: Instagram Marketing App
+- **技術スタック**: React + TypeScript + Vite (フロントエンド), Node.js + Express (バックエンド)
+- **デプロイ環境**: Vercel (フロントエンド), Render (バックエンド)
+- **最終更新**: 2025年1月25日
 
-## 🎯 プロジェクト概要
+## 🚨 重要: 404エラー問題の原因と解決方法 (2025年7月31日追加)
 
-### アプリケーション
-- **名称**: Instagram/Threads分析アプリ
-- **目的**: Instagram・Threadsの投稿分析・最適化支援SaaS
-- **技術スタック**: React + Node.js + MongoDB + OpenAI API
+### 問題の概要
+- **発生時期**: 2025年7月31日
+- **症状**: `/auth/instagram/callback` にアクセスするとVercelの404ページが表示される
+- **影響範囲**: ログイン機能、Instagram認証機能
 
-### 主要機能
-- ✅ AI投稿分析・改善提案
-- ✅ Threadsトレンド分析
-- ✅ 投稿履歴管理
-- ✅ AI投稿文自動生成
-- ✅ アルゴリズム対応アドバイス
-- ✅ PWA対応（オフライン対応）
+### 根本原因
+1. **SPAルーティング設定の問題**
+   - `vercel.json` の rewrites 設定が不十分
+   - React Router のルーティングが正しく動作しない
 
----
+2. **バックエンドURLの不一致**
+   - フロントエンドが参照するバックエンドURL: `instagram-marketing-backend.onrender.com`
+   - 実際のバックエンドURL: `instagram-marketing-backend-v2.onrender.com`
+   - サービス名の不一致によりAPI呼び出しが失敗
 
-## ✅ 完了した作業（2025年1月25日 - 7月28日）
+### 調査方法と手順
 
-### 1. MongoDB Atlas設定完了
-- **クラスター名**: instagram-app-cluster
-- **ユーザー名**: trill03100321
-- **パスワード**: mYvoYpl10yxf9Py2
-- **接続文字列**: `mongodb+srv://trill03100321:mYvoYpl10yxf9Py2@instagram-app-cluster.hnahwkn.mongodb.net/?retryWrites=true&w=majority&appName=instagram-app-cluster`
-- **ステータス**: ✅ 接続確認済み・本番環境準備完了
-
-### 2. Facebook開発者コンソール設定完了
-- **App ID**: 1193533602546658
-- **App Secret**: 5f337d6e7ad05fd7a74cd78f13d7d5c1
-- **Threads App ID**: 25252287587694713
-- **Threads App Secret**: 14ad79e7973687a6e3f803024caaf5b9
-- **設定項目**: 
-  - ✅ アプリ基本設定
-  - ✅ Threads API権限追加（threads_basic, threads_keyword_search, threads_manage_insights, threads_manage_mentions）
-  - ✅ プライバシーポリシー・利用規約設定
-- **ステータス**: ✅ 設定完了・OAuth機能準備完了
-
-### 3. 環境変数設定完了
-- **フロントエンド** (`env.production`): ✅ 更新完了
-- **バックエンド** (`server/env.production`): ✅ 更新完了
-- **設定内容**:
-  - MongoDB Atlas接続文字列
-  - Facebook OAuth設定
-  - Threads API設定
-  - 本番環境URL設定
-
-### 4. 機密情報管理設定完了
-- **SECRETS.md**: ✅ 作成完了（詳細な機密情報管理）
-- **CREDENTIALS_BACKUP.txt**: ✅ 作成完了（簡潔なバックアップ）
-- **.gitignore更新**: ✅ 機密ファイル除外設定完了
-- **セキュリティ**: ✅ Gitコミットからの除外設定完了
-
-### 5. GitHubリポジトリ作成・プッシュ完了
-- **リポジトリ**: https://github.com/trillnihon/instagram-marketing-app
-- **ブランチ**: main
-- **コミット数**: 複数回（継続的な改善とデバッグ）
-- **ファイル数**: 187ファイル（3.09 MiB）
-- **ステータス**: ✅ プッシュ完了・Vercelデプロイ準備完了
-
-### 6. 本番デプロイ完了（2025年7月28日）
-- **フロントエンド（Vercel）**: ✅ デプロイ完了
-  - **URL**: https://instagram-marketing-g8ujpngu8-trillnihons-projects.vercel.app
-  - **ステータス**: 正常動作中
-- **バックエンド（Render）**: ✅ デプロイ完了
-  - **URL**: https://instagram-marketing-backend-v2.onrender.com
-  - **ステータス**: 正常動作中
-  - **ヘルスチェック**: `/health` エンドポイント追加済み
-
-### 7. ログイン機能動作確認完了
-- **デモ認証情報**:
-  - メールアドレス: `trill.0310.0321@gmail.com`
-  - パスワード: `password123`
-- **認証フロー**: ✅ 正常動作
-- **バックエンドAPI**: ✅ 正常応答（HTTP 200 OK）
-- **フロントエンド状態管理**: ✅ 正常動作
-- **ページ遷移**: ✅ 認証状態監視による自動遷移実装
-
-### 8. 技術的改善完了
-- **Service Worker**: ✅ 完全削除（エラー解消）
-- **ルーティング**: ✅ 修正完了（ルート→ダッシュボード、ログイン→ダッシュボード）
-- **エラーハンドリング**: ✅ 強化済み
-- **デバッグ機能**: ✅ 詳細ログ追加済み
-
----
-
-## 🔧 技術的状況
-
-### フロントエンド
-- **ビルド状況**: ✅ 成功
-- **本番動作**: ✅ 正常（Vercel）
-- **PWA対応**: ✅ 実装完了（Service Worker削除により安定化）
-- **UI**: ✅ Instagram風デザイン適用済み
-- **環境変数**: ✅ 本番用設定完了
-- **認証状態管理**: ✅ Zustand + useEffect監視実装
-
-### バックエンド
-- **起動状況**: ✅ 正常（Render）
-- **MongoDB接続**: ✅ 本番接続確認済み
-- **OAuth設定**: ✅ Facebook/Threads API準備完了
-- **セキュリティ**: ✅ 本番環境対応完了
-- **環境変数**: ✅ 本番用設定完了
-- **ヘルスチェック**: ✅ `/health` エンドポイント追加済み
-
-### データベース
-- **MongoDB Atlas**: ✅ クラスター作成・接続確認済み
-- **スキーマ**: ✅ ユーザー・分析履歴・投稿データ設計済み
-- **接続**: ✅ 本番環境用接続文字列設定完了
-
----
-
-## 🚀 本番環境情報
-
-### デプロイ済みURL
-- **フロントエンド**: https://instagram-marketing-g8ujpngu8-trillnihons-projects.vercel.app
-- **バックエンド**: https://instagram-marketing-backend-v2.onrender.com
-- **GitHubリポジトリ**: https://github.com/trillnihon/instagram-marketing-app
-
-### 重要な環境変数設定
-```
-NODE_ENV=production
-PORT=4000
-MONGODB_URI=mongodb+srv://trill03100321:mYvoYpl10yxf9Py2@instagram-app-cluster.hnahwkn.mongodb.net/?retryWrites=true&w=majority&appName=instagram-app-cluster
-OPENAI_API_KEY=<your-openai-api-key>
-JWT_SECRET=<16文字以上の強固なJWTシークレット>
-CORS_ORIGIN=https://instagram-marketing-g8ujpngu8-trillnihons-projects.vercel.app
-STRIPE_SECRET_KEY=<your-stripe-secret-key>
-SENDGRID_API_KEY=<your-sendgrid-api-key>
-SESSION_SECRET=<16文字以上の強固なセッションシークレット>
-FACEBOOK_APP_ID=1193533602546658
-FACEBOOK_APP_SECRET=5f337d6e7ad05fd7a74cd78f13d7d5c1
-INSTAGRAM_APP_ID=25252287587694713
-INSTAGRAM_APP_SECRET=14ad79e7973687a6e3f803024caaf5b9
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-LOG_LEVEL=info
+#### 1. フロントエンドの問題調査
+```bash
+# 1. ブラウザの開発者ツールでコンソールログを確認
+# 2. Network タブでAPIリクエストの失敗を確認
+# 3. 404エラーの詳細を確認
 ```
 
-### 設定ファイル一覧
-- `vercel.json` - Vercel設定（PWA対応）
-- `render.yaml` - Render設定
-- `public/manifest.json` - PWAマニフェスト
-- `env.production` - フロントエンド環境変数
-- `server/env.production` - バックエンド環境変数
+#### 2. Vercel設定の確認
+```bash
+# vercel.json の内容を確認
+cat vercel.json
 
----
+# 期待される設定
+{
+  "rewrites": [
+    { "source": "/auth/(.*)", "destination": "/" },
+    { "source": "/(.*)", "destination": "/" }
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite"
+}
+```
 
-## 📋 次のステップ（オプション）
+#### 3. バックエンドの状態確認
+```bash
+# Renderダッシュボードで以下を確認
+# 1. サービス名: instagram-marketing-backend-v2
+# 2. デプロイステータス: "Live" になっているか
+# 3. ログでエラーがないか
+# 4. 環境変数が正しく設定されているか
+```
 
-### 優先度A: 機能拡張
-1. **AI機能の本格運用**
-   - OpenAI APIキーの設定
-   - AI投稿分析機能のテスト
-   - AI投稿生成機能のテスト
+#### 4. APIエンドポイントの確認
+```bash
+# サーバー側のエンドポイント
+grep -r "app.post.*login" server/
+grep -r "app.post.*signup" server/
 
-2. **OAuth機能の本格運用**
-   - Facebook/Instagram OAuthのテスト
-   - ユーザー認証フローの確認
-   - アクセストークンの管理
+# フロントエンド側のAPI呼び出し
+grep -r "fetch.*auth" src/
+```
 
-3. **PWA機能の復活**
-   - Service Workerの再実装（必要に応じて）
-   - オフライン機能のテスト
-   - プッシュ通知の実装
+### 解決方法
 
-### 優先度B: パフォーマンス最適化
-1. **フロントエンド最適化**
-   - コード分割の実装
-   - 画像最適化
-   - キャッシュ戦略の改善
+#### 1. SPAルーティング修正
+```json
+// vercel.json
+{
+  "rewrites": [
+    { "source": "/auth/(.*)", "destination": "/" },
+    { "source": "/(.*)", "destination": "/" }
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite"
+}
+```
 
-2. **バックエンド最適化**
-   - データベースクエリの最適化
-   - レート制限の調整
-   - ログ管理の改善
+#### 2. バックエンドURL修正
+```typescript
+// src/store/useAppStore.ts
+const API_BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:4000' 
+  : 'https://instagram-marketing-backend-v2.onrender.com'; // 正しいサービス名
+```
 
-### 優先度C: 運用・保守
-1. **監視・ログ**
-   - エラー監視の設定
-   - パフォーマンス監視
-   - ユーザー行動分析
+#### 3. APIエンドポイント修正
+```typescript
+// ログイン
+const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  // ...
+});
 
-2. **セキュリティ強化**
-   - 定期的なセキュリティ監査
-   - 依存関係の更新
-   - セキュリティヘッダーの追加
+// 新規登録
+const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+  // ...
+});
+```
 
----
+### 予防策
 
-## 🎯 プロジェクト完了状況
+#### 1. 環境変数の統一管理
+```bash
+# .env.production
+VITE_API_BASE_URL=https://instagram-marketing-backend-v2.onrender.com
+VITE_INSTAGRAM_APP_ID=your_app_id
+VITE_INSTAGRAM_REDIRECT_URI=https://your-domain.vercel.app/auth/instagram/callback
+```
 
-### 全体進捗: 100%完了
-- **開発**: ✅ 完了
-- **テスト**: ✅ 完了
-- **設定**: ✅ 完了
-- **デプロイ準備**: ✅ 完了
-- **GitHubプッシュ**: ✅ 完了
-- **本番デプロイ**: ✅ 完了
-- **ログイン機能確認**: ✅ 完了
+#### 2. デプロイ前チェックリスト
+- [ ] フロントエンドとバックエンドのURLが一致しているか
+- [ ] APIエンドポイントが正しく設定されているか
+- [ ] 環境変数が正しく設定されているか
+- [ ] SPAルーティングが正しく動作するか
 
-### 本日の成果（2025年7月28日）
-1. **本番デプロイ完了**
-   - フロントエンド（Vercel）デプロイ成功
-   - バックエンド（Render）デプロイ成功
-   - 両環境の連携確認済み
+#### 3. ログ監視
+```bash
+# フロントエンドログ
+console.log('[DEBUG] API_BASE_URL:', API_BASE_URL);
+console.log('[DEBUG] レスポンスステータス:', response.status);
 
-2. **ログイン機能動作確認**
-   - デモ認証情報でのログイン成功
-   - バックエンドAPI正常応答確認
-   - フロントエンド状態管理正常動作確認
+# バックエンドログ
+console.log('[DEBUG] ログインリクエスト受信:', req.body);
+console.log('[DEBUG] 認証チェック開始:', { email });
+```
 
-3. **技術的改善完了**
-   - Service Worker問題の解決
-   - ルーティング修正完了
-   - エラーハンドリング強化
-   - デバッグ機能追加
+### トラブルシューティング手順
 
-### 🎉 プロジェクト状況
-- **技術的準備**: 100%完了
-- **設定作業**: 100%完了
-- **ドキュメント**: 100%完了
-- **デプロイ**: 100%完了
-- **動作確認**: 100%完了
+#### 1. 404エラーが発生した場合
+1. ブラウザの開発者ツールでコンソールログを確認
+2. Network タブでAPIリクエストの詳細を確認
+3. Vercelダッシュボードでデプロイ状況を確認
+4. Renderダッシュボードでバックエンドの状態を確認
 
-**Instagram/Threads分析アプリの本番環境での運用が開始されました！**
+#### 2. ログインができない場合
+1. フロントエンドのAPI_BASE_URLを確認
+2. バックエンドのサービス名を確認
+3. APIエンドポイントのパスを確認
+4. 環境変数の設定を確認
 
----
-
-## 📞 連絡先・サポート
-
-### 技術サポート
-- **プロジェクト管理者**: [連絡先を記入]
-- **開発チーム**: [連絡先を記入]
-- **緊急時連絡先**: [連絡先を記入]
+#### 3. SPAルーティングが効かない場合
+1. `vercel.json` の rewrites 設定を確認
+2. `vite.config.ts` の base 設定を確認
+3. React Router の設定を確認
 
 ### 参考資料
-- **MongoDB Atlas**: https://cloud.mongodb.com
-- **Facebook開発者**: https://developers.facebook.com
-- **Vercel**: https://vercel.com
-- **Render**: https://render.com
-- **GitHubリポジトリ**: https://github.com/trillnihon/instagram-marketing-app
+- [Vercel SPA Routing Documentation](https://vercel.com/docs/projects/project-configuration#rewrites)
+- [Express Rate Limit Documentation](https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/)
+- [Render Deployment Documentation](https://render.com/docs/web-services)
 
 ---
 
-**📝 備考**: 本申し送り書は2025年7月28日の作業完了時点での状況を記録しています。Instagram/Threads分析アプリは本番環境で正常に動作しており、ユーザーが利用可能な状態です。
-
-**🎯 次のステップ**: アプリケーションは本番環境で利用可能です。必要に応じて機能拡張やパフォーマンス最適化を検討してください。 
+## 既存の内容

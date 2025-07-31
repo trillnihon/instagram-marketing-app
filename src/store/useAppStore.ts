@@ -90,7 +90,7 @@ export const useAppStore = create<AuthState>()(
           // 環境に応じてAPI_BASE_URLを切り替え
           const API_BASE_URL = window.location.hostname === 'localhost' 
             ? 'http://localhost:4000' 
-            : 'https://instagram-marketing-backend.onrender.com';
+            : 'https://instagram-marketing-backend-v2.onrender.com';
           
           console.log('[DEBUG] ログイン - API_BASE_URL:', API_BASE_URL);
           
@@ -157,7 +157,7 @@ export const useAppStore = create<AuthState>()(
           // 環境に応じてAPI_BASE_URLを切り替え
           const API_BASE_URL = window.location.hostname === 'localhost' 
             ? 'http://localhost:4000' 
-            : 'https://instagram-marketing-backend.onrender.com';
+            : 'https://instagram-marketing-backend-v2.onrender.com';
           
           const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
             method: 'POST',
