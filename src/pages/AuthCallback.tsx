@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
+import { handleInstagramCallback } from '../services/instagramApi';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -47,10 +48,9 @@ const AuthCallback: React.FC = () => {
 
   const handleAuthCallback = async () => {
     try {
-      logStep(1, '認証コールバック処理開始');
-      setLoading?.(true);
-      setError?.(null);
-
+      // [STEP 2] コールバック処理開始
+      logStep(2, 'コールバック処理開始');
+      
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       const state = urlParams.get('state');
@@ -58,220 +58,72 @@ const AuthCallback: React.FC = () => {
       const error_reason = urlParams.get('error_reason');
       const error_description = urlParams.get('error_description');
 
-      logStep(2, 'URLパラメータ解析完了', {
-        code: code ? `${code.substring(0, 10)}...` : null,
-        state,
-        error,
-        error_reason,
-        error_description,
-        hasCode: !!code,
-        hasState: !!state,
-        codeLength: code?.length || 0,
-        stateLength: state?.length || 0
-      });
+      // [STEP 3] URLパラメータ取得完了
+      logStep(3, 'URLパラメータ取得完了', { code: !!code, state: !!state, error, error_reason, error_description });
 
-      // デバッグ情報を更新
-      setDebugInfo((prev: any) => ({
-        ...prev,
-        url: window.location.href,
-        pathname: window.location.pathname,
-        search: window.location.search,
-        hash: window.location.hash,
-        hostname: window.location.hostname,
-        protocol: window.location.protocol,
-        code: code ? `${code.substring(0, 10)}...` : null,
-        state,
-        error,
-        error_reason,
-        error_description,
-        userAgent: navigator.userAgent
-      }));
-
-      // Facebookからのエラーレスポンスをチェック
       if (error) {
-        logStep(3, 'Facebook認証エラーを検出', { error, error_reason, error_description });
-        const errorMessage = `Facebook認証エラー: ${error} - ${error_description || error_reason || '不明なエラー'}`;
-        console.error('❌ [DEBUG] AuthCallback - Facebook認証エラー:', {
-          error,
-          error_reason,
-          error_description,
-          url: window.location.href,
-          timestamp: new Date().toISOString()
-        });
-        setErrorDetails(errorMessage);
+        // [STEP 4] エラー発生
+        logStep(4, 'エラー発生', { error, error_reason, error_description });
+        setErrorDetails(`認証エラー: ${error} - ${error_description || error_reason || '不明なエラー'}`);
         setStatus('error');
-        setError?.(errorMessage);
+        setLoading?.(false);
         return;
       }
 
       if (!code) {
-        logStep(4, '認証コードが見つからないためデモモードで継続');
-        console.warn('⚠️ [DEBUG] AuthCallback - 認証コードが見つかりません');
-        console.log('🔍 [DEBUG] AuthCallback - 詳細調査:', {
-          searchParams: window.location.search,
-          urlParams: Array.from(urlParams.entries()),
-          referrer: document.referrer,
-          timestamp: new Date().toISOString()
-        });
-        
-        // 認証コードがない場合でも、デモモードで処理を継続
-        setAuthenticated?.(true);
-        setStatus('success');
-        setErrorDetails('認証コードが見つかりませんでしたが、デモモードでアプリケーションを使用できます。');
-        setTimeout(() => {
-          logStep(5, 'デモモードでダッシュボードにリダイレクト');
-          alert('認証コードが見つかりませんでしたが、デモモードでアプリケーションを使用できます。');
-          navigate('/dashboard');
-        }, 3000);
+        // [STEP 5] コード未取得
+        logStep(5, 'コード未取得');
+        setErrorDetails('認証コードが取得できませんでした。');
+        setStatus('error');
+        setLoading?.(false);
         return;
       }
 
-      logStep(6, '認証コード取得成功', {
-        code: code.substring(0, 10) + '...',
-        fullLength: code.length
-      });
+      // [STEP 6] Instagram API呼び出し開始
+      logStep(6, 'Instagram API呼び出し開始', { code: code.substring(0, 10) + '...' });
 
-      // バックエンドサーバーへのリクエストを試行
-      try {
-        logStep(7, 'バックエンドAPI設定確認');
-        // 環境に応じてAPI_BASE_URLを切り替え
-        const API_BASE_URL = window.location.hostname === 'localhost' 
-          ? 'http://localhost:4000' 
-          : 'https://instagram-marketing-backend-v2.onrender.com';
-        
-        console.log('🌐 [DEBUG] AuthCallback - API_BASE_URL:', API_BASE_URL);
-        
-        const requestUrl = `${API_BASE_URL}/auth/instagram/callback`;
-        const requestBody = JSON.stringify({ code, state });
-        
-        logStep(8, 'バックエンドへのリクエスト送信準備完了', {
-          url: requestUrl,
-          method: 'POST',
-          bodyLength: requestBody.length,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        const response = await fetch(requestUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: requestBody,
-        });
+      const response = await handleInstagramCallback();
+      
+      // [STEP 7] Instagram API呼び出し完了
+      logStep(7, 'Instagram API呼び出し完了', { success: !!response });
 
-        logStep(9, 'バックエンドからのレスポンス受信', {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok,
-          headers: Object.fromEntries(response.headers.entries())
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          logStep(10, 'バックエンドエラーを検出', {
-            status: response.status,
-            statusText: response.statusText,
-            errorText
-          });
-          console.error('❌ [DEBUG] AuthCallback - バックエンドエラー:', {
-            status: response.status,
-            statusText: response.statusText,
-            errorText,
-            url: requestUrl,
-            timestamp: new Date().toISOString()
-          });
-          throw new Error(`バックエンドエラー: ${response.status} ${response.statusText} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        logStep(11, '認証成功 - レスポンスデータ解析完了', {
-          hasToken: !!data.token,
-          hasUser: !!data.user,
-          userInfo: data.user ? {
-            id: data.user.id,
-            username: data.user.username,
-            media_count: data.user.media_count
-          } : null
-        });
-
-        // トークンを保存
-        if (data.token) {
-          localStorage.setItem('auth_token', data.token);
-          logStep(12, 'トークン保存完了');
-        }
-
+      if (response.success) {
+        // [STEP 8] 認証成功
+        logStep(8, '認証成功');
         setAuthenticated?.(true);
         setStatus('success');
-        setErrorDetails('Instagram認証が完了しました！');
+        setLoading?.(false);
         
-        // ダッシュボードにリダイレクト
+        // [STEP 9] ダッシュボードへリダイレクト
+        logStep(9, 'ダッシュボードへリダイレクト');
         setTimeout(() => {
-          logStep(13, 'ダッシュボードにリダイレクト');
-          console.log('🔄 [DEBUG] AuthCallback - ダッシュボードにリダイレクト');
           navigate('/dashboard');
         }, 2000);
-
-      } catch (fetchError) {
-        logStep(14, 'フェッチエラー発生', {
-          error: fetchError,
-          message: fetchError instanceof Error ? fetchError.message : '不明なエラー',
-          stack: fetchError instanceof Error ? fetchError.stack : undefined
-        });
-        console.error('❌ [DEBUG] AuthCallback - フェッチエラー:', {
-          error: fetchError,
-          message: fetchError instanceof Error ? fetchError.message : '不明なエラー',
-          stack: fetchError instanceof Error ? fetchError.stack : undefined,
-          timestamp: new Date().toISOString()
-        });
-        
-        const errorMessage = fetchError instanceof Error ? fetchError.message : 'バックエンドとの通信に失敗しました';
-        setErrorDetails(errorMessage);
+      } else {
+        // [STEP 10] 認証失敗
+        logStep(10, '認証失敗', { error: response.error });
+        setErrorDetails(response.error || '認証に失敗しました。');
         setStatus('error');
-        setError?.(errorMessage);
-        
-        // エラーが発生してもデモモードで継続
-        setTimeout(() => {
-          logStep(15, 'エラー後デモモードで継続');
-          console.log('🔄 [DEBUG] AuthCallback - エラー後デモモードで継続');
-          setAuthenticated?.(true);
-          navigate('/dashboard');
-        }, 5000);
+        setLoading?.(false);
       }
-
     } catch (error) {
-      logStep(16, '予期しないエラー発生', {
-        error,
-        message: error instanceof Error ? error.message : '不明なエラー',
-        stack: error instanceof Error ? error.stack : undefined
-      });
-      console.error('❌ [DEBUG] AuthCallback - 予期しないエラー:', {
-        error,
-        message: error instanceof Error ? error.message : '不明なエラー',
-        stack: error instanceof Error ? error.stack : undefined,
-        timestamp: new Date().toISOString()
-      });
-      
-      const errorMessage = error instanceof Error ? error.message : '予期しないエラーが発生しました';
-      setErrorDetails(errorMessage);
+      // [STEP 11] 例外発生
+      logStep(11, '例外発生', { error: error instanceof Error ? error.message : '不明なエラー' });
+      console.error('AuthCallback error:', error);
+      setErrorDetails(error instanceof Error ? error.message : '予期しないエラーが発生しました。');
       setStatus('error');
-      setError?.(errorMessage);
-      
-      // エラーが発生してもデモモードで継続
-      setTimeout(() => {
-        logStep(17, '予期しないエラー後デモモードで継続');
-        console.log('🔄 [DEBUG] AuthCallback - 予期しないエラー後デモモードで継続');
-        setAuthenticated?.(true);
-        navigate('/dashboard');
-      }, 5000);
-    } finally {
       setLoading?.(false);
     }
   };
 
   useEffect(() => {
-    console.log('🔄 [DEBUG] AuthCallback - useEffect実行');
+    // [STEP 1] AuthCallback マウント完了
+    logStep(1, 'AuthCallback マウント完了');
+    console.log('🎯 [STEP 1] AuthCallback マウント完了');
+    console.log('📍 [STEP 1] 現在のURL:', window.location.href);
+    console.log('🔍 [STEP 1] パス名:', window.location.pathname);
+    console.log('📝 [STEP 1] クエリ文字列:', window.location.search);
+    
     handleAuthCallback();
   }, []);
 

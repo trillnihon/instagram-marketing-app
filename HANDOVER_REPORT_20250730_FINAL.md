@@ -204,6 +204,51 @@
   ```
 - **ステータス**: ✅ 修正完了・デプロイ待ち
 
+### 17. Gitプッシュ成功（2025年7月30日）
+- **実行方法**: 手動でGitコマンドを実行
+- **実行コマンド**:
+  ```bash
+  git add .
+  git commit -m "🔧 Instagram OAuthコールバック問題解決 - カスタム404ページ削除・デバッグログ強化"
+  git push origin main
+  ```
+- **実行結果**:
+  - **コミットハッシュ**: `62b121d`
+  - **変更ファイル**: 4ファイル（45行追加、330行削除）
+  - **削除ファイル**: `public/404.html`
+  - **プッシュ状況**: GitHubに正常に反映済み
+  - **警告**: LF/CRLF変換警告（Windows環境のため正常）
+- **ステータス**: ✅ プッシュ完了・Vercelデプロイ開始
+
+### 18. Reactルーティング修正（2025年7月30日）
+- **問題**: `/auth/instagram/callback`でReactルーティングが機能せず404エラーが発生
+- **原因**: vercel.jsonのルーティング設定が不十分
+- **解決策**: 
+  - ✅ vercel.jsonを全ルーティングをReactに委ねる設定に変更
+  - ✅ AuthCallback.tsxに[STEP 1]ログを追加
+  - ✅ ログ番号を連番で調整（STEP 1-11）
+  - ✅ リンターエラーを修正
+- **修正内容**:
+  ```json
+  // vercel.json
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
+  ```
+  ```typescript
+  // AuthCallback.tsx
+  useEffect(() => {
+    // [STEP 1] AuthCallback マウント完了
+    logStep(1, 'AuthCallback マウント完了');
+    console.log('🎯 [STEP 1] AuthCallback マウント完了');
+    // ...
+  }, []);
+  ```
+- **ステータス**: ✅ 修正完了・デプロイ待ち
+
 ---
 
 ## 🔧 技術的状況
