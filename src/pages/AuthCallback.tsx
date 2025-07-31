@@ -117,13 +117,18 @@ const AuthCallback: React.FC = () => {
   };
 
   useEffect(() => {
-    // [STEP 1] AuthCallback マウント完了
-    logStep(1, 'AuthCallback マウント完了');
+    // [STEP 1] AuthCallback マウント完了 - 必ず実行される
     console.log('🎯 [STEP 1] AuthCallback マウント完了');
     console.log('📍 [STEP 1] 現在のURL:', window.location.href);
     console.log('🔍 [STEP 1] パス名:', window.location.pathname);
     console.log('📝 [STEP 1] クエリ文字列:', window.location.search);
+    console.log('🌐 [STEP 1] ホスト名:', window.location.hostname);
+    console.log('🔗 [STEP 1] プロトコル:', window.location.protocol);
     
+    // ログステップ関数で記録
+    logStep(1, 'AuthCallback マウント完了');
+    
+    // 認証コールバック処理を実行
     handleAuthCallback();
   }, []);
 

@@ -150,13 +150,41 @@
 - **ステータス**: ✅ プッシュ完了・Vercelデプロイ開始
 
 ### 13. Vercelデプロイ成功（2025年7月30日）
-- **デプロイメントID**: `hjra79ppz`
-- **コミットハッシュ**: `32e6b84`
-- **デプロイ時刻**: プッシュ後2分で完了
-- **ステータス**: ✅ Ready（正常完了）
+- **デプロイID**: `EJIRJE8fR`
+- **コミットハッシュ**: `3924958`
+- **コミットメッセージ**: `Reactルーティング_`
+- **デプロイ時間**: 30秒
+- **ステータス**: ✅ Ready（成功）
 - **環境**: Production
-- **修正内容反映**: ✅ vercel.jsonのAPIルーティング修正が反映済み
-- **ステータス**: ✅ デプロイ完了・Instagram OAuth 404エラー解決済み
+- **デプロイ時刻**: 3分前
+- **ステータス**: ✅ デプロイ完了・テスト待ち
+
+### 20. vercel.json修正（2025年7月30日）
+- **問題**: `/auth/instagram/callback`でReactルーティングが機能せず404エラーが発生
+- **原因**: vercel.jsonのdestinationが`/`になっていたため、Reactアプリが読み込まれない
+- **解決策**: 
+  - ✅ vercel.jsonのdestinationを`/index.html`に修正
+  - ✅ AuthCallback.tsxのログ出力を強化
+  - ✅ useEffectの先頭で必ず[STEP 1]ログを出力
+- **修正内容**:
+  ```json
+  // vercel.json
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"  // / から /index.html に変更
+    }
+  ]
+  ```
+  ```typescript
+  // AuthCallback.tsx
+  useEffect(() => {
+    // [STEP 1] AuthCallback マウント完了 - 必ず実行される
+    console.log('🎯 [STEP 1] AuthCallback マウント完了');
+    // ...
+  }, []);
+  ```
+- **ステータス**: ✅ 修正完了・デプロイ待ち
 
 ### 14. Instagram OAuthコールバックルーティング修正（2025年7月30日）
 - **問題**: `/auth/instagram/callback`がバックエンドAPIに直接リダイレクトされ、ReactアプリケーションのAuthCallbackコンポーネントが実行されない
