@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { algorithmAnalysis } from '../services/algorithmAnalysis';
+import { fetchInstagramPosts } from '../services/instagramApi';
 import AccountAnalytics from '../components/AccountAnalytics';
 import PostAnalysis from '../components/PostAnalysis';
 import ContentSuggestions from '../components/ContentSuggestions';
@@ -58,19 +59,27 @@ const Dashboard: React.FC = () => {
         return;
       }
 
-      // Instagram Graph API連携が実装されるまでは、デモデータを使用
-      console.log('📱 [DEBUG] Instagram Graph API連携準備中 - デモデータを使用');
+      // Instagram認証情報を確認
+      const instagramAuth = localStorage.getItem('instagram_auth');
       
-      // 将来的には以下のような実装になる予定：
-      // const authData = getInstagramAuth();
-      // if (authData) {
-      //   const posts = await fetchInstagramPosts(
-      //     currentUser.userId, 
-      //     authData.accessToken, 
-      //     authData.instagramBusinessAccount.id
-      //   );
-      //   setPosts(posts);
-      // }
+      if (instagramAuth) {
+        console.log('📱 [DEBUG] Instagram認証情報を確認 - 実際のAPIを呼び出し');
+        const authData = JSON.parse(instagramAuth);
+        
+        // Instagram投稿データを取得
+        if (authData.accessToken && authData.instagramBusinessAccount?.id && currentUser?.userId) {
+          const posts = await fetchInstagramPosts(
+            currentUser.userId,
+            authData.accessToken,
+            authData.instagramBusinessAccount.id
+          );
+          setPosts?.(posts);
+          console.log('✅ [DEBUG] Instagram投稿データ取得成功:', posts.length, '件');
+        }
+      } else {
+        console.log('📱 [DEBUG] Instagram認証情報なし - デモデータを使用');
+        // Instagram認証が完了していない場合はデモデータを使用
+      }
 
     } catch (error) {
       console.error('[ERROR] データ取得エラー:', error);

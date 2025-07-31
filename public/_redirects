@@ -1,0 +1,4 @@
+# SPAルーティング設定
+/auth/instagram/callback / 200
+/auth/* / 200
+/* / 200 
