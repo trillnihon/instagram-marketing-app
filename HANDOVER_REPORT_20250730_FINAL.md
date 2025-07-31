@@ -317,6 +317,44 @@
 - **削除ファイル**: `public/_redirects`（競合の原因）
 - **ステータス**: ✅ 修正完了・デプロイ待ち
 
+### 23. vercel.json最終修正（2025年7月30日）
+- **問題**: `/auth/instagram/callback`でReactアプリがマウントされず404エラーが発生
+- **原因**: vercel.jsonの設定が複雑すぎて競合していた
+- **解決策**: 
+  - ✅ vercel.jsonをシンプルな設定に変更
+  - ✅ 不要なheaders、cleanUrls、trailingSlashを削除
+  - ✅ destinationを`/`に設定（SPA用標準設定）
+- **修正内容**:
+  ```json
+  {
+    "rewrites": [
+      { "source": "/(.*)", "destination": "/" }
+    ]
+  }
+  ```
+- **配置確認**: ✅ vercel.jsonはプロジェクトルート直下に正しく配置
+- **ステータス**: ✅ 修正完了・デプロイ待ち
+
+### 24. Viteプロジェクト用vercel.json修正（2025年7月30日）
+- **問題**: `/auth/instagram/callback`でReactアプリがマウントされず404エラーが発生
+- **根本原因**: Viteプロジェクトのビルド出力が`dist`ディレクトリに生成されるが、vercel.jsonの設定が不適切
+- **解決策**: 
+  - ✅ destinationを`/index.html`に変更（Vite用）
+  - ✅ `buildCommand`と`outputDirectory`を明示的に指定
+  - ✅ Viteプロジェクトの特性に合わせた設定
+- **修正内容**:
+  ```json
+  {
+    "rewrites": [
+      { "source": "/(.*)", "destination": "/index.html" }
+    ],
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist"
+  }
+  ```
+- **技術的背景**: Viteプロジェクトは`dist`ディレクトリにビルド出力を生成
+- **ステータス**: ✅ 修正完了・デプロイ待ち
+
 ---
 
 ## 🔧 技術的状況
