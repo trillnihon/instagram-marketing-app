@@ -129,8 +129,8 @@ app.use(cors(corsOptions));
 app.use(rateLimiter);
   app.use(requestLogger);
 } else {
-  // 開発環境では基本的なCORSのみ
-  app.use(cors());
+  // 開発環境でもCORS設定を適用
+  app.use(cors(corsOptions));
 }
 
 // リクエストサイズ制限（全環境で有効）

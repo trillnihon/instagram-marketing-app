@@ -3,17 +3,39 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 
 // CORS設定
+const getCorsOrigins = () => {
+  if (process.env.NODE_ENV === 'production') {
+    const origins = [
+      'https://instagram-marketing-app-v1.vercel.app',
+      'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app'
+    ];
+    
+    // 環境変数で追加のオリジンを指定可能
+    if (process.env.CORS_ORIGIN) {
+      origins.push(process.env.CORS_ORIGIN);
+    }
+    
+    // 複数のオリジンを環境変数で指定可能（カンマ区切り）
+    if (process.env.CORS_ORIGINS) {
+      const additionalOrigins = process.env.CORS_ORIGINS.split(',').map(origin => origin.trim());
+      origins.push(...additionalOrigins);
+    }
+    
+    return origins;
+  } else {
+    return [
+      'http://localhost:3000',
+      'https://localhost:3000',
+      'http://localhost:3001',
+      'https://localhost:3001',
+      'http://localhost:3002',
+      'https://localhost:3002'
+    ];
+  }
+};
+
 export const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.CORS_ORIGIN || 'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app'] // 本番環境では指定されたドメインのみ
-    : [
-    'http://localhost:3000',
-    'https://localhost:3000',
-    'http://localhost:3001',
-        'https://localhost:3001',
-        'http://localhost:3002',
-        'https://localhost:3002'
-      ], // 開発環境ではローカルホストを許可
+  origin: getCorsOrigins(),
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
