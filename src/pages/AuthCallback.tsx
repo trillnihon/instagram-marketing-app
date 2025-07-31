@@ -21,11 +21,9 @@ const AuthCallback: React.FC = () => {
     setCurrentStep(step);
     const timestamp = new Date().toISOString();
     
-    // デバッグモードの場合のみログを出力
-    if (isDebugMode) {
-      console.log(`🎯 [STEP ${step}] ${message}`, data ? data : '');
-      console.log(`⏰ [STEP ${step}] タイムスタンプ: ${timestamp}`);
-    }
+    // 常にログを出力（デバッグモードに関係なく）
+    console.log(`🎯 [STEP ${step}] ${message}`, data ? data : '');
+    console.log(`⏰ [STEP ${step}] タイムスタンプ: ${timestamp}`);
     
     // デバッグ情報を更新
     setDebugInfo((prev: any) => ({
@@ -38,13 +36,14 @@ const AuthCallback: React.FC = () => {
     }));
   };
 
-  // 即座にデバッグログを出力
+  // 即座にデバッグログを出力（常に実行）
+  console.log('🚀 [FORCE DEBUG] AuthCallbackコンポーネントが実行されました');
   logStep(0, 'AuthCallbackコンポーネントが実行されました');
-  console.log('📍 [DEBUG] AuthCallback - 現在のURL:', window.location.href);
-  console.log('🔍 [DEBUG] AuthCallback - パス名:', window.location.pathname);
-  console.log('📝 [DEBUG] AuthCallback - クエリ文字列:', window.location.search);
-  console.log('🌐 [DEBUG] AuthCallback - ホスト名:', window.location.hostname);
-  console.log('🔗 [DEBUG] AuthCallback - プロトコル:', window.location.protocol);
+  console.log('📍 [FORCE DEBUG] AuthCallback - 現在のURL:', window.location.href);
+  console.log('🔍 [FORCE DEBUG] AuthCallback - パス名:', window.location.pathname);
+  console.log('📝 [FORCE DEBUG] AuthCallback - クエリ文字列:', window.location.search);
+  console.log('🌐 [FORCE DEBUG] AuthCallback - ホスト名:', window.location.hostname);
+  console.log('🔗 [FORCE DEBUG] AuthCallback - プロトコル:', window.location.protocol);
 
   const handleAuthCallback = async () => {
     try {

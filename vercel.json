@@ -5,6 +5,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/auth/instagram/callback(.*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "https://instagram-marketing-backend-v2.onrender.com/api/$1"
     },

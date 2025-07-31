@@ -173,6 +173,37 @@
   ```
 - **ステータス**: ✅ 修正完了・デプロイ待ち
 
+### 15. Gitプッシュ成功（2025年7月30日）
+- **実行方法**: 手動でGitコマンドを実行
+- **実行コマンド**:
+  ```bash
+  git add .
+  git commit -m "🔧 Instagram OAuthコールバックルーティング修正 - Reactアプリケーションに戻す・デバッグモード有効化"
+  git push origin main
+  ```
+- **実行結果**:
+  - **コミットハッシュ**: `bd4333c`
+  - **変更ファイル**: 3ファイル（42行追加、2行削除）
+  - **プッシュ状況**: GitHubに正常に反映済み
+  - **警告**: LF/CRLF変換警告（Windows環境のため正常）
+- **ステータス**: ✅ プッシュ完了・Vercelデプロイ開始
+
+### 16. Instagram OAuthコールバック問題解決（2025年7月30日）
+- **問題**: `/auth/instagram/callback`で404エラーが発生し、`[STEP X]`ログが出力されない
+- **原因**: カスタム404ページ（`public/404.html`）がAuthCallbackコンポーネントの実行を阻害
+- **解決策**: 
+  - ✅ カスタム404ページを削除（`public/404.html`）
+  - ✅ AuthCallback.tsxのデバッグログを強制出力に変更
+  - ✅ vercel.jsonに`/auth/instagram/callback(.*)`パターンを追加
+  - ✅ デバッグモードに関係なく常にログを出力
+- **修正内容**:
+  ```typescript
+  // 常にログを出力（デバッグモードに関係なく）
+  console.log(`🎯 [STEP ${step}] ${message}`, data ? data : '');
+  console.log(`⏰ [STEP ${step}] タイムスタンプ: ${timestamp}`);
+  ```
+- **ステータス**: ✅ 修正完了・デプロイ待ち
+
 ---
 
 ## 🔧 技術的状況
