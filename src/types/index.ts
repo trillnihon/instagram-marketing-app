@@ -324,4 +324,28 @@ export interface ErrorReport {
     url: string;
     timestamp: string;
   };
+}
+
+// 投稿時間分析用の型定義
+export interface PostingTimeData {
+  dayOfWeek: number; // 0-6 (日曜日-土曜日)
+  hour: number; // 0-23
+  engagementRate: number; // 0-1
+  postCount: number;
+}
+
+export interface PostingTimeAnalysis {
+  topTimes: PostingTimeData[];
+  dayAverages: { day: number; average: number }[];
+  hourAverages: { hour: number; average: number }[];
+  overallAverage: number;
+}
+
+export interface PostingRecommendation {
+  type: 'optimal_time' | 'best_day' | 'best_hour';
+  priority: number;
+  title: string;
+  description: string;
+  engagementRate: number;
+  reasoning: string;
 } 

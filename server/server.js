@@ -52,6 +52,7 @@ import authRouter from './authRouter.js';
 import analysisHistoryRouter from './routes/analysisHistory.js';
 import { User } from './models/User.js';
 import { authenticateToken } from './middleware/auth.js';
+import threadsRouter from './routes/threads.js';
 // 環境変数の読み込み
 if (process.env.NODE_ENV === 'production') {
   dotenv.config({ path: '.env.production' });
@@ -502,108 +503,47 @@ app.get('/auth/instagram/callback', async (req, res) => {
   req.session.usedCode = code;
   
   try {
-    // アクセストークン取得
+    // Instagram Basic Display APIのアクセストークン取得
     const redirectUri = process.env.NODE_ENV === 'production' 
-      ? 'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app/auth/instagram/callback'
+      ? 'https://instagram-marketing-app.vercel.app/auth/instagram/callback'
       : 'https://localhost:4000/auth/instagram/callback';
       
-    const tokenRes = await axios.post(`https://graph.facebook.com/v18.0/oauth/access_token`, null, {
+    const tokenRes = await axios.post(`https://api.instagram.com/oauth/access_token`, null, {
       params: {
-        client_id: FACEBOOK_APP_ID,
-        client_secret: FACEBOOK_APP_SECRET,
+        client_id: process.env.VITE_INSTAGRAM_APP_ID || FACEBOOK_APP_ID,
+        client_secret: process.env.VITE_INSTAGRAM_APP_SECRET || FACEBOOK_APP_SECRET,
         redirect_uri: redirectUri,
-        code
+        code,
+        grant_type: 'authorization_code'
       }
     });
     
     const accessToken = tokenRes.data.access_token;
+    const userId = tokenRes.data.user_id;
     console.log('[DEBUG] Instagram認証 - アクセストークン取得成功');
+    console.log('[DEBUG] Instagram認証 - ユーザーID:', userId);
     
-    // Facebookページ一覧取得
-    const pagesRes = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
+    // Instagram Basic Display APIでユーザー情報を取得
+    const userRes = await axios.get(`https://graph.instagram.com/me`, {
       params: {
         access_token: accessToken,
-        fields: 'id,name,instagram_business_account{id,username,media_count}'
+        fields: 'id,username,account_type'
       }
     });
     
-    console.log('[DEBUG] Instagram認証 - ページ一覧取得レスポンス:', JSON.stringify(pagesRes.data, null, 2));
+    console.log('[DEBUG] Instagram認証 - ユーザー情報取得レスポンス:', JSON.stringify(userRes.data, null, 2));
     
-    const pages = pagesRes.data.data || [];
-    let instagramBusinessAccount = null;
-    
-    // ページが存在しない場合の詳細情報を取得
-    if (pages.length === 0) {
-      console.log('[DEBUG] Facebookページが見つかりません。ユーザー情報を確認します。');
-      
-      // ユーザー情報を取得
-      const userRes = await axios.get('https://graph.facebook.com/v18.0/me', {
-        params: {
-          access_token: accessToken,
-          fields: 'id,name,email'
-        }
-      });
-      
-      console.log('[DEBUG] ユーザー情報:', JSON.stringify(userRes.data, null, 2));
-      
-      // ユーザーのページ一覧を取得（より詳細な情報）
-      const userPagesRes = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
-        params: {
-          access_token: accessToken,
-          fields: 'id,name,category,fan_count,verification_status,instagram_business_account{id,username,media_count}'
-        }
-      });
-      
-      console.log('[DEBUG] 詳細なページ情報:', JSON.stringify(userPagesRes.data, null, 2));
-    }
-    
-    for (const page of pages) {
-      console.log(`[DEBUG] ページ名: ${page.name}, ページID: ${page.id}, Instagramビジネスアカウント:`, page.instagram_business_account);
-      if (page.instagram_business_account && page.instagram_business_account.id) {
-        instagramBusinessAccount = {
-          id: page.instagram_business_account.id,
-          username: page.instagram_business_account.username,
-          media_count: page.instagram_business_account.media_count,
-          page_id: page.id,
-          page_name: page.name
-        };
-        break;
-      }
-    }
-    
-    if (!instagramBusinessAccount) {
-      const debugInfo = {
-        pages,
-        accessToken: accessToken.substring(0, 10) + '...',
-        note: 'Instagramビジネスアカウントが見つかりません',
-        possible_causes: [
-          'Facebookページがクラシックページ（旧タイプ）である',
-          'ビジネスアセットにページが追加されていない',
-          'Instagramビジネスアカウントが正しく連携されていない',
-          '認証時にページ選択でチェックが入っていない',
-          'Facebookの反映遅延や一時的な不具合'
-        ],
-        suggestion: 'デモモードを使用して機能をテストしてください',
-        setup_instructions: [
-          '1. Facebookページを作成または確認してください',
-          '2. InstagramビジネスアカウントをFacebookページに連携してください',
-          '3. ビジネスアセットマネージャーでページを追加してください',
-          '4. 再度認証を試してください'
-        ]
-      };
-      console.error('[ERROR] Instagramビジネスアカウントが見つかりません。', debugInfo);
-      return res.status(400).json({ 
-        error: 'Instagramビジネスアカウントが見つかりません。FacebookページとInstagramビジネスアカウントの連携を確認してください。デモモードを使用して機能をテストすることもできます。', 
-        debug: debugInfo,
-        setup_guide: 'https://developers.facebook.com/docs/instagram-api/getting-started'
-      });
-    }
+    const instagramUser = {
+      id: userRes.data.id,
+      username: userRes.data.username,
+      account_type: userRes.data.account_type
+    };
     
     // 投稿データ取得（最新5件）
-    const mediaRes = await axios.get(`https://graph.facebook.com/v18.0/${instagramBusinessAccount.id}/media`, {
+    const mediaRes = await axios.get(`https://graph.instagram.com/me/media`, {
       params: {
         access_token: accessToken,
-        fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
+        fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp',
         limit: 5
       }
     });
@@ -701,170 +641,93 @@ app.post('/auth/instagram/callback', async (req, res) => {
     
     // 環境に応じてリダイレクトURIを切り替え
     const redirectUri = process.env.NODE_ENV === 'production' 
-      ? 'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app/auth/instagram/callback'
+      ? 'https://instagram-marketing-app.vercel.app/auth/instagram/callback'
       : 'https://localhost:4000/auth/instagram/callback';
     
     logStep(9, 'リダイレクトURI設定完了', { redirectUri });
     
-    // アクセストークン取得
-    logStep(10, 'Facebook API アクセストークン取得開始');
-    const tokenRes = await axios.post(`https://graph.facebook.com/v18.0/oauth/access_token`, null, {
+    // Instagram Basic Display APIのアクセストークン取得
+    logStep(10, 'Instagram Basic Display API アクセストークン取得開始');
+    const tokenRes = await axios.post(`https://api.instagram.com/oauth/access_token`, null, {
       params: {
-        client_id: FACEBOOK_APP_ID,
-        client_secret: FACEBOOK_APP_SECRET,
+        client_id: process.env.VITE_INSTAGRAM_APP_ID || FACEBOOK_APP_ID,
+        client_secret: process.env.VITE_INSTAGRAM_APP_SECRET || FACEBOOK_APP_SECRET,
         redirect_uri: redirectUri,
-        code
+        code,
+        grant_type: 'authorization_code'
       }
     });
     
     const accessToken = tokenRes.data.access_token;
+    const userId = tokenRes.data.user_id;
     logStep(11, 'アクセストークン取得成功', { 
       accessToken: accessToken.substring(0, 10) + '...',
-      tokenLength: accessToken.length 
+      tokenLength: accessToken.length,
+      userId: userId
     });
     console.log('[DEBUG] Instagram認証 POST - アクセストークン取得成功');
     
-    // Facebookページ一覧取得
-    logStep(12, 'Facebookページ一覧取得開始');
-    const pagesRes = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
+    // Instagram Basic Display APIでユーザー情報を取得
+    logStep(12, 'Instagramユーザー情報取得開始');
+    const userRes = await axios.get(`https://graph.instagram.com/me`, {
       params: {
         access_token: accessToken,
-        fields: 'id,name,instagram_business_account{id,username,media_count}'
+        fields: 'id,username,account_type'
       }
     });
     
-    logStep(13, 'Facebookページ一覧取得成功', { 
-      pageCount: pagesRes.data.data?.length || 0 
+    logStep(13, 'Instagramユーザー情報取得成功', { 
+      userId: userRes.data.id,
+      username: userRes.data.username,
+      accountType: userRes.data.account_type
     });
-    console.log('[DEBUG] Instagram認証 POST - ページ一覧取得レスポンス:', JSON.stringify(pagesRes.data, null, 2));
+    console.log('[DEBUG] Instagram認証 POST - ユーザー情報取得レスポンス:', JSON.stringify(userRes.data, null, 2));
     
-    const pages = pagesRes.data.data || [];
-    let instagramBusinessAccount = null;
+    const instagramUser = {
+      id: userRes.data.id,
+      username: userRes.data.username,
+      account_type: userRes.data.account_type
+    };
     
-    logStep(14, 'Instagramビジネスアカウント検索開始', { pageCount: pages.length });
-    
-    // ページが存在しない場合の詳細情報を取得
-    if (pages.length === 0) {
-      logStep(15, 'Facebookページが見つからないため詳細情報を取得');
-      console.log('[DEBUG] Facebookページが見つかりません。ユーザー情報を確認します。');
-      
-      // ユーザー情報を取得
-      const userRes = await axios.get('https://graph.facebook.com/v18.0/me', {
-        params: {
-          access_token: accessToken,
-          fields: 'id,name,email'
-        }
-      });
-      
-      logStep(16, 'ユーザー情報取得成功', { 
-        userId: userRes.data.id,
-        userName: userRes.data.name 
-      });
-      console.log('[DEBUG] ユーザー情報:', JSON.stringify(userRes.data, null, 2));
-      
-      // ユーザーのページ一覧を取得（より詳細な情報）
-      const userPagesRes = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
-        params: {
-          access_token: accessToken,
-          fields: 'id,name,category,fan_count,verification_status,instagram_business_account{id,username,media_count}'
-        }
-      });
-      
-      logStep(17, '詳細なページ情報取得成功', { 
-        detailedPageCount: userPagesRes.data.data?.length || 0 
-      });
-      console.log('[DEBUG] 詳細なページ情報:', JSON.stringify(userPagesRes.data, null, 2));
-    }
-    
-    for (const page of pages) {
-      logStep(18, `ページ確認中: ${page.name}`, { 
-        pageId: page.id,
-        hasInstagramAccount: !!(page.instagram_business_account && page.instagram_business_account.id)
-      });
-      console.log(`[DEBUG] ページ名: ${page.name}, ページID: ${page.id}, Instagramビジネスアカウント:`, page.instagram_business_account);
-      if (page.instagram_business_account && page.instagram_business_account.id) {
-        instagramBusinessAccount = {
-          id: page.instagram_business_account.id,
-          username: page.instagram_business_account.username,
-          media_count: page.instagram_business_account.media_count,
-          page_id: page.id,
-          page_name: page.name
-        };
-        logStep(19, 'Instagramビジネスアカウント発見', {
-          instagramId: instagramBusinessAccount.id,
-          username: instagramBusinessAccount.username,
-          pageName: instagramBusinessAccount.page_name
-        });
-        break;
-      }
-    }
-    
-    if (!instagramBusinessAccount) {
-      logStep(20, 'Instagramビジネスアカウントが見つからない - エラーレスポンス');
-      const debugInfo = {
-        pages,
-        accessToken: accessToken.substring(0, 10) + '...',
-        note: 'Instagramビジネスアカウントが見つかりません',
-        possible_causes: [
-          'Facebookページがクラシックページ（旧タイプ）である',
-          'ビジネスアセットにページが追加されていない',
-          'Instagramビジネスアカウントが正しく連携されていない',
-          '認証時にページ選択でチェックが入っていない',
-          'Facebookの反映遅延や一時的な不具合'
-        ],
-        suggestion: 'デモモードを使用して機能をテストしてください',
-        setup_instructions: [
-          '1. Facebookページを作成または確認してください',
-          '2. InstagramビジネスアカウントをFacebookページに連携してください',
-          '3. ビジネスアセットマネージャーでページを追加してください',
-          '4. 再度認証を試してください'
-        ]
-      };
-      console.error('[ERROR] Instagramビジネスアカウントが見つかりません。', debugInfo);
-      return res.status(400).json({ 
-        error: 'Instagramビジネスアカウントが見つかりません。FacebookページとInstagramビジネスアカウントの連携を確認してください。デモモードを使用して機能をテストすることもできます。', 
-        debug: debugInfo,
-        setup_guide: 'https://developers.facebook.com/docs/instagram-api/getting-started'
-      });
-    }
+    logStep(14, 'Instagramユーザー情報処理完了', { instagramUser });
     
     // 投稿データ取得（最新5件）
-    logStep(21, 'Instagram投稿データ取得開始');
-    const mediaRes = await axios.get(`https://graph.facebook.com/v18.0/${instagramBusinessAccount.id}/media`, {
+    logStep(15, 'Instagram投稿データ取得開始');
+    const mediaRes = await axios.get(`https://graph.instagram.com/me/media`, {
       params: {
         access_token: accessToken,
-        fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
+        fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp',
         limit: 5
       }
     });
     
-    logStep(22, 'Instagram投稿データ取得成功', { 
+    logStep(16, 'Instagram投稿データ取得成功', { 
       postCount: mediaRes.data.data?.length || 0 
     });
     console.log('[DEBUG] Instagram認証 POST - 投稿データ取得レスポンス:', JSON.stringify(mediaRes.data, null, 2));
     
     // 成功レスポンス
-    logStep(23, '認証処理完了 - 成功レスポンス送信');
+    logStep(17, '認証処理完了 - 成功レスポンス送信');
     res.json({
       success: true,
-      accessToken: accessToken,
-      user: {
-        id: instagramBusinessAccount.id,
-        username: instagramBusinessAccount.username,
-        media_count: instagramBusinessAccount.media_count,
-        page_id: instagramBusinessAccount.page_id,
-        page_name: instagramBusinessAccount.page_name
-      },
-      recent_posts: mediaRes.data.data || [],
-      debug: {
-        pages,
-        accessToken: accessToken.substring(0, 10) + '...',
-        instagramBusinessAccount
+      data: {
+        access_token: accessToken,
+        user_id: userId,
+        user: {
+          id: instagramUser.id,
+          username: instagramUser.username,
+          account_type: instagramUser.account_type
+        },
+        recent_posts: mediaRes.data.data || [],
+        debug: {
+          accessToken: accessToken.substring(0, 10) + '...',
+          instagramUser
+        }
       }
     });
     
   } catch (err) {
-    logStep(24, 'Instagram認証処理でエラー発生', {
+    logStep(18, 'Instagram認証処理でエラー発生', {
       error: err.response?.data || err.message,
       status: err.response?.status
     });
@@ -1495,6 +1358,7 @@ app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/api/analysis-history', analysisHistoryRouter);
 app.use('/api/diagnostics', diagnosticsRouter);
 app.use('/api', urlAnalysisRouter);
+app.use('/threads/api', threadsRouter);
 
 // AI分析APIエンドポイント
 app.post('/api/ai/analyze', async (req, res) => {

@@ -63,7 +63,8 @@ interface AuthState {
   setAiProvider?: (provider: string) => void;
   
   // 追加のメソッド
-  setAuthenticated?: (authenticated: boolean) => void;
+  setAuthenticated: (authenticated: boolean) => void;
+  setDemoAuth: (user: User) => void;
   suggestions?: any[];
   setAccountAnalytics?: (analytics: any) => void;
   setPosts?: (posts: any[]) => void;
@@ -79,6 +80,35 @@ export const useAppStore = create<AuthState>()(
       token: null,
       currentUser: null,
       isLoading: false,
+
+      // 認証状態を設定するメソッド（無限ループ解決のため）
+      setAuthenticated: (authenticated: boolean) => {
+        console.log('[DEBUG] setAuthenticated called:', authenticated);
+        set({ isAuthenticated: authenticated });
+      },
+
+      // デモモード用の認証設定
+      setDemoAuth: (user: User) => {
+        console.log('[DEBUG] setDemoAuth called:', user);
+        set({ 
+          isAuthenticated: true,
+          currentUser: user,
+          token: 'demo-token-' + Date.now()
+        });
+      },
+
+      // ローディング状態を設定
+      setLoading: (loading: boolean) => {
+        set({ isLoading: loading });
+      },
+
+      // エラーを設定
+      setError: (error: string | null) => {
+        // エラー処理の実装
+        if (error) {
+          console.error('[ERROR] App Error:', error);
+        }
+      },
 
       // ログイン
       login: async (email: string, password: string) => {
@@ -183,7 +213,7 @@ export const useAppStore = create<AuthState>()(
             return false;
           }
         } catch (error) {
-          console.error('新規登録エラー:', error);
+          console.error('[ERROR] 新規登録エラー:', error);
           set({ isLoading: false });
           alert('新規登録中にエラーが発生しました');
           return false;
@@ -191,27 +221,14 @@ export const useAppStore = create<AuthState>()(
       },
 
       // ログアウト
-      logout: async () => {
-        try {
-          const { token } = get();
-          if (token) {
-            await fetch('/api/auth/logout', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            });
-          }
-        } catch (error) {
-          console.error('ログアウトエラー:', error);
-        } finally {
-          set({
-            isAuthenticated: false,
-            token: null,
-            currentUser: null,
-          });
-        }
+      logout: () => {
+        set({
+          isAuthenticated: false,
+          token: null,
+          currentUser: null,
+          isLoading: false,
+        });
+        console.log('[DEBUG] ログアウト完了');
       },
 
       // プロフィール更新
@@ -223,8 +240,8 @@ export const useAppStore = create<AuthState>()(
           const response = await fetch('/api/auth/profile', {
             method: 'PUT',
             headers: {
-              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(profile),
           });
@@ -232,16 +249,19 @@ export const useAppStore = create<AuthState>()(
           const data = await response.json();
 
           if (data.success) {
-            set({
-              currentUser: data.user,
-            });
+            set((state) => ({
+              currentUser: state.currentUser ? {
+                ...state.currentUser,
+                profile: { ...state.currentUser.profile, ...profile }
+              } : null
+            }));
             return true;
           } else {
             alert(data.error || 'プロフィール更新に失敗しました');
             return false;
           }
         } catch (error) {
-          console.error('プロフィール更新エラー:', error);
+          console.error('[ERROR] プロフィール更新エラー:', error);
           alert('プロフィール更新中にエラーが発生しました');
           return false;
         }
@@ -254,10 +274,10 @@ export const useAppStore = create<AuthState>()(
           if (!token) return false;
 
           const response = await fetch('/api/auth/change-password', {
-            method: 'PUT',
+            method: 'POST',
             headers: {
-              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({ currentPassword, newPassword }),
           });
@@ -272,7 +292,7 @@ export const useAppStore = create<AuthState>()(
             return false;
           }
         } catch (error) {
-          console.error('パスワード変更エラー:', error);
+          console.error('[ERROR] パスワード変更エラー:', error);
           alert('パスワード変更中にエラーが発生しました');
           return false;
         }
@@ -284,11 +304,10 @@ export const useAppStore = create<AuthState>()(
           const { token } = get();
           if (!token) return false;
 
-          const response = await fetch('/api/auth/account', {
+          const response = await fetch('/api/auth/delete-account', {
             method: 'DELETE',
             headers: {
               'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
             },
           });
 

@@ -1,0 +1,5 @@
+# SPAルーティング用リダイレクト設定
+# すべてのルートをindex.htmlにリダイレクト（APIルートを除く）
+
+/api/*  /api/:splat  200
+/*      /index.html  200 

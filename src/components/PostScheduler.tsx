@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { apiWithFallback } from '../services/mockApi';
 
 interface ScheduledPost {
   id: string;
@@ -30,22 +31,20 @@ const PostScheduler: React.FC<PostSchedulerProps> = ({ onPostSelect }) => {
     setError(null);
 
     try {
-      const response = await fetch('/api/scheduler/posts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser?.userId || 'demo_user',
-          month: selectedDate.getMonth() + 1,
-          year: selectedDate.getFullYear()
-        }),
-      });
-
-      const data = await response.json();
+      // モックAPIを使用（フォールバック付き）
+      const data = await apiWithFallback.getScheduledPosts();
 
       if (data.success) {
-        setScheduledPosts(data.posts);
+        // モックデータをScheduledPost形式に変換
+        const convertedPosts: ScheduledPost[] = data.data.map((post: any) => ({
+          id: post.id,
+          caption: post.caption,
+          scheduledTime: post.scheduled_time,
+          status: post.status,
+          hashtags: extractHashtags(post.caption),
+          createdAt: new Date().toISOString()
+        }));
+        setScheduledPosts(convertedPosts);
       } else {
         setError(data.error || 'スケジュール済み投稿の取得に失敗しました');
       }
@@ -55,6 +54,12 @@ const PostScheduler: React.FC<PostSchedulerProps> = ({ onPostSelect }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ハッシュタグを抽出する関数
+  const extractHashtags = (caption: string): string[] => {
+    const hashtagRegex = /#[\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+/g;
+    return caption.match(hashtagRegex) || [];
   };
 
   // 投稿を削除

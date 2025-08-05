@@ -22,6 +22,8 @@ import Diagnostics from './pages/Diagnostics';
 import AnalyzeUrl from './pages/AnalyzeUrl';
 import AnalyticsDashboardPage from './pages/AnalyticsDashboardPage';
 import ThreadsAnalysis from './pages/ThreadsAnalysis';
+import ThreadsManagement from './pages/ThreadsManagement';
+import PostingTimeAnalysis from './pages/PostingTimeAnalysis';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import NotFound from './pages/NotFound';
@@ -60,7 +62,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const App: React.FC = () => {
   // アプリ起動時の認証状態チェックとフォールバック処理
   React.useEffect(() => {
-    const { isAuthenticated, currentUser } = useAppStore.getState();
+    const { isAuthenticated, currentUser, setAuthenticated } = useAppStore.getState();
     console.log('🚀 [DEBUG] アプリ起動 - 初期認証状態:', {
       isAuthenticated,
       currentUser: currentUser ? {
@@ -71,6 +73,13 @@ const App: React.FC = () => {
       search: window.location.search,
       timestamp: new Date().toISOString()
     });
+
+    // リダイレクトループ防止のため、認証状態をリセット
+    if (isAuthenticated && !currentUser) {
+      console.log('🔄 [DEBUG] 認証状態の不整合を検出、リセットします');
+      setAuthenticated?.(false);
+      localStorage.removeItem('instagram-marketing-app-storage');
+    }
 
     // ルーティングデバッグ情報を追加
     console.log('🎯 [DEBUG] 現在のルーティング状況:', {
@@ -90,10 +99,9 @@ const App: React.FC = () => {
     if (authCallback === 'true' && code) {
       console.log('🔄 [DEBUG] クエリパラメータからのコールバック処理を開始');
       console.log('📝 [DEBUG] 認証コード:', code.substring(0, 10) + '...');
-      window.location.href = `/auth/instagram/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state || '')}`;
+      window.location.href = `/auth/facebook/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state || '')}`;
     } else if (authCallback === 'true' && urlParams.get('no_code') === 'true') {
       console.log('⚠️ [DEBUG] 認証コードなしのコールバック処理');
-      const { setAuthenticated } = useAppStore.getState();
       setAuthenticated?.(true);
       setTimeout(() => {
         window.location.href = '/dashboard';
@@ -105,14 +113,15 @@ const App: React.FC = () => {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/analysis-history" element={<AnalysisHistory />} />
           
-          {/* Instagram OAuthコールバックルート - 最終修正版 */}
+          {/* Facebook OAuthコールバックルート */}
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/auth/facebook/callback" element={<AuthCallback />} />
           <Route path="/auth/instagram/callback" element={<AuthCallback />} /> {/* フォールバック */}
           
           <Route path="/success" element={<Success />} />
@@ -210,6 +219,22 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <ThreadsAnalysis />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/threads-management" 
+            element={
+              <ProtectedRoute>
+                <ThreadsManagement />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/posting-time-analysis" 
+            element={
+              <ProtectedRoute>
+                <PostingTimeAnalysis />
               </ProtectedRoute>
             } 
           />

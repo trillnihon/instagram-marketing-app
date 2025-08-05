@@ -3,6 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import Navigation from '../components/Navigation';
 import PostHistory from '../components/PostHistory';
 import AdvancedAnalytics from '../components/AdvancedAnalytics';
+import { apiWithFallback } from '../services/mockApi';
 
 interface ThreadsAnalysisHistory {
   id: string;

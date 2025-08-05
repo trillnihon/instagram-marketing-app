@@ -46,6 +46,9 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange, showAdm
         <button className={getTabClass('hashtags')}>
           <Link to="/hashtags">ハッシュタグ分析</Link>
         </button>
+        <button className={getTabClass('posting-time')}>
+          <Link to="/posting-time-analysis">投稿時間分析</Link>
+        </button>
         <button className={getTabClass('instagram')}>
           <Link to="/auth/instagram">Instagram連携</Link>
         </button>

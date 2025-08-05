@@ -1,0 +1,37 @@
+{
+  "projectNote": "このプロジェクトはGPTs（ChatGPT Custom GPT: CursorBuddy）と連携しています。コード補完・API設計・デバッグ支援などはChatGPTと協調して行います。チャットの履歴を継続的に考慮してサポートを受けてください。",
+  "gptIntegration": {
+    "enabled": true,
+    "contextFiles": [
+      ".env.development",
+      ".env.production", 
+      "api-spec.md",
+      "code-snippets.md",
+      "HANDOVER_REPORT_20250730_FINAL.md",
+      "README.md"
+    ],
+    "collaborationAreas": [
+      "コード補完",
+      "API設計",
+      "バグ修正", 
+      "テスト作成",
+      "UI改善",
+      "ドキュメント生成"
+    ]
+  },
+  "projectContext": {
+    "name": "Instagram Marketing App",
+    "techStack": {
+      "frontend": "React 18, TypeScript, Vite, Zustand, Tailwind CSS",
+      "backend": "Node.js, Express, MongoDB Atlas",
+      "testing": "Jest, React Testing Library, Supertest",
+      "deployment": "Vercel (frontend), Render (backend)"
+    },
+    "currentFeatures": [
+      "Facebook Login for Business認証",
+      "Threads投稿管理API",
+      "投稿作成・一覧・削除・分析機能",
+      "統合テスト・ユニットテスト"
+    ]
+  }
+} 

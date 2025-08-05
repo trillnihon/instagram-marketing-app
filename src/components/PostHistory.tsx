@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { InstagramPost } from '../types';
+import { apiWithFallback } from '../services/mockApi';
 
 interface PostHistoryProps {
   accessToken?: string;
@@ -26,14 +27,10 @@ const PostHistory: React.FC<PostHistoryProps> = ({
     setLocalError(null);
 
     try {
-      // 新しい履歴取得APIを使用
-      const response = await fetch(
-        `/api/instagram/history/${currentUser?.userId || 'demo'}`
-      );
+      // モックAPIを使用（フォールバック付き）
+      const result = await apiWithFallback.getInstagramHistory();
 
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error(result.error || '投稿履歴の取得に失敗しました');
       }
 
@@ -47,8 +44,8 @@ const PostHistory: React.FC<PostHistoryProps> = ({
         timestamp: post.timestamp,
         permalink: post.permalink,
         engagement: {
-          likes: post.like_count || 0,
-          comments: post.comments_count || 0,
+          likes: post.likes || 0,
+          comments: post.comments || 0,
           saves: 0, // Instagram APIでは取得できない場合がある
           shares: 0,
           reach: 0,

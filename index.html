@@ -5,25 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Instagram Marketing App</title>
     
-    <!-- 基本的なメタタグのみ -->
+    <!-- PWA対応メタタグ -->
     <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Instagram Marketing App" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    <meta name="msapplication-tap-highlight" content="no" />
     
     <!-- キャッシュバスティング - 2025年7月31日 修正版 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
     <!-- アイコン設定 -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
     
     <!-- プリロード -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <script type="module" crossorigin src="/assets/index-13a6e268.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/vendor-ac51a7a2.js">
-    <link rel="modulepreload" crossorigin href="/assets/router-6187e3ab.js">
-    <link rel="stylesheet" href="/assets/index-fe6657a2.css">
   </head>
   <body>
     <div id="root">
@@ -39,153 +46,93 @@
     <!-- Reactアプリケーションの初期化 -->
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- フォールバック処理 -->
+    <!-- フォールバック処理 - 簡素化版 -->
     <script>
-      // Reactアプリケーションの初期化を確認
+      // Reactアプリケーションの初期化を確認（簡素化版）
       setTimeout(() => {
         const root = document.getElementById('root');
-        if (root && root.children.length === 1) {
+        if (root && root.children.length === 1 && !window.instagramCallbackProcessed) {
           console.log('⚠️ [DEBUG] Reactアプリケーションが初期化されていません');
-          // フォールバック処理
-          window.location.href = '/';
         }
       }, 5000);
     </script>
     
-    <!-- Instagram OAuthコールバック処理 - 最終修正版 -->
+    <!-- Instagram OAuthコールバック処理 - 簡素化版 -->
     <script>
-      // Instagram OAuthコールバックの事前処理（最終修正版）
+      // Instagram OAuthコールバックの事前処理（簡素化版）
       (function() {
-        console.log('🚀 [DEBUG] index.html - Instagram OAuthコールバック処理開始');
-        console.log('📅 [DEBUG] 実行時刻:', new Date().toISOString());
+        // 一度だけ実行されるようにフラグを設定
+        if (window.instagramCallbackProcessed) {
+          return;
+        }
+        window.instagramCallbackProcessed = true;
         
         const pathname = window.location.pathname;
         const search = window.location.search;
-        const href = window.location.href;
         
-        console.log('🔍 [DEBUG] index.html - 詳細URL情報:', {
-          pathname,
-          search,
-          href,
-          hostname: window.location.hostname,
-          protocol: window.location.protocol,
-          timestamp: new Date().toISOString()
-        });
-        
-        // Instagram OAuthコールバックURLの場合
+        // Instagram OAuthコールバックURLの場合のみ処理
         if (pathname === '/auth/instagram/callback') {
-          console.log('🎯 [DEBUG] InstagramコールバックURLを検出！');
+          console.log('🎯 [DEBUG] InstagramコールバックURLを検出');
           
           const urlParams = new URLSearchParams(search);
-          const code = urlParams.get('code');
-          const state = urlParams.get('state');
           const error = urlParams.get('error');
-          const error_reason = urlParams.get('error_reason');
-          const error_description = urlParams.get('error_description');
           
-          console.log('📝 [DEBUG] コールバックパラメータ詳細:', {
-            code: code ? `${code.substring(0, 10)}...` : null,
-            state,
-            error,
-            error_reason,
-            error_description,
-            hasCode: !!code,
-            codeLength: code?.length || 0,
-            stateLength: state?.length || 0,
-            timestamp: new Date().toISOString()
-          });
-          
-          // エラーの場合
+          // エラーの場合のみリダイレクト
           if (error) {
-            console.error('❌ [DEBUG] Instagram認証エラー検出:', {
-              error,
-              error_reason,
-              error_description,
-              url: href,
-              timestamp: new Date().toISOString()
-            });
-            // エラーページにリダイレクト
+            console.error('❌ [DEBUG] Instagram認証エラー:', error);
             setTimeout(() => {
-              console.log('🔄 [DEBUG] エラーページにリダイレクト');
               window.location.href = '/?auth_error=' + encodeURIComponent(error);
             }, 1000);
-            return;
-          }
-          
-          // 認証コードがある場合
-          if (code) {
-            console.log('✅ [DEBUG] 認証コードを検出、Reactアプリケーションに処理を委譲:', {
-              code: code.substring(0, 10) + '...',
-              state,
-              timestamp: new Date().toISOString()
-            });
-            // Reactアプリケーションに処理を委譲
-            // 何もしない（Reactアプリケーションが処理する）
-          } else {
-            console.log('⚠️ [DEBUG] 認証コードなし、デモモードで継続:', {
-              pathname,
-              search,
-              timestamp: new Date().toISOString()
-            });
-            // 認証コードなしでもデモモードで継続
-            setTimeout(() => {
-              console.log('🔄 [DEBUG] デモモードでリダイレクト');
-              window.location.href = '/?auth_callback=true&no_code=true';
-            }, 1000);
           }
         }
-        
-        // クエリパラメータからのコールバック処理も追加
-        const urlParams = new URLSearchParams(search);
-        const authCallback = urlParams.get('auth_callback');
-        const authCode = urlParams.get('code');
-        const authState = urlParams.get('state');
-        
-        if (authCallback === 'true' && authCode) {
-          console.log('🔄 [DEBUG] クエリパラメータからのコールバック処理を開始');
-          console.log('📝 [DEBUG] 認証コード:', authCode.substring(0, 10) + '...');
-          window.location.href = `/auth/instagram/callback?code=${encodeURIComponent(authCode)}&state=${encodeURIComponent(authState || '')}`;
-        } else if (authCallback === 'true' && urlParams.get('no_code') === 'true') {
-          console.log('⚠️ [DEBUG] 認証コードなしのコールバック処理');
-          // デモモードで継続
-          setTimeout(() => {
-            console.log('🔄 [DEBUG] ダッシュボードにリダイレクト');
-            window.location.href = '/dashboard';
-          }, 1000);
-        }
-        
-        console.log('✅ [DEBUG] index.html - Instagram OAuthコールバック処理完了');
       })();
     </script>
     
-    <!-- Service Worker完全無効化 -->
+    <!-- PWA Service Worker登録 -->
     <script>
-      // Service Workerを完全に無効化
+      // PWA Service Worker登録
       if ('serviceWorker' in navigator) {
-        // 既存のService Workerを削除
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for(let registration of registrations) {
-            registration.unregister();
-            console.log('[DEBUG] Service Worker unregistered:', registration);
-          }
-        });
-        
-        // Service Workerの登録を防止
-        navigator.serviceWorker.addEventListener('message', function(event) {
-          console.log('[DEBUG] Service Worker message blocked');
-          event.preventDefault();
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function(registration) {
+              console.log('[PWA] ServiceWorker registration successful with scope: ', registration.scope);
+              
+              // アップデート確認
+              registration.addEventListener('updatefound', function() {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', function() {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('[PWA] New content is available; please refresh.');
+                    // 必要に応じてユーザーに更新を促す
+                    if (confirm('新しいバージョンが利用可能です。更新しますか？')) {
+                      window.location.reload();
+                    }
+                  }
+                });
+              });
+            })
+            .catch(function(error) {
+              console.log('[PWA] ServiceWorker registration failed: ', error);
+            });
         });
       }
       
-      // キャッシュも削除
-      if ('caches' in window) {
-        caches.keys().then(function(names) {
-          for (let name of names) {
-            caches.delete(name);
-            console.log('[DEBUG] Cache deleted:', name);
-          }
-        });
-      }
+      // PWAインストールプロンプト
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('[PWA] Install prompt ready');
+        
+        // インストールボタンを表示（必要に応じて）
+        // showInstallButton();
+      });
+      
+      // インストール完了時の処理
+      window.addEventListener('appinstalled', (evt) => {
+        console.log('[PWA] App was installed');
+        deferredPrompt = null;
+      });
     </script>
   </body>
 </html> 
