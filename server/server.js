@@ -67,6 +67,8 @@ if (process.env.NODE_ENV === 'production') {
 logger.info('環境:', process.env.NODE_ENV || 'development');
 logger.info('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '読み込み成功' : '未設定');
 logger.info('デモモード:', process.env.DEMO_MODE === 'true' ? '有効' : '無効');
+logger.info('FACEBOOK_APP_ID:', process.env.FACEBOOK_APP_ID || '未設定（デフォルト値使用）');
+logger.info('FACEBOOK_APP_SECRET:', process.env.FACEBOOK_APP_SECRET ? '読み込み成功' : '未設定（デフォルト値使用）');
 
 const app = express();
 const DEFAULT_PORT = parseInt(process.env.PORT, 10) || 4000;
@@ -99,8 +101,8 @@ const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SEC
 }) : null;
 
 // Facebook API設定（フロントエンドと統一）
-const FACEBOOK_APP_ID = '1003724798254754';
-const FACEBOOK_APP_SECRET = 'fd6a61c31a9f1f5798b4d48a927d8f0c';
+const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || '1003724798254754';
+const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || 'fd6a61c31a9f1f5798b4d48a927d8f0c';
 const REDIRECT_URI = 'https://localhost:3000/auth/callback';
 
 // インメモリユーザーストア（本番ではDBを使用）
@@ -522,6 +524,19 @@ app.get('/auth/instagram/callback', async (req, res) => {
     console.log('[DEBUG] Instagram認証 - アクセストークン取得成功');
     console.log('[DEBUG] Instagram認証 - ユーザーID:', userId);
     
+    // 長期トークンに交換
+    const longLivedTokenRes = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+      params: {
+        grant_type: 'fb_exchange_token',
+        client_id: FACEBOOK_APP_ID,
+        client_secret: FACEBOOK_APP_SECRET,
+        fb_exchange_token: accessToken
+      }
+    });
+    
+    const longLivedToken = longLivedTokenRes.data.access_token;
+    console.log('[DEBUG] Instagram認証 - 長期トークン取得成功');
+    
     // Instagram Basic Display APIでユーザー情報を取得
     const userRes = await axios.get(`https://graph.instagram.com/me`, {
       params: {
@@ -552,15 +567,20 @@ app.get('/auth/instagram/callback', async (req, res) => {
     // 成功レスポンス
     res.json({
       success: true,
-      data: {
-        access_token: accessToken,
-        instagram_business_account: instagramBusinessAccount,
-        recent_posts: mediaRes.data.data || [],
-        debug: {
-          pages,
-          accessToken: accessToken.substring(0, 10) + '...',
-          instagramBusinessAccount
-        }
+      access_token: longLivedToken,
+      longLivedToken: longLivedToken,
+      user: {
+        id: instagramBusinessAccount.id,
+        username: instagramBusinessAccount.username,
+        media_count: instagramBusinessAccount.media_count,
+        page_id: instagramBusinessAccount.page_id,
+        page_name: instagramBusinessAccount.page_name
+      },
+      recent_posts: mediaRes.data.data || [],
+      debug: {
+        pages,
+        accessToken: longLivedToken.substring(0, 10) + '...',
+        instagramBusinessAccount
       }
     });
     
@@ -645,15 +665,14 @@ app.post('/auth/instagram/callback', async (req, res) => {
     
     logStep(9, 'リダイレクトURI設定完了', { redirectUri });
     
-    // Instagram Basic Display APIのアクセストークン取得
-    logStep(10, 'Instagram Basic Display API アクセストークン取得開始');
-    const tokenRes = await axios.post(`https://api.instagram.com/oauth/access_token`, null, {
+    // Instagram Graph APIのアクセストークン取得
+    logStep(10, 'Instagram Graph API アクセストークン取得開始');
+    const tokenRes = await axios.post(`https://graph.facebook.com/v18.0/oauth/access_token`, null, {
       params: {
-        client_id: process.env.VITE_INSTAGRAM_APP_ID || FACEBOOK_APP_ID,
-        client_secret: process.env.VITE_INSTAGRAM_APP_SECRET || FACEBOOK_APP_SECRET,
+        client_id: FACEBOOK_APP_ID,
+        client_secret: FACEBOOK_APP_SECRET,
         redirect_uri: redirectUri,
-        code,
-        grant_type: 'authorization_code'
+        code
       }
     });
     
@@ -666,8 +685,26 @@ app.post('/auth/instagram/callback', async (req, res) => {
     });
     console.log('[DEBUG] Instagram認証 POST - アクセストークン取得成功');
     
+    // 長期トークンに交換
+    logStep(12, '長期トークン交換開始');
+    const longLivedTokenRes = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+      params: {
+        grant_type: 'fb_exchange_token',
+        client_id: FACEBOOK_APP_ID,
+        client_secret: FACEBOOK_APP_SECRET,
+        fb_exchange_token: accessToken
+      }
+    });
+    
+    const longLivedToken = longLivedTokenRes.data.access_token;
+    logStep(13, '長期トークン取得成功', { 
+      longLivedToken: longLivedToken.substring(0, 10) + '...',
+      tokenLength: longLivedToken.length
+    });
+    console.log('[DEBUG] Instagram認証 POST - 長期トークン取得成功');
+    
     // Instagram Graph APIでFacebookページとInstagramビジネスアカウントを取得
-    logStep(12, 'Facebookページ一覧取得開始');
+    logStep(14, 'Facebookページ一覧取得開始');
     const pagesRes = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
       params: {
         access_token: accessToken,
@@ -675,7 +712,7 @@ app.post('/auth/instagram/callback', async (req, res) => {
       }
     });
     
-    logStep(13, 'Facebookページ一覧取得成功', { 
+    logStep(15, 'Facebookページ一覧取得成功', { 
       pageCount: pagesRes.data.data?.length || 0 
     });
     console.log('[DEBUG] Instagram認証 POST - ページ一覧取得レスポンス:', JSON.stringify(pagesRes.data, null, 2));
@@ -683,10 +720,10 @@ app.post('/auth/instagram/callback', async (req, res) => {
     const pages = pagesRes.data.data || [];
     let instagramBusinessAccount = null;
     
-    logStep(14, 'Instagramビジネスアカウント検索開始', { pageCount: pages.length });
+    logStep(16, 'Instagramビジネスアカウント検索開始', { pageCount: pages.length });
     
     for (const page of pages) {
-      logStep(15, `ページ確認中: ${page.name}`, { 
+      logStep(17, `ページ確認中: ${page.name}`, { 
         pageId: page.id,
         hasInstagramAccount: !!(page.instagram_business_account && page.instagram_business_account.id)
       });
@@ -699,7 +736,7 @@ app.post('/auth/instagram/callback', async (req, res) => {
           page_id: page.id,
           page_name: page.name
         };
-        logStep(16, 'Instagramビジネスアカウント発見', {
+        logStep(18, 'Instagramビジネスアカウント発見', {
           instagramId: instagramBusinessAccount.id,
           username: instagramBusinessAccount.username,
           pageName: instagramBusinessAccount.page_name
@@ -709,7 +746,7 @@ app.post('/auth/instagram/callback', async (req, res) => {
     }
     
     if (!instagramBusinessAccount) {
-      logStep(17, 'Instagramビジネスアカウントが見つからない - エラーレスポンス');
+      logStep(19, 'Instagramビジネスアカウントが見つからない - エラーレスポンス');
       const debugInfo = {
         pages,
         accessToken: accessToken.substring(0, 10) + '...',
@@ -764,19 +801,20 @@ app.post('/auth/instagram/callback', async (req, res) => {
     logStep(21, '認証処理完了 - 成功レスポンス送信');
     res.json({
       success: true,
-      data: {
-        access_token: accessToken,
-        user_id: userId,
-        user: {
-          id: instagramUser.id,
-          username: instagramUser.username,
-          account_type: instagramUser.account_type
-        },
-        recent_posts: mediaRes.data.data || [],
-        debug: {
-          accessToken: accessToken.substring(0, 10) + '...',
-          instagramUser
-        }
+      access_token: longLivedToken,
+      longLivedToken: longLivedToken,
+      user: {
+        id: instagramBusinessAccount.id,
+        username: instagramBusinessAccount.username,
+        media_count: instagramBusinessAccount.media_count,
+        page_id: instagramBusinessAccount.page_id,
+        page_name: instagramBusinessAccount.page_name
+      },
+      recent_posts: mediaRes.data.data || [],
+      debug: {
+        pages,
+        accessToken: longLivedToken.substring(0, 10) + '...',
+        instagramBusinessAccount
       }
     });
     

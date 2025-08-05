@@ -29,8 +29,16 @@ export class InstagramAuthService {
   static generateAuthUrl(): string {
     const clientId = import.meta.env.VITE_FACEBOOK_APP_ID || '1003724798254754';
     const redirectUri = import.meta.env.VITE_INSTAGRAM_REDIRECT_URI || 'https://instagram-marketing-app.vercel.app/auth/instagram/callback';
-    const scope = 'instagram_basic,pages_show_list';
+    const scope = 'instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement,instagram_manage_insights';
     const state = this.generateState();
+
+    // デバッグログ追加
+    console.log('[DEBUG] 環境変数確認:', {
+      VITE_FACEBOOK_APP_ID: import.meta.env.VITE_FACEBOOK_APP_ID,
+      VITE_INSTAGRAM_REDIRECT_URI: import.meta.env.VITE_INSTAGRAM_REDIRECT_URI,
+      clientId: clientId,
+      redirectUri: redirectUri
+    });
 
     // 状態をCookieに保存
     this.setStateCookie(state);
@@ -38,6 +46,7 @@ export class InstagramAuthService {
 
     // Instagram Graph APIの認証URL
     const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
+    console.log('[DEBUG] 生成された認証URL:', authUrl);
     return authUrl;
   }
 
@@ -72,11 +81,11 @@ export class InstagramAuthService {
       
       // サーバーからのレスポンス形式に合わせて処理
       const authData: InstagramAuth = {
-        accessToken: data.access_token,
-        userId: data.user_id || data.instagram_business_account_id || '',
-        expiresAt: new Date(Date.now() + (data.expires_in || 3600) * 1000).toISOString(),
-        permissions: ['user_profile', 'user_media'],
-        instagramBusinessAccountId: data.instagram_business_account_id
+        accessToken: data.access_token || data.longLivedToken,
+        userId: data.user?.id || data.user_id || '',
+        expiresAt: new Date(Date.now() + (data.expires_in || 5184000) * 1000).toISOString(), // 60日
+        permissions: ['instagram_basic', 'instagram_content_publish', 'pages_show_list', 'pages_read_engagement'],
+        instagramBusinessAccountId: data.user?.id || data.instagram_business_account_id
       };
       
       console.log('[DEBUG] 処理された認証データ:', authData);
@@ -93,7 +102,7 @@ export class InstagramAuthService {
     access_token: string;
     expires_in: number;
   }> {
-    const url = `${this.INSTAGRAM_GRAPH_URL}/access_token?grant_type=ig_exchange_token&client_secret=${import.meta.env.VITE_INSTAGRAM_APP_SECRET}&access_token=${shortLivedToken}`;
+    const url = `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${import.meta.env.VITE_FACEBOOK_APP_ID}&client_secret=${import.meta.env.VITE_FACEBOOK_APP_SECRET}&fb_exchange_token=${shortLivedToken}`;
 
     const response = await fetch(url);
     
@@ -107,7 +116,8 @@ export class InstagramAuthService {
   // アクセストークンの有効性を確認
   static async validateToken(accessToken: string): Promise<boolean> {
     try {
-      const url = `${this.INSTAGRAM_GRAPH_URL}/me?fields=id,username&access_token=${accessToken}`;
+      // Facebook Graph APIでトークンの有効性を確認
+      const url = `https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${accessToken}`;
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -127,7 +137,9 @@ export class InstagramAuthService {
     access_token: string;
     expires_in: number;
   }> {
-    const url = `${this.INSTAGRAM_GRAPH_URL}/refresh_access_token?grant_type=ig_refresh_token&access_token=${accessToken}`;
+    // Facebook Graph APIでは長期トークンは自動的に更新されるため、
+    // 必要に応じて新しい長期トークンを取得
+    const url = `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${import.meta.env.VITE_FACEBOOK_APP_ID}&client_secret=${import.meta.env.VITE_FACEBOOK_APP_SECRET}&fb_exchange_token=${accessToken}`;
 
     const response = await fetch(url);
     
