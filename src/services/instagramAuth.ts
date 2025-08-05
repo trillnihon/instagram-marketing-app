@@ -27,17 +27,17 @@ export class InstagramAuthService {
 
   // 認証URLの生成
   static generateAuthUrl(): string {
-    const clientId = import.meta.env.VITE_INSTAGRAM_APP_ID || '1003724798254754';
+    const clientId = import.meta.env.VITE_FACEBOOK_APP_ID || '1003724798254754';
     const redirectUri = import.meta.env.VITE_INSTAGRAM_REDIRECT_URI || 'https://instagram-marketing-app.vercel.app/auth/instagram/callback';
-    const scope = 'user_profile,user_media';
+    const scope = 'instagram_basic,pages_show_list';
     const state = this.generateState();
 
     // 状態をCookieに保存
     this.setStateCookie(state);
     console.log('保存したstate:', state, '(Cookie)');
 
-    // Instagram Basic Display APIの認証URL
-    const authUrl = `${this.INSTAGRAM_AUTH_URL}?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
+    // Instagram Graph APIの認証URL
+    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
     return authUrl;
   }
 

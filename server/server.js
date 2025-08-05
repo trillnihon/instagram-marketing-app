@@ -503,18 +503,17 @@ app.get('/auth/instagram/callback', async (req, res) => {
   req.session.usedCode = code;
   
   try {
-    // Instagram Basic Display APIのアクセストークン取得
+    // Instagram Graph APIのアクセストークン取得
     const redirectUri = process.env.NODE_ENV === 'production' 
       ? 'https://instagram-marketing-app.vercel.app/auth/instagram/callback'
       : 'https://localhost:4000/auth/instagram/callback';
       
-    const tokenRes = await axios.post(`https://api.instagram.com/oauth/access_token`, null, {
+    const tokenRes = await axios.post(`https://graph.facebook.com/v18.0/oauth/access_token`, null, {
       params: {
-        client_id: process.env.VITE_INSTAGRAM_APP_ID || FACEBOOK_APP_ID,
-        client_secret: process.env.VITE_INSTAGRAM_APP_SECRET || FACEBOOK_APP_SECRET,
+        client_id: FACEBOOK_APP_ID,
+        client_secret: FACEBOOK_APP_SECRET,
         redirect_uri: redirectUri,
-        code,
-        grant_type: 'authorization_code'
+        code
       }
     });
     
@@ -667,47 +666,102 @@ app.post('/auth/instagram/callback', async (req, res) => {
     });
     console.log('[DEBUG] Instagram認証 POST - アクセストークン取得成功');
     
-    // Instagram Basic Display APIでユーザー情報を取得
-    logStep(12, 'Instagramユーザー情報取得開始');
-    const userRes = await axios.get(`https://graph.instagram.com/me`, {
+    // Instagram Graph APIでFacebookページとInstagramビジネスアカウントを取得
+    logStep(12, 'Facebookページ一覧取得開始');
+    const pagesRes = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
       params: {
         access_token: accessToken,
-        fields: 'id,username,account_type'
+        fields: 'id,name,instagram_business_account{id,username,media_count}'
       }
     });
     
-    logStep(13, 'Instagramユーザー情報取得成功', { 
-      userId: userRes.data.id,
-      username: userRes.data.username,
-      accountType: userRes.data.account_type
+    logStep(13, 'Facebookページ一覧取得成功', { 
+      pageCount: pagesRes.data.data?.length || 0 
     });
-    console.log('[DEBUG] Instagram認証 POST - ユーザー情報取得レスポンス:', JSON.stringify(userRes.data, null, 2));
+    console.log('[DEBUG] Instagram認証 POST - ページ一覧取得レスポンス:', JSON.stringify(pagesRes.data, null, 2));
+    
+    const pages = pagesRes.data.data || [];
+    let instagramBusinessAccount = null;
+    
+    logStep(14, 'Instagramビジネスアカウント検索開始', { pageCount: pages.length });
+    
+    for (const page of pages) {
+      logStep(15, `ページ確認中: ${page.name}`, { 
+        pageId: page.id,
+        hasInstagramAccount: !!(page.instagram_business_account && page.instagram_business_account.id)
+      });
+      console.log(`[DEBUG] ページ名: ${page.name}, ページID: ${page.id}, Instagramビジネスアカウント:`, page.instagram_business_account);
+      if (page.instagram_business_account && page.instagram_business_account.id) {
+        instagramBusinessAccount = {
+          id: page.instagram_business_account.id,
+          username: page.instagram_business_account.username,
+          media_count: page.instagram_business_account.media_count,
+          page_id: page.id,
+          page_name: page.name
+        };
+        logStep(16, 'Instagramビジネスアカウント発見', {
+          instagramId: instagramBusinessAccount.id,
+          username: instagramBusinessAccount.username,
+          pageName: instagramBusinessAccount.page_name
+        });
+        break;
+      }
+    }
+    
+    if (!instagramBusinessAccount) {
+      logStep(17, 'Instagramビジネスアカウントが見つからない - エラーレスポンス');
+      const debugInfo = {
+        pages,
+        accessToken: accessToken.substring(0, 10) + '...',
+        note: 'Instagramビジネスアカウントが見つかりません',
+        possible_causes: [
+          'Facebookページがクラシックページ（旧タイプ）である',
+          'ビジネスアセットにページが追加されていない',
+          'Instagramビジネスアカウントが正しく連携されていない',
+          '認証時にページ選択でチェックが入っていない',
+          'Facebookの反映遅延や一時的な不具合'
+        ],
+        suggestion: 'デモモードを使用して機能をテストしてください',
+        setup_instructions: [
+          '1. Facebookページを作成または確認してください',
+          '2. InstagramビジネスアカウントをFacebookページに連携してください',
+          '3. ビジネスアセットマネージャーでページを追加してください',
+          '4. 再度認証を試してください'
+        ]
+      };
+      console.error('[ERROR] Instagramビジネスアカウントが見つかりません。', debugInfo);
+      return res.status(400).json({ 
+        error: 'Instagramビジネスアカウントが見つかりません。FacebookページとInstagramビジネスアカウントの連携を確認してください。デモモードを使用して機能をテストすることもできます。', 
+        debug: debugInfo,
+        setup_guide: 'https://developers.facebook.com/docs/instagram-api/getting-started'
+      });
+    }
     
     const instagramUser = {
-      id: userRes.data.id,
-      username: userRes.data.username,
-      account_type: userRes.data.account_type
+      id: instagramBusinessAccount.id,
+      username: instagramBusinessAccount.username,
+      account_type: 'BUSINESS'
     };
     
-    logStep(14, 'Instagramユーザー情報処理完了', { instagramUser });
+    logStep(18, 'Instagramビジネスアカウント情報処理完了', { instagramUser });
     
     // 投稿データ取得（最新5件）
-    logStep(15, 'Instagram投稿データ取得開始');
-    const mediaRes = await axios.get(`https://graph.instagram.com/me/media`, {
+    logStep(19, 'Instagram投稿データ取得開始');
+    const mediaRes = await axios.get(`https://graph.facebook.com/v18.0/${instagramBusinessAccount.id}/media`, {
       params: {
         access_token: accessToken,
-        fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp',
+        fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
         limit: 5
       }
     });
     
-    logStep(16, 'Instagram投稿データ取得成功', { 
+    logStep(20, 'Instagram投稿データ取得成功', { 
       postCount: mediaRes.data.data?.length || 0 
     });
     console.log('[DEBUG] Instagram認証 POST - 投稿データ取得レスポンス:', JSON.stringify(mediaRes.data, null, 2));
     
     // 成功レスポンス
-    logStep(17, '認証処理完了 - 成功レスポンス送信');
+    logStep(21, '認証処理完了 - 成功レスポンス送信');
     res.json({
       success: true,
       data: {
@@ -727,7 +781,7 @@ app.post('/auth/instagram/callback', async (req, res) => {
     });
     
   } catch (err) {
-    logStep(18, 'Instagram認証処理でエラー発生', {
+    logStep(22, 'Instagram認証処理でエラー発生', {
       error: err.response?.data || err.message,
       status: err.response?.status
     });
