@@ -1,15 +1,9 @@
 import express from 'express';
-import { Request, Response } from 'express';
 
 const router = express.Router();
 
 // ダミーデータストア
-let dummyPosts: Array<{
-  id: string;
-  content: string;
-  media: string[];
-  timestamp: string;
-}> = [
+let dummyPosts = [
   {
     id: '1',
     content: 'これは最初のダミー投稿です。',
@@ -25,7 +19,7 @@ let dummyPosts: Array<{
 ];
 
 // 認証ミドルウェア（ダミー実装）
-const authenticateToken = (req: Request, res: Response, next: Function) => {
+const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -43,7 +37,7 @@ const authenticateToken = (req: Request, res: Response, next: Function) => {
 };
 
 // POST /threads/api/submitPost
-router.post('/submitPost', authenticateToken, (req: Request, res: Response) => {
+router.post('/submitPost', authenticateToken, (req, res) => {
   try {
     const { content, media = [] } = req.body;
 
@@ -89,9 +83,9 @@ router.post('/submitPost', authenticateToken, (req: Request, res: Response) => {
 });
 
 // GET /threads/api/listPosts
-router.get('/listPosts', authenticateToken, (req: Request, res: Response) => {
+router.get('/listPosts', authenticateToken, (req, res) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = parseInt(req.query.limit) || 10;
     const posts = dummyPosts.slice(0, limit);
 
     console.log('📋 [THREADS API] 投稿一覧取得成功:', {
@@ -108,7 +102,7 @@ router.get('/listPosts', authenticateToken, (req: Request, res: Response) => {
 });
 
 // DELETE /threads/api/deletePost/:id
-router.delete('/deletePost/:id', authenticateToken, (req: Request, res: Response) => {
+router.delete('/deletePost/:id', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
     const initialLength = dummyPosts.length;
@@ -132,7 +126,7 @@ router.delete('/deletePost/:id', authenticateToken, (req: Request, res: Response
 });
 
 // POST /threads/api/analyze
-router.post('/analyze', authenticateToken, (req: Request, res: Response) => {
+router.post('/analyze', authenticateToken, (req, res) => {
   try {
     const { content, media = [] } = req.body;
 
