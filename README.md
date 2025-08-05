@@ -1,314 +1,182 @@
-# Instagram Marketing App
+# Instagram Marketing App v1.0.0
 
-## 🚀 本番リリース完了 ✅
+## 🚀 プロジェクト概要
 
-**✅ 本番デプロイ済み・動作確認完了**
-- Vercel + Render デプロイ設定完了
-- PWA対応（Service Worker + Manifest）✅ 動作確認済み
-- レスポンシブデザイン対応
-- 全テスト（ユニット/統合）パス
-- OpenAI API連携
-- Facebook Login for Business認証
-- **SPAルーティング404問題解決済み** ✅
-- **投稿時間分析機能実装完了** ✅
+Instagram Marketing Appは、Instagramビジネスアカウント向けの投稿管理・分析ツールです。PWA（Progressive Web App）として実装され、オフライン対応とモバイル最適化を提供します。
 
-## 🚀 デプロイ
+## 📊 現在の状況
 
-### 開発環境
-```bash
-npm run dev
-# http://localhost:3001/login でアクセス
+### ✅ 完了済み機能
+- **PWA実装**: オフライン対応、インストール可能
+- **Facebook Login for Business**: Instagramビジネスアカウント連携
+- **OpenAI統合**: AIキャプション生成機能
+- **Jestテスト**: ユニットテスト・APIテスト実装済み
+- **Instagram Graph API**: 最新APIへの移行完了
+- **デプロイ環境**: Vercel（フロントエンド）+ Render.com（バックエンド）
+
+### 🔧 最近の修正（2025年8月5日）
+- **TypeScriptファイル拡張子エラー修正**: `threads.ts` → `threads.js` 変換
+- **Node.js互換性向上**: 本番環境での実行エラーを解消
+- **デプロイ成功**: Render.comでのバックエンドサービスが正常稼働
+
+## 🏗️ 技術スタック
+
+### フロントエンド
+- **React 18** + **Vite**
+- **TypeScript** (部分的)
+- **Tailwind CSS**
+- **PWA** (Service Worker, Manifest)
+
+### バックエンド
+- **Node.js 20.18.1**
+- **Express.js**
+- **MongoDB Atlas**
+- **JavaScript** (TypeScriptから移行)
+
+### 外部サービス
+- **Vercel**: フロントエンドホスティング
+- **Render.com**: バックエンドホスティング
+- **OpenAI API**: AI機能
+- **Facebook Graph API**: Instagram連携
+
+## 🌐 デプロイURL
+
+- **フロントエンド**: https://instagram-marketing-app.vercel.app
+- **バックエンド**: https://instagram-marketing-backend-v2.onrender.com
+
+## 🔑 環境変数設定
+
+### 本番環境（Vercel）
+```env
+# アプリケーション設定
+VITE_APP_NAME=Instagram Marketing App
+VITE_APP_VERSION=1.0.0
+VITE_API_BASE_URL=https://instagram-marketing-backend-v2.onrender.com
+
+# Facebook OAuth設定
+VITE_FACEBOOK_APP_ID=1003724798254754
+VITE_FACEBOOK_APP_SECRET=fd6a61c31a9f1f5798b4d48a927d8f0c
+
+# Instagram Graph API設定
+VITE_INSTAGRAM_APP_ID=1003724798254754
+VITE_INSTAGRAM_APP_SECRET=14ad79e7973687a6e3f803024caaf5b9
+VITE_INSTAGRAM_REDIRECT_URI=https://instagram-marketing-app.vercel.app/auth/instagram/callback
+VITE_INSTAGRAM_AUTH_URL=https://www.facebook.com/v18.0/dialog/oauth
+VITE_INSTAGRAM_TOKEN_URL=https://graph.facebook.com/v18.0/oauth/access_token
+
+# OpenAI API設定
+VITE_OPENAI_API_KEY=sk-your-actual-openai-api-key-here
 ```
 
-### 本番環境
-```bash
-# 自動デプロイ（GitHub連携）
-git push origin main
+### 本番環境（Render.com）
+```env
+# サーバー設定
+NODE_ENV=production
+PORT=10000
 
-# 手動デプロイ
-vercel --prod
-# https://instagram-marketing-app.vercel.app/login でアクセス
-```## 🚨 重要な通知
+# データベース設定
+MONGODB_URI=mongodb+srv://your-username:your-password@your-cluster.mongodb.net/instagram-marketing-app?retryWrites=true&w=majority
 
-**Instagram Basic Display APIは2024年12月4日に廃止されました。**
+# Facebook OAuth設定
+FACEBOOK_CLIENT_ID=1003724798254754
+FACEBOOK_CLIENT_SECRET=fd6a61c31a9f1f5798b4d48a927d8f0c
 
-- ❌ **Instagram Basic Display API**: 提供終了
-- ✅ **Facebook Login for Business**: 実装完了
-- ✅ **デモモード**: 引き続き利用可能
+# NextAuth設定
+NEXTAUTH_URL=https://instagram-marketing-backend-v2.onrender.com
+NEXTAUTH_SECRET=your-nextauth-secret-here
 
-### 現在の対応
-- Facebook Login for Businessを使用
-- Instagram Business Account / Creator Account向け
-- 必要な権限: `instagram_basic`, `instagram_content_publish`, `instagram_manage_comments`, `instagram_manage_insights`, `pages_show_list`, `pages_read_engagement`
-- デモモードも引き続き利用可能
+# API認証
+API_TOKEN=your_actual_token_here
 
-## 📱 アプリケーション概要
+# OpenAI API設定
+OPENAI_API_KEY=sk-your-actual-openai-api-key-here
+```
 
-## 📋 プロジェクト概要
-
-Instagram/Threads投稿分析・AI提案SaaSアプリケーション
-
-### 主要機能
-- ✅ AI投稿分析・改善提案
-- ✅ Threadsトレンド分析
-- ✅ 投稿履歴管理
-- ✅ AI投稿文自動生成
-- ✅ アルゴリズム対応アドバイス
-- ✅ PWA対応（オフライン対応）
-- ✅ Facebook Login for Business認証
-- ✅ Instagram Business Account連携
-- ✅ **投稿時間分析・ヒートマップ機能**（新機能）
-- ✅ **最適投稿時間推奨機能**（新機能）
-
-## 🚀 クイックスタート
-
-### 1. 環境構築
+## 🧪 テスト実行
 
 ```bash
-# リポジトリクローン
-git clone https://github.com/trillnihon/instagram-marketing-app.git
-cd instagram-marketing-app
+# 全テスト実行
+npm test
 
+# 特定のテストファイル実行
+npm test -- --testPathPattern=api
+
+# カバレッジ付きテスト
+npm run test:coverage
+```
+
+## 🚀 開発・デプロイ手順
+
+### ローカル開発
+```bash
 # 依存関係インストール
 npm install
 
 # 開発サーバー起動
 npm run dev
+
+# バックエンド起動
+cd server && npm start
 ```
-
-### 2. テスト実行
-
-```bash
-# 本番テスト実行（推奨）
-./run-tests.sh
-
-# 個別テスト実行
-npm test                                    # 全テスト
-npm run test:component                      # ユニットテストのみ
-npm run test:api                           # 統合テストのみ
-npm run test:coverage                      # カバレッジレポート
-npm run verify                             # ビルド + テスト検証
-```
-
-### 2. 環境変数設定
-
-#### 開発環境（`env.development`）
-```env
-# Facebook OAuth設定
-VITE_INSTAGRAM_APP_ID=1003724798254754
-VITE_INSTAGRAM_APP_SECRET=14ad79e7973687a6e3f803024caaf5b9
-VITE_INSTAGRAM_REDIRECT_URI=http://localhost:3001/auth/facebook/callback
-
-# API設定
-VITE_API_BASE_URL=http://localhost:4000/api
-
-# デバッグ設定
-VITE_DEBUG=true
-```
-
-#### 本番環境（`env.production`）
-```env
-# Facebook OAuth設定
-VITE_INSTAGRAM_APP_ID=1003724798254754
-VITE_INSTAGRAM_APP_SECRET=14ad79e7973687a6e3f803024caaf5b9
-VITE_INSTAGRAM_REDIRECT_URI=https://instagram-marketing-app.vercel.app/auth/facebook/callback
-
-# API設定
-VITE_API_BASE_URL=https://instagram-marketing-backend-v2.onrender.com/api
-VITE_API_URL=https://api.myservice.com
-
-# OpenAI API設定
-VITE_OPENAI_API_KEY=sk-your-actual-openai-api-key-here
-OPENAI_API_KEY=sk-your-actual-openai-api-key-here
-
-# PWA設定
-VITE_APP_NAME=Instagram Marketing App
-VITE_APP_DESCRIPTION=AIがあなたのSNS投稿を分析し、最適な投稿内容を提案するツール
-```
-
-### 3. Meta Developer Console設定
-
-#### 必須設定項目
-1. **Facebook Login for Business追加**
-2. **Valid OAuth redirect URIs**:
-   ```
-   開発環境: http://localhost:3001/auth/facebook/callback
-   本番環境: https://instagram-marketing-app.vercel.app/auth/facebook/callback
-   ```
-
-#### 必要な権限
-- `instagram_basic`
-- `instagram_content_publish`
-- `instagram_manage_comments`
-- `instagram_manage_insights`
-- `pages_show_list`
-- `pages_read_engagement`
-
-## 🔧 技術スタック
-
-### フロントエンド
-- **React 18** + **TypeScript**
-- **Vite** (ビルドツール)
-- **Zustand** (状態管理)
-- **React Router** (ルーティング)
-- **Tailwind CSS** (スタイリング)
-- **PWA対応** (Service Worker + Manifest)
-
-### バックエンド
-- **Node.js** + **Express**
-- **MongoDB Atlas** (データベース)
-- **OpenAI API** (AI機能)
-- **Jest + Supertest** (テスト)
 
 ### デプロイ
-- **Vercel** (フロントエンド)
-- **Render** (バックエンド)
-- **GitHub Actions** (CI/CD)
+```bash
+# フロントエンド（Vercel）
+git push origin main
 
-## 📁 プロジェクト構造
-
-```
-instagram-marketing-app/
-├── src/
-│   ├── components/          # Reactコンポーネント
-│   │   ├── ThreadsPostCreator.tsx  # Threads投稿作成コンポーネント
-│   │   ├── ThreadsPostList.tsx     # Threads投稿一覧コンポーネント
-│   │   └── __tests__/              # ユニットテスト
-│   │       └── ThreadsPostCreator.test.tsx
-│   ├── pages/              # ページコンポーネント
-│   │   ├── Login.tsx       # ログインページ（Facebook Login for Business）
-│   │   ├── AuthCallback.tsx # 認証コールバック処理
-│   │   └── ThreadsManagement.tsx   # Threads管理ページ
-│   ├── store/              # Zustand状態管理
-│   │   └── useAppStore.ts  # アプリケーション状態
-│   └── services/           # APIサービス
-│       ├── authService.ts  # 認証サービス（ログステップ実装）
-│       └── threadsService.ts # Threads APIサービス
-├── server/
-│   └── routes/
-│       └── threads.ts      # Threads APIルーター
-├── tests/
-│   └── threadsApi.test.ts  # 統合テスト
-├── public/                 # 静的ファイル
-│   ├── manifest.json      # PWA Manifest
-│   ├── service-worker.js  # PWA Service Worker
-│   └── icons/             # PWAアイコン
-├── env.development         # 開発環境変数
-├── env.production          # 本番環境変数
-├── vercel.json            # Vercel設定
-├── jest.config.js         # Jest設定
-├── run-tests.sh           # 本番テストスクリプト
-└── README.md              # プロジェクトドキュメント
+# バックエンド（Render.com）
+# 自動デプロイ（mainブランチへのプッシュで自動実行）
 ```
 
-## 🔐 認証フロー
+## 📝 主要な修正履歴
 
-### Facebook Login for Business認証
+### 2025年8月5日
+- **TypeScriptファイル拡張子エラー修正**
+  - `server/routes/threads.ts` → `server/routes/threads.js` 変換
+  - Node.js本番環境での実行エラーを解消
+  - Render.comデプロイ成功
 
-1. **認証開始**
-   ```javascript
-   // Login.tsxでFacebook OAuth URL構築
-   const facebookAuthUrl = `https://www.facebook.com/v23.0/dialog/oauth?client_id=${facebookAppId}&display=page&extras=${encodeURIComponent('{"setup":{"channel":"IG_API_ONBOARDING"}}')}&redirect_uri=${encodeURIComponent(finalRedirectUri)}&response_type=token&scope=instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,pages_show_list,pages_read_engagement`;
-   ```
+### 2025年8月5日
+- **Instagram Graph API移行**
+  - Instagram Basic Display APIからGraph APIに移行
+  - Facebook OAuth設定の更新
+  - 環境変数の整理
 
-2. **トークン取得**
-   ```javascript
-   // AuthCallback.tsxでフラグメント（#）からトークン取得
-   const hash = window.location.hash.substring(1);
-   const urlParams = new URLSearchParams(hash);
-   const accessToken = urlParams.get('access_token');
-   const longLivedToken = urlParams.get('long_lived_token');
-   ```
+### 2025年8月5日
+- **環境変数設定の統一**
+  - Render.com環境変数の追加
+  - NextAuth設定の追加
+  - 本番環境での動作確認
 
-3. **Instagram Business Account取得**
-   ```javascript
-   // バックエンドAPIでPagesとInstagram Business Account取得
-   const pagesResponse = await fetch(`https://graph.facebook.com/v23.0/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${userAccessToken}`);
-   ```
+## 🔍 トラブルシューティング
 
-## 📝 ログステップ仕様
+### よくある問題と解決方法
 
-### 認証フローログ
+#### 1. TypeScriptファイル拡張子エラー
 ```
-📸 [AUTH STEP 1] Facebook Login for Business認証開始
-✅ [AUTH STEP 2] Facebook認証成功
-📸 [AUTH STEP 3] Instagram Media取得開始
-✅ [AUTH STEP 4] Instagram Media取得成功
+TypeError [ERR_UNKNOWN_FILE_EXTENSION]: Unknown file extension ".ts"
 ```
+**解決方法**: TypeScriptファイルをJavaScriptに変換
 
-### エラーハンドリングアクセス
-```
+#### 2. 環境変数読み込みエラー
+**解決方法**: `.env.production`ファイルの確認と更新
 
-## 🐛 トラブルシューティング
-
-### ✅ 解決済み問題
-
-#### SPAルーティング404エラー（解決済み）
-- **問題**: `/threads-management`などのルートに直接アクセスで404エラー
-- **解決**: vercel.jsonのrewrites設定で全ルートを`/index.html`にリダイレクト
-- **確認済み**: 本番環境で全ルートが正常に動作
-
-#### 投稿時間分析機能（実装完了）
-- **機能**: エンゲージメント率ベースのヒートマップ表示
-- **実装**: PostingTimeHeatmapコンポーネント、分析サービス
-- **確認済み**: モックデータで正常動作
-
-### Instagram連携404エラーチェックポイント
-
-1. **Meta Developer Console設定確認**
-   - Facebook Login for Businessが追加されているか
-   - Valid OAuth redirect URIsが正しく設定されているか
-   - 必要な権限が追加されているか
-
-2. **環境変数確認**
-   - `VITE_INSTAGRAM_APP_ID`が正しいか
-   - `VITE_INSTAGRAM_REDIRECT_URI`が正しいか
-
-3. **Vercel設定確認**
-   - `vercel.json`のルーティング設定が正しいか
-   - `/auth/facebook/callback`が`/`にルーティングされているか
-
-4. **ブラウザキャッシュクリア**
-   - 古い設定がキャッシュされている可能性
-
-### よくある問題
-
-- **「Invalid platform app」エラー**: App IDの不一致
-- **「URL blocked」エラー**: Meta Developer Consoleの設定不備
-- **「認証エラー」**: コールバックURLの設定ミス
+#### 3. デプロイ失敗
+**解決方法**: 
+1. ログの確認
+2. 環境変数の設定確認
+3. 依存関係の確認
 
 ## 📞 サポート
 
-### 緊急時の連絡先
-1. **HANDOVER_REPORT_20250730_FINAL.md**を確認
-2. **Meta Developer Console**設定を確認
-3. **環境変数**の整合性を確認
-4. **ログステップ**で問題を特定
-
-### 参考資料
-- [Facebook Login for Business Documentation](https://developers.facebook.com/docs/instagram-basic-display-api/guides/getting-started)
-- [Meta Developer Console](https://developers.facebook.com/)
-- [Vercel Documentation](https://vercel.com/docs)
-
-## 📊 本番環境動作確認結果（2025-08-03）
-
-### ✅ SPAルーティング確認済み
-- `/threads-management` → ✅ 200 OK
-- `/posting-time-analysis` → ✅ 200 OK  
-- `/non-existent-route` → ✅ 200 OK（SPA NotFound表示）
-- `/auth/facebook/callback` → ✅ 200 OK
-
-### ✅ PWA機能確認済み
-- manifest.json → ✅ 正常配信
-- service-worker.js → ✅ 正常配信
-- ホーム画面追加可能 → ✅ 確認済み
-
-### ✅ 新機能確認済み
-- 投稿時間分析ヒートマップ → ✅ 動作確認済み
-- 最適投稿時間推奨 → ✅ 動作確認済み
+問題が発生した場合は、以下を確認してください：
+1. Render.comのログ
+2. Vercelのデプロイログ
+3. ブラウザのコンソールエラー
+4. 環境変数の設定状況
 
 ---
 
-**このプロジェクトはFacebook Login for Businessを使用してInstagram Business Accountと連携します。Meta Developer Consoleの設定が重要です。**
-
-**🎉 本番環境デプロイ完了・全機能動作確認済み**
+**最終更新**: 2025年8月5日  
+**バージョン**: 1.0.0  
+**ステータス**: 本番稼働中 ✅
