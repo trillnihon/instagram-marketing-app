@@ -67,8 +67,10 @@ if (process.env.NODE_ENV === 'production') {
 logger.info('環境:', process.env.NODE_ENV || 'development');
 logger.info('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '読み込み成功' : '未設定');
 logger.info('デモモード:', process.env.DEMO_MODE === 'true' ? '有効' : '無効');
-logger.info('FACEBOOK_APP_ID:', process.env.FACEBOOK_APP_ID || '未設定（デフォルト値使用）');
-logger.info('FACEBOOK_APP_SECRET:', process.env.FACEBOOK_APP_SECRET ? '読み込み成功' : '未設定（デフォルト値使用）');
+logger.info('FACEBOOK_APP_ID:', process.env.FACEBOOK_APP_ID || process.env.FACEBOOK_CLIENT_ID || '未設定（デフォルト値使用）');
+logger.info('FACEBOOK_APP_SECRET:', (process.env.FACEBOOK_APP_SECRET || process.env.FACEBOOK_CLIENT_SECRET) ? '読み込み成功' : '未設定（デフォルト値使用）');
+logger.info('NEXTAUTH_URL:', process.env.NEXTAUTH_URL || '未設定');
+logger.info('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? '読み込み成功' : '未設定');
 
 const app = express();
 const DEFAULT_PORT = parseInt(process.env.PORT, 10) || 4000;
@@ -101,8 +103,8 @@ const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SEC
 }) : null;
 
 // Facebook API設定（フロントエンドと統一）
-const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || '1003724798254754';
-const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || 'fd6a61c31a9f1f5798b4d48a927d8f0c';
+const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || process.env.FACEBOOK_CLIENT_ID || '1003724798254754';
+const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || process.env.FACEBOOK_CLIENT_SECRET || 'fd6a61c31a9f1f5798b4d48a927d8f0c';
 const REDIRECT_URI = 'https://localhost:3000/auth/callback';
 
 // インメモリユーザーストア（本番ではDBを使用）
