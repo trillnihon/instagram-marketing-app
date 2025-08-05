@@ -52,7 +52,7 @@ import authRouter from './authRouter.js';
 import analysisHistoryRouter from './routes/analysisHistory.js';
 import { User } from './models/User.js';
 import { authenticateToken } from './middleware/auth.js';
-import threadsRouter from './routes/threads.js';
+import threadsRouter from './routes/threads.ts';
 // 環境変数の読み込み
 if (process.env.NODE_ENV === 'production') {
   dotenv.config({ path: '.env.production' });
