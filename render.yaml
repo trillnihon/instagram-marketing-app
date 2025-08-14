@@ -35,7 +35,7 @@ services:
       - key: INSTAGRAM_GRAPH_API_VERSION
         value: v19.0
       - key: FB_REDIRECT_URI
-        value: https://instagram-marketing-80snujbla-trillnihons-projects.vercel.app/auth/instagram/callback
+        value: https://instagram-marketing-5nbzao3xp-trillnihons-projects.vercel.app/auth/instagram/callback
       - key: FB_PAGE_ID
         value: 736448266214336
       - key: RATE_LIMIT_WINDOW_MS
