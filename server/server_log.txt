@@ -1,0 +1,15 @@
+
+> instagram-marketing-server@1.0.0 dev
+> node --watch server.js
+
+2025-08-07 14:10:00 [[32minfo[39m]: 環境:
+2025-08-07 14:10:00 [[32minfo[39m]: OPENAI_API_KEY:
+2025-08-07 14:10:00 [[32minfo[39m]: デモモード:
+2025-08-07 14:10:00 [[32minfo[39m]: FACEBOOK_APP_ID:
+2025-08-07 14:10:00 [[32minfo[39m]: FACEBOOK_APP_SECRET:
+2025-08-07 14:10:00 [[32minfo[39m]: NEXTAUTH_URL:
+2025-08-07 14:10:00 [[32minfo[39m]: NEXTAUTH_SECRET:
+⚠️ MongoDBなしでデモモードで動作します
+2025-08-07 14:10:00 [[32minfo[39m]: MongoDB接続状態: デモモード
+✅ サーバー起動成功: http://localhost:4000
+MongoDB接続状態: デモモード

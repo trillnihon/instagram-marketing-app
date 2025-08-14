@@ -3,10 +3,10 @@ import OpenAI from 'openai';
 
 const router = express.Router();
 
-// OpenAIクライアントの初期化
-const openai = new OpenAI({
+// OpenAIクライアントの初期化（APIキーがある場合のみ）
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
-});
+}) : null;
 
 // 分析テンプレート
 const analysisTemplates = {
@@ -109,24 +109,45 @@ router.post('/analyze-url', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    // OpenAI API呼び出し
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: selectedTemplate.system
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      max_tokens: 1500,
-      temperature: 0.7
-    });
+    // OpenAI API呼び出し（デモモード対応）
+    let analysisContent;
+    if (!openai) {
+      console.log('OpenAI APIキーが設定されていません。デモモードで動作します。');
+      analysisContent = `デモモード: ${url} の分析結果
 
-    const analysisContent = completion.choices[0].message.content;
+1. 推定エンゲージメント率とその理由
+推定エンゲージメント率: 4.5%
+理由: ハッシュタグの使用が適切で、視覚的に魅力的な投稿
+
+2. 投稿スタイルの特徴
+ビジュアル重視の投稿スタイルで、ブランドの一貫性が保たれています。
+
+3. ハッシュタグの改善案
+より具体的で関連性の高いハッシュタグを追加することをお勧めします。
+
+4. CTA（行動喚起）の最適化案
+明確な行動喚起を含めることで、エンゲージメント率の向上が期待できます。
+
+5. 総合評価と改善ポイント
+全体的に良好な投稿ですが、CTAの強化とハッシュタグの最適化でさらなる改善が可能です。`;
+    } else {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: selectedTemplate.system
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.7
+      });
+      analysisContent = completion.choices[0].message.content;
+    }
     
     // レスポンスを構造化
     const structuredResult = structureResponse(analysisContent);

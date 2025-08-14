@@ -15,7 +15,7 @@ const https = require('https');
 class InstagramConnectionTester {
   constructor(accessToken) {
     this.accessToken = accessToken;
-    this.baseUrl = 'https://graph.facebook.com/v18.0';
+    this.baseUrl = 'https://graph.facebook.com/v19.0';
   }
 
   // HTTPリクエストを実行

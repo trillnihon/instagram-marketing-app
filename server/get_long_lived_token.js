@@ -1,140 +1,173 @@
-import axios from 'axios';
-import dotenv from 'dotenv';
+#!/usr/bin/env node
 
-dotenv.config();
+/**
+ * Instagram Marketing App - 長期トークン管理ラッパー
+ * 
+ * このファイルは新しいTypeScriptスクリプト (scripts/refresh-long-lived-token.ts) の
+ * ラッパーとして機能します。既存のコードとの互換性を保ちながら、
+ * 新しい機能を利用できます。
+ * 
+ * 使用方法:
+ *   node get_long_lived_token.js <short_lived_token> [--refresh] [--dry-run] [--report]
+ */
 
-// Facebook API設定
-const FACEBOOK_APP_ID = '1003724798254754';
-const FACEBOOK_APP_SECRET = 'fd6a61c31a9f1f5798b4d48a927d8f0c';
+import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import fs from 'fs';
 
-async function getLongLivedToken(shortLivedToken) {
-  console.log('🔄 長期アクセストークンを取得中...\n');
-  
-  try {
-    // 短期トークンを長期トークンに変換
-    const response = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
-      params: {
-        grant_type: 'fb_exchange_token',
-        client_id: FACEBOOK_APP_ID,
-        client_secret: FACEBOOK_APP_SECRET,
-        fb_exchange_token: shortLivedToken
-      }
-    });
-    
-    const longLivedToken = response.data.access_token;
-    const expiresIn = response.data.expires_in;
-    const expiresAt = new Date(Date.now() + expiresIn * 1000);
-    
-    console.log('✅ 長期アクセストークン取得成功！');
-    console.log('='.repeat(50));
-    console.log(`🔑 長期アクセストークン: ${longLivedToken}`);
-    console.log(`⏰ 有効期限: ${expiresIn}秒 (約${Math.floor(expiresIn / 86400)}日)`);
-    console.log(`📅 期限日時: ${expiresAt.toLocaleString('ja-JP')}`);
-    console.log('='.repeat(50));
-    
-    // トークンの詳細情報を取得
-    console.log('\n🔍 トークン詳細情報を取得中...');
-    const tokenInfo = await axios.get('https://graph.facebook.com/debug_token', {
-      params: {
-        input_token: longLivedToken,
-        access_token: `${FACEBOOK_APP_ID}|${FACEBOOK_APP_SECRET}`
-      }
-    });
-    
-    const info = tokenInfo.data.data;
-    console.log('📊 トークン情報:');
-    console.log(`   アプリID: ${info.app_id}`);
-    console.log(`   ユーザーID: ${info.user_id}`);
-    console.log(`   有効: ${info.is_valid ? '✅ YES' : '❌ NO'}`);
-    console.log(`   スコープ: ${info.scopes.join(', ')}`);
-    console.log(`   タイプ: ${info.type}`);
-    
-    // ファイルに保存
-    const fs = await import('fs');
-    const tokenData = {
-      access_token: longLivedToken,
-      expires_in: expiresIn,
-      expires_at: expiresAt.toISOString(),
-      user_id: info.user_id,
-      app_id: info.app_id,
-      scopes: info.scopes,
-      created_at: new Date().toISOString()
-    };
-    
-    fs.writeFileSync('long_lived_token.json', JSON.stringify(tokenData, null, 2));
-    console.log('\n💾 トークン情報を long_lived_token.json に保存しました');
-    
-    return {
-      success: true,
-      token: longLivedToken,
-      expiresAt: expiresAt,
-      info: info
-    };
-    
-  } catch (error) {
-    console.error('❌ 長期アクセストークン取得エラー:', error.response?.data || error.message);
-    return {
-      success: false,
-      error: error.response?.data || error.message
-    };
-  }
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-async function refreshLongLivedToken(currentToken) {
-  console.log('🔄 長期アクセストークンを更新中...\n');
-  
-  try {
-    const response = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
-      params: {
-        grant_type: 'fb_exchange_token',
-        client_id: FACEBOOK_APP_ID,
-        client_secret: FACEBOOK_APP_SECRET,
-        fb_exchange_token: currentToken
-      }
-    });
-    
-    const newToken = response.data.access_token;
-    const expiresIn = response.data.expires_in;
-    const expiresAt = new Date(Date.now() + expiresIn * 1000);
-    
-    console.log('✅ トークン更新成功！');
-    console.log(`🔑 新しいトークン: ${newToken}`);
-    console.log(`⏰ 有効期限: ${expiresIn}秒 (約${Math.floor(expiresIn / 86400)}日)`);
-    console.log(`📅 期限日時: ${expiresAt.toLocaleString('ja-JP')}`);
-    
-    return {
-      success: true,
-      token: newToken,
-      expiresAt: expiresAt
-    };
-    
-  } catch (error) {
-    console.error('❌ トークン更新エラー:', error.response?.data || error.message);
-    return {
-      success: false,
-      error: error.response?.data || error.message
-    };
-  }
-}
+// 新しいTypeScriptスクリプトのパス
+const SCRIPT_PATH = join(__dirname, '..', 'scripts', 'refresh-long-lived-token.ts');
 
-// 使用方法
-console.log('長期アクセストークン取得ツール');
-console.log('使用方法:');
-console.log('  1. 新しい長期トークンを取得: node get_long_lived_token.js <short_lived_token>');
-console.log('  2. 既存トークンを更新: node get_long_lived_token.js --refresh <current_token>');
-console.log('');
-
-if (process.argv.length < 3) {
-  console.log('短期アクセストークンを指定してください');
-  console.log('例: node get_long_lived_token.js EAAOQ4eQNXqIBP...');
+// スクリプトが存在するかチェック
+if (!fs.existsSync(SCRIPT_PATH)) {
+  console.error('❌ 新しいスクリプトが見つかりません:', SCRIPT_PATH);
+  console.error('scripts/refresh-long-lived-token.ts を確認してください');
   process.exit(1);
 }
 
-const token = process.argv[2];
-const isRefresh = process.argv.includes('--refresh');
+// コマンドライン引数の解析
+const args = process.argv.slice(2);
+const shortToken = args[0];
+const isRefresh = args.includes('--refresh');
+const isDryRun = args.includes('--dry-run');
+const isReport = args.includes('--report');
 
-if (isRefresh) {
-  refreshLongLivedToken(token);
-} else {
-  getLongLivedToken(token);
-} 
+// 引数チェック
+if (!shortToken && !isRefresh) {
+  console.log('長期アクセストークン取得ツール (新バージョン)');
+  console.log('');
+  console.log('使用方法:');
+  console.log('  1. 新しい長期トークンを取得: node get_long_lived_token.js <short_lived_token>');
+  console.log('  2. 既存トークンを更新: node get_long_lived_token.js --refresh');
+  console.log('  3. ドライラン: node get_long_lived_token.js --refresh --dry-run');
+  console.log('  4. レポート付き: node get_long_lived_token.js --refresh --report');
+  console.log('');
+  console.log('注意: このファイルは scripts/refresh-long-lived-token.ts のラッパーです');
+  console.log('新しい機能を使用するには、直接TypeScriptスクリプトを実行してください:');
+  console.log('  npm run token:refresh');
+  console.log('  npm run token:rotate-now');
+  console.log('');
+  
+  if (!shortToken) {
+    console.log('短期アクセストークンを指定してください');
+    console.log('例: node get_long_lived_token.js EAAOQ4eQNXqIBP...');
+    process.exit(1);
+  }
+}
+
+// 環境変数ファイルに短期トークンを設定
+function setShortTokenInEnv(token) {
+  try {
+    const envPath = join(__dirname, '..', 'env.development');
+    
+    if (!fs.existsSync(envPath)) {
+      console.error('❌ 環境変数ファイルが見つかりません:', envPath);
+      return false;
+    }
+    
+    let envContent = fs.readFileSync(envPath, 'utf8');
+    
+    // 既存のFB_USER_SHORT_TOKENを更新
+    if (envContent.includes('FB_USER_SHORT_TOKEN=')) {
+      envContent = envContent.replace(
+        /FB_USER_SHORT_TOKEN=.*/,
+        `FB_USER_SHORT_TOKEN=${token}`
+      );
+    } else {
+      // 存在しない場合は追加
+      envContent += `\nFB_USER_SHORT_TOKEN=${token}`;
+    }
+    
+    fs.writeFileSync(envPath, envContent);
+    console.log('✅ 短期トークンを環境変数ファイルに設定しました');
+    return true;
+  } catch (error) {
+    console.error('❌ 環境変数ファイル更新に失敗:', error.message);
+    return false;
+  }
+}
+
+// TypeScriptスクリプトを実行
+function runTypeScriptScript() {
+  const scriptArgs = [];
+  
+  if (isRefresh) {
+    scriptArgs.push('--rotate-now');
+  }
+  
+  if (isDryRun) {
+    scriptArgs.push('--dry-run');
+  }
+  
+  if (isReport) {
+    scriptArgs.push('--report');
+  }
+  
+  console.log('🚀 新しいTypeScriptスクリプトを実行中...');
+  console.log(`スクリプト: ${SCRIPT_PATH}`);
+  console.log(`引数: ${scriptArgs.join(' ')}`);
+  console.log('');
+  
+  // tsxを使用してTypeScriptスクリプトを実行
+  const child = spawn('npx', ['tsx', SCRIPT_PATH, ...scriptArgs], {
+    stdio: 'inherit',
+    cwd: join(__dirname, '..')
+  });
+  
+  child.on('close', (code) => {
+    console.log('');
+    console.log(`スクリプトが終了しました (終了コード: ${code})`);
+    
+    if (code === 0) {
+      console.log('✅ スクリプトが正常に完了しました');
+    } else {
+      console.log('❌ スクリプトがエラーで終了しました');
+      process.exit(code);
+    }
+  });
+  
+  child.on('error', (error) => {
+    console.error('❌ スクリプト実行エラー:', error.message);
+    console.error('');
+    console.error('tsxがインストールされていない可能性があります:');
+    console.error('  npm install -g tsx');
+    console.error('  または');
+    console.error('  npm install --save-dev tsx');
+    process.exit(1);
+  });
+}
+
+// メイン処理
+async function main() {
+  console.log('🔄 Instagram Marketing App - 長期トークン管理');
+  console.log('='.repeat(60));
+  
+  if (shortToken) {
+    console.log('📝 短期トークンを環境変数ファイルに設定中...');
+    if (!setShortTokenInEnv(shortToken)) {
+      process.exit(1);
+    }
+    console.log('');
+  }
+  
+  if (isRefresh) {
+    console.log('🔄 トークン更新モード');
+  } else if (shortToken) {
+    console.log('🆕 新規トークン取得モード');
+  }
+  
+  console.log('');
+  
+  // TypeScriptスクリプトを実行
+  runTypeScriptScript();
+}
+
+// スクリプト実行
+main().catch((error) => {
+  console.error('❌ 予期しないエラーが発生しました:', error.message);
+  process.exit(1);
+}); 

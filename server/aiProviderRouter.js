@@ -2,10 +2,12 @@ import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 dotenv.config();
-// OpenAIクライアントの初期化
-const openai = new OpenAI({
+
+// OpenAIクライアントの初期化（APIキーがある場合のみ）
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
-});
+}) : null;
+
 // Geminiクライアントの初期化
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 // AIプロバイダー決定ロジック
@@ -18,6 +20,16 @@ function getDefaultProvider() {
 }
 // OpenAI GPT-3.5/GPT-4で分析
 async function analyzeWithOpenAI(caption, model) {
+    // OpenAI APIキーが設定されていない場合はデモモード
+    if (!openai) {
+        console.log('OpenAI APIキーが設定されていません。デモモードで動作します。');
+        return {
+            score: 75,
+            reasons: ['デモモード: AI分析が完了しました'],
+            suggestions: ['キャプションの改善を検討してください']
+        };
+    }
+
     const prompt = `
 以下のInstagram投稿のキャプションを分析し、スコア（0-100）、評価理由、改善提案を提供してください。
 

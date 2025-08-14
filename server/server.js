@@ -1,3 +1,9 @@
+// exit-watchdogを最初にimport（副作用ロード）
+import { patchHttpServer } from './utils/exit-watchdog.js';
+
+// express-async-errorsをimport（asyncルートの例外を捕捉）
+import 'express-async-errors';
+
 import express from 'express';
 import session from 'express-session';
 import axios from 'axios';
@@ -15,6 +21,42 @@ import 'winston-daily-rotate-file';
 import { fileURLToPath } from 'url';
 import detect from 'detect-port';
 import { analyzePost } from './aiProviderRouter.js';
+
+// ESM対応の__dirname再現
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 起動デバッグ開始
+console.log('[BOOT] step1: ESM __dirname設定完了');
+
+// グローバルエラーハンドラ追加
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  console.error('Stack trace:', err.stack);
+  console.error('[EXIT-GUARD] uncaughtException経路でprocess.exit(1)を実行');
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('Stack trace:', reason?.stack);
+  console.error('[EXIT-GUARD] unhandledRejection経路でprocess.exit(1)を実行');
+  process.exit(1);
+});
+
+console.log('[BOOT] step2: グローバルエラーハンドラ設定完了');
+
+// 環境変数ファイルの存在確認と読み込み
+const envPath = path.resolve(__dirname, 'env.development');
+const envExists = fs.existsSync(envPath);
+console.log('[BOOT] step3: env.development存在確認:', envExists ? '存在' : '不存在');
+
+if (envExists) {
+  dotenv.config({ path: envPath });
+  console.log('[BOOT] step4: env.development読み込み完了');
+} else {
+  console.log('[BOOT] step4: env.development読み込みスキップ（ファイル不存在）');
+}
 
 // MongoDB非推奨警告を抑制
 process.env.MONGODB_SUPPRESS_DEPRECATION_WARNINGS = 'true';
@@ -53,15 +95,23 @@ import analysisHistoryRouter from './routes/analysisHistory.js';
 import { User } from './models/User.js';
 import { authenticateToken } from './middleware/auth.js';
 import threadsRouter from './routes/threads.js';
+import instagramApiRouter from './routes/instagram-api.js';
 // 環境変数の読み込み
 if (process.env.NODE_ENV === 'production') {
-  dotenv.config({ path: '.env.production' });
+  dotenv.config({ path: path.join(__dirname, '.env.production') });
 } else {
-  dotenv.config();
+  // 開発環境では明示的にenv.developmentを読み込み
+  dotenv.config({ path: path.join(__dirname, 'env.development') });
   // 開発環境でMONGODB_URIが設定されていない場合はデモモード
   if (!process.env.MONGODB_URI) {
     process.env.DEMO_MODE = 'true';
   }
+}
+
+// DEV_NO_EXIT ガード設定
+const DEV_NO_EXIT = process.env.DEV_NO_EXIT === 'true';
+if (DEV_NO_EXIT) {
+  console.log('[DEV-GUARD] DEV_NO_EXIT=true: サーバー終了を無効化');
 }
 
 logger.info('環境:', process.env.NODE_ENV || 'development');
@@ -77,16 +127,29 @@ const DEFAULT_PORT = parseInt(process.env.PORT, 10) || 4000;
 
 // MongoDB接続（デモモード対応）
 let mongoConnected = false;
-connectDB().then(connected => {
+connectDB().then(async connected => {
   mongoConnected = connected;
   logger.info(`MongoDB接続状態: ${connected ? '接続済み' : 'デモモード'}`);
+  
+  // MongoDB接続イベントを監視
+  if (connected) {
+    const mongoose = await import('mongoose');
+    mongoose.connection.on('connected', () => {
+      console.log('[MONGODB] connected イベント');
+    });
+    mongoose.connection.on('error', (err) => {
+      console.error('[MONGODB] error イベント:', err);
+    });
+    mongoose.connection.on('disconnected', () => {
+      console.log('[MONGODB] disconnected イベント');
+    });
+  }
 }).catch(error => {
   logger.info('MongoDB接続状態: デモモード');
   mongoConnected = false;
 });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
 
 // HTTPS証明書の読み込み（一時的にコメントアウト）
 // const key = fs.readFileSync('./localhost-key.pem');
@@ -121,7 +184,12 @@ if (process.env.NODE_ENV === 'production') {
     logger.info('✅ JWTシークレット強度チェック完了');
   } catch (error) {
     logger.error('❌ JWTシークレット強度チェック失敗:', error.message);
-    process.exit(1);
+    if (!DEV_NO_EXIT) {
+      console.error('[EXIT-GUARD] JWTシークレット強度チェック失敗経路でprocess.exit(1)を実行');
+      process.exit(1);
+    } else {
+      console.log('[DEV-GUARD] DEV_NO_EXIT=true: JWTシークレット強度チェック失敗でも終了しない');
+    }
   }
 }
 
@@ -195,8 +263,34 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    mongoConnected: mongoConnected
+    environment: process.env.NODE_ENV || 'development',
+    mongodb: mongoConnected ? 'connected' : 'demo_mode'
+  });
+});
+
+// 管理者用トークン情報エンドポイント
+app.get('/admin/token/current', authenticateToken, (req, res) => {
+  // 管理者権限チェック
+  if (!req.user || !req.user.isAdmin) {
+    return res.status(403).json({ error: '管理者権限が必要です' });
+  }
+
+  // 環境変数からトークン情報を取得（マスク済み）
+  const tokenInfo = {
+    hasAppId: !!process.env.FACEBOOK_APP_ID,
+    hasAppSecret: !!process.env.FACEBOOK_APP_SECRET,
+    hasShortToken: !!process.env.FB_USER_SHORT_TOKEN,
+    hasLongToken: !!process.env.FB_USER_OR_LL_TOKEN,
+    tokenPreview: process.env.FB_USER_OR_LL_TOKEN ? 
+      `${process.env.FB_USER_OR_LL_TOKEN.substring(0, 8)}...${process.env.FB_USER_OR_LL_TOKEN.substring(process.env.FB_USER_OR_LL_TOKEN.length - 4)}` : 
+      null,
+    lastUpdated: new Date().toISOString(),
+    mongodbStatus: mongoConnected ? 'connected' : 'demo_mode'
+  };
+
+  res.json({
+    success: true,
+    data: tokenInfo
   });
 });
 
@@ -306,7 +400,7 @@ app.get('/health', (req, res) => {
 app.get('/auth/start', (req, res) => {
   const state = Math.random().toString(36).slice(2);
   req.session.oauthState = state;
-  const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=public_profile,email,instagram_basic,instagram_manage_insights&response_type=code&state=${state}`;
+        const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=public_profile,email,instagram_basic,instagram_manage_insights&response_type=code&state=${state}`;
   res.redirect(authUrl);
 });
 
@@ -317,10 +411,10 @@ app.get('/auth/instagram', (req, res) => {
   
   // 本番環境と開発環境でリダイレクトURIを切り替え
   const redirectUri = process.env.NODE_ENV === 'production' 
-    ? 'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app/auth/instagram/callback'
-    : 'https://localhost:4000/auth/instagram/callback';
+    ? 'https://instagram-marketing-app.vercel.app/auth/instagram/callback'
+    : 'http://localhost:3001/auth/instagram/callback';
     
-  const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=public_profile,email,instagram_basic,instagram_manage_insights,pages_show_list,pages_read_engagement&response_type=code&state=${state}`;
+  const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=instagram_basic,instagram_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement,public_profile,email&response_type=code&state=${state}`;
   res.redirect(authUrl);
 });
 
@@ -365,7 +459,7 @@ app.get('/auth/callback', async (req, res) => {
   // state検証OK、アクセストークン取得
   try {
     console.log('[DEBUG] Facebookアクセストークン取得開始');
-    const tokenRes = await axios.post(`https://graph.facebook.com/v18.0/oauth/access_token`, null, {
+    const tokenRes = await axios.post(`https://graph.facebook.com/v19.0/oauth/access_token`, null, {
       params: {
         client_id: FACEBOOK_APP_ID,
         client_secret: FACEBOOK_APP_SECRET,
@@ -380,7 +474,7 @@ app.get('/auth/callback', async (req, res) => {
     
     // Facebookページ一覧取得
     console.log('[DEBUG] Facebookページ一覧取得開始');
-    const pagesRes = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
+    const pagesRes = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
       params: {
         access_token: accessToken,
         fields: 'id,name,instagram_business_account'
@@ -424,7 +518,7 @@ app.get('/auth/callback', async (req, res) => {
     }
     
     // ユーザー情報を取得
-    const userInfoRes = await axios.get('https://graph.facebook.com/v18.0/me', {
+    const userInfoRes = await axios.get('https://graph.facebook.com/v19.0/me', {
       params: {
         access_token: accessToken,
         fields: 'id,name,email'
@@ -512,7 +606,7 @@ app.get('/auth/instagram/callback', async (req, res) => {
       ? 'https://instagram-marketing-app.vercel.app/auth/instagram/callback'
       : 'https://localhost:4000/auth/instagram/callback';
       
-    const tokenRes = await axios.post(`https://graph.facebook.com/v18.0/oauth/access_token`, null, {
+    const tokenRes = await axios.post(`https://graph.facebook.com/v19.0/oauth/access_token`, null, {
       params: {
         client_id: FACEBOOK_APP_ID,
         client_secret: FACEBOOK_APP_SECRET,
@@ -527,7 +621,7 @@ app.get('/auth/instagram/callback', async (req, res) => {
     console.log('[DEBUG] Instagram認証 - ユーザーID:', userId);
     
     // 長期トークンに交換
-    const longLivedTokenRes = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+    const longLivedTokenRes = await axios.get('https://graph.facebook.com/v19.0/oauth/access_token', {
       params: {
         grant_type: 'fb_exchange_token',
         client_id: FACEBOOK_APP_ID,
@@ -667,16 +761,16 @@ app.post('/auth/instagram/callback', async (req, res) => {
     
     logStep(9, 'リダイレクトURI設定完了', { redirectUri });
     
-    // Instagram Graph APIのアクセストークン取得
-    logStep(10, 'Instagram Graph API アクセストークン取得開始');
-    const tokenRes = await axios.post(`https://graph.facebook.com/v18.0/oauth/access_token`, null, {
-      params: {
-        client_id: FACEBOOK_APP_ID,
-        client_secret: FACEBOOK_APP_SECRET,
-        redirect_uri: redirectUri,
-        code
-      }
-    });
+      // Instagram Graph APIのアクセストークン取得
+  logStep(10, 'Instagram Graph API アクセストークン取得開始');
+  const tokenRes = await axios.post(`https://graph.facebook.com/v19.0/oauth/access_token`, null, {
+    params: {
+      client_id: FACEBOOK_APP_ID,
+      client_secret: FACEBOOK_APP_SECRET,
+      redirect_uri: redirectUri,
+      code
+    }
+  });
     
     const accessToken = tokenRes.data.access_token;
     const userId = tokenRes.data.user_id;
@@ -689,7 +783,7 @@ app.post('/auth/instagram/callback', async (req, res) => {
     
     // 長期トークンに交換
     logStep(12, '長期トークン交換開始');
-    const longLivedTokenRes = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+    const longLivedTokenRes = await axios.get('https://graph.facebook.com/v19.0/oauth/access_token', {
       params: {
         grant_type: 'fb_exchange_token',
         client_id: FACEBOOK_APP_ID,
@@ -707,7 +801,7 @@ app.post('/auth/instagram/callback', async (req, res) => {
     
     // Instagram Graph APIでFacebookページとInstagramビジネスアカウントを取得
     logStep(14, 'Facebookページ一覧取得開始');
-    const pagesRes = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
+    const pagesRes = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
       params: {
         access_token: accessToken,
         fields: 'id,name,instagram_business_account{id,username,media_count}'
@@ -786,7 +880,7 @@ app.post('/auth/instagram/callback', async (req, res) => {
     
     // 投稿データ取得（最新5件）
     logStep(19, 'Instagram投稿データ取得開始');
-    const mediaRes = await axios.get(`https://graph.facebook.com/v18.0/${instagramBusinessAccount.id}/media`, {
+    const mediaRes = await axios.get(`https://graph.facebook.com/v19.0/${instagramBusinessAccount.id}/media`, {
       params: {
         access_token: accessToken,
         fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
@@ -821,17 +915,44 @@ app.post('/auth/instagram/callback', async (req, res) => {
     });
     
   } catch (err) {
+    // Graph API v19.0 エラーハンドリング改善
+    const errorCode = err.response?.data?.error?.code;
+    const errorSubcode = err.response?.data?.error?.error_subcode;
+    const fbtraceId = err.response?.data?.error?.fbtrace_id;
+    
     logStep(22, 'Instagram認証処理でエラー発生', {
       error: err.response?.data || err.message,
-      status: err.response?.status
+      status: err.response?.status,
+      errorCode,
+      errorSubcode,
+      fbtraceId
     });
+    
     const debugInfo = {
       error: err.response?.data || err.message,
+      errorCode,
+      errorSubcode,
+      fbtraceId,
       stack: err.stack
     };
+    
     console.error('[ERROR] Instagram認証 POST 失敗:', debugInfo);
+    
+    // Graph API エラーコード別の詳細メッセージ
+    let errorMessage = 'Instagram認証失敗';
+    if (errorCode === 190) {
+      errorMessage = 'アクセストークンが無効です。再認証が必要です。';
+    } else if (errorCode === 191) {
+      errorMessage = 'リダイレクトURIが許可されていません。Facebook設定を確認してください。';
+    } else if (errorCode === 10 || errorCode === 4) {
+      errorMessage = 'APIレート制限または権限不足です。しばらく待ってから再試行してください。';
+    }
+    
     return res.status(500).json({ 
-      error: 'Instagram認証失敗', 
+      error: errorMessage,
+      errorCode,
+      errorSubcode,
+      fbtraceId,
       debug: debugInfo 
     });
   }
@@ -847,7 +968,7 @@ app.get('/api/instagram/posts/:userId', async (req, res) => {
   }
   
   try {
-    const mediaRes = await axios.get(`https://graph.facebook.com/v18.0/${instagram_business_account_id}/media`, {
+    const mediaRes = await axios.get(`https://graph.facebook.com/v19.0/${instagram_business_account_id}/media`, {
       params: {
         access_token: access_token,
         fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
@@ -861,9 +982,23 @@ app.get('/api/instagram/posts/:userId', async (req, res) => {
     });
     
   } catch (err) {
-    console.error('[ERROR] Instagram投稿データ取得失敗:', err.response?.data || err.message);
+    // Graph API v19.0 エラーハンドリング改善
+    const errorCode = err.response?.data?.error?.code;
+    const errorSubcode = err.response?.data?.error?.error_subcode;
+    const fbtraceId = err.response?.data?.error?.fbtrace_id;
+    
+    console.error('[ERROR] Instagram投稿データ取得失敗:', {
+      error: err.response?.data || err.message,
+      errorCode,
+      errorSubcode,
+      fbtraceId
+    });
+    
     res.status(500).json({ 
       error: 'Instagram投稿データ取得失敗',
+      errorCode,
+      errorSubcode,
+      fbtraceId,
       debug: err.response?.data || err.message
     });
   }
@@ -879,7 +1014,7 @@ app.get('/api/instagram/insights/:mediaId', async (req, res) => {
   }
   
   try {
-    const insightsRes = await axios.get(`https://graph.facebook.com/v18.0/${mediaId}/insights`, {
+    const insightsRes = await axios.get(`https://graph.facebook.com/v19.0/${mediaId}/insights`, {
       params: {
         access_token: access_token,
         metric: 'impressions,reach,engagement,saved'
@@ -892,9 +1027,23 @@ app.get('/api/instagram/insights/:mediaId', async (req, res) => {
     });
     
   } catch (err) {
-    console.error('[ERROR] Instagramインサイト取得失敗:', err.response?.data || err.message);
+    // Graph API v19.0 エラーハンドリング改善
+    const errorCode = err.response?.data?.error?.code;
+    const errorSubcode = err.response?.data?.error?.error_subcode;
+    const fbtraceId = err.response?.data?.error?.fbtrace_id;
+    
+    console.error('[ERROR] Instagramインサイト取得失敗:', {
+      error: err.response?.data || err.message,
+      errorCode,
+      errorSubcode,
+      fbtraceId
+    });
+    
     res.status(500).json({ 
       error: 'Instagramインサイト取得失敗',
+      errorCode,
+      errorSubcode,
+      fbtraceId,
       debug: err.response?.data || err.message
     });
   }
@@ -1454,6 +1603,9 @@ app.use('/api/diagnostics', diagnosticsRouter);
 app.use('/api', urlAnalysisRouter);
 app.use('/threads/api', threadsRouter);
 
+// Instagram Graph APIルートを追加
+app.use('/api/instagram', instagramApiRouter);
+
 // AI分析APIエンドポイント
 app.post('/api/ai/analyze', async (req, res) => {
   try {
@@ -1602,7 +1754,7 @@ app.post('/api/instagram/posts', async (req, res) => {
     
     // 画像がある場合は先にアップロード
     if (image_url) {
-      const createMediaRes = await axios.post(`https://graph.facebook.com/v18.0/${instagram_business_account_id}/media`, {
+      const createMediaRes = await axios.post(`https://graph.facebook.com/v19.0/${instagram_business_account_id}/media`, {
         image_url: image_url,
         caption: caption || '',
         access_token: access_token
@@ -1612,7 +1764,7 @@ app.post('/api/instagram/posts', async (req, res) => {
       console.log('[DEBUG] メディア作成成功:', mediaId);
       
       // 投稿を公開
-      const publishRes = await axios.post(`https://graph.facebook.com/v18.0/${instagram_business_account_id}/media_publish`, {
+      const publishRes = await axios.post(`https://graph.facebook.com/v19.0/${instagram_business_account_id}/media_publish`, {
         creation_id: mediaId,
         access_token: access_token
       });
@@ -1630,7 +1782,7 @@ app.post('/api/instagram/posts', async (req, res) => {
       
     } else {
       // テキストのみの投稿
-      const createMediaRes = await axios.post(`https://graph.facebook.com/v18.0/${instagram_business_account_id}/media`, {
+      const createMediaRes = await axios.post(`https://graph.facebook.com/v19.0/${instagram_business_account_id}/media`, {
         caption: caption,
         access_token: access_token
       });
@@ -1639,7 +1791,7 @@ app.post('/api/instagram/posts', async (req, res) => {
       console.log('[DEBUG] テキスト投稿作成成功:', mediaId);
       
       // 投稿を公開
-      const publishRes = await axios.post(`https://graph.facebook.com/v18.0/${instagram_business_account_id}/media_publish`, {
+      const publishRes = await axios.post(`https://graph.facebook.com/v19.0/${instagram_business_account_id}/media_publish`, {
         creation_id: mediaId,
         access_token: access_token
       });
@@ -1688,7 +1840,7 @@ app.post('/api/instagram/schedule', async (req, res) => {
       caption: caption ? caption.substring(0, 50) + '...' : null
     });
     
-    const createMediaRes = await axios.post(`https://graph.facebook.com/v18.0/${instagram_business_account_id}/media`, {
+    const createMediaRes = await axios.post(`https://graph.facebook.com/v19.0/${instagram_business_account_id}/media`, {
       image_url: image_url,
       caption: caption || '',
       scheduled_publish_time: scheduled_publish_time,
@@ -3751,30 +3903,130 @@ app.post('/api/ai/generate-post', authenticateToken, async (req, res) => {
 process.on("uncaughtException", (err) => {
   console.error(`❌ Uncaught Exception: ${err.message}`);
   console.error('Stack trace:', err.stack);
+  console.error('Error details:', {
+    name: err.name,
+    message: err.message,
+    stack: err.stack,
+    code: err.code,
+    errno: err.errno
+  });
+  
+  // ログファイルにも記録
+  import('fs').then(fs => {
+    import('path').then(path => {
+      const logDir = path.join(process.cwd(), 'logs');
+      const logFile = path.join(logDir, 'crash.log');
+      
+      const logEntry = `[${new Date().toISOString()}] Uncaught Exception: ${err.message}\nStack: ${err.stack}\n\n`;
+      fs.appendFileSync(logFile, logEntry);
+    }).catch(logError => {
+      console.error('ログファイルへの書き込みに失敗:', logError);
+    });
+  }).catch(logError => {
+    console.error('ログファイルへの書き込みに失敗:', logError);
+  });
+  
   process.exit(1);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
   console.error(`❌ Unhandled Rejection at:`, promise, 'reason:', reason);
+  console.error('Rejection details:', {
+    reason: reason,
+    promise: promise,
+    stack: reason?.stack
+  });
+  
+  // ログファイルにも記録
+  import('fs').then(fs => {
+    import('path').then(path => {
+      const logDir = path.join(process.cwd(), 'logs');
+      const logFile = path.join(logDir, 'rejection.log');
+      
+      const logEntry = `[${new Date().toISOString()}] Unhandled Rejection: ${reason}\nPromise: ${promise}\nStack: ${reason?.stack}\n\n`;
+      fs.appendFileSync(logFile, logEntry);
+    }).catch(logError => {
+      console.error('ログファイルへの書き込みに失敗:', logError);
+    });
+  }).catch(logError => {
+    console.error('ログファイルへの書き込みに失敗:', logError);
+  });
 });
 
 // ポート検出とサーバー起動
-detect(DEFAULT_PORT).then(port => {
-  if (DEFAULT_PORT !== port) {
-    console.warn(`⚠️ ポート${DEFAULT_PORT}は使用中です。代わりにポート${port}で起動します。`);
-  }
+console.log('[BOOT] step5: サーバー起動プロセス開始...');
 
-  try {
-    app.listen(port, () => {
-      console.log(`✅ サーバー起動成功: http://localhost:${port}`);
-      console.log('MongoDB接続状態:', mongoConnected ? '接続済み' : 'デモモード');
-    }).on('error', (error) => {
+const port = process.env.PORT || DEFAULT_PORT;
+console.log(`🔍 使用ポート: ${port} (環境変数: ${process.env.PORT || '未設定'})`);
+
+// httpServerをグローバル変数で保持
+let httpServer = null;
+
+try {
+  console.log('📡 サーバーリスニング開始...');
+  
+  httpServer = app.listen(port, () => {
+    console.log(`[LISTEN] port=${port}`);
+    console.log(`✅ サーバー起動成功: http://localhost:${port}`);
+    console.log('MongoDB接続状態:', mongoConnected ? '接続済み' : 'デモモード');
+    console.log('🔧 環境:', process.env.NODE_ENV || 'development');
+    console.log('🎯 デモモード:', process.env.DEMO_MODE === 'true' ? '有効' : '無効');
+    
+    // httpServer.close をモンキーパッチ
+    patchHttpServer(httpServer);
+    
+    // 起動直後に自己テスト実行
+    setTimeout(async () => {
+      try {
+        const response = await fetch(`http://localhost:${port}/health`);
+        if (response.ok) {
+          console.log('[SELF-TEST] 成功: ヘルスチェックエンドポイント応答正常');
+        } else {
+          console.log('[SELF-TEST] 警告: ヘルスチェックエンドポイント応答異常', response.status);
+        }
+      } catch (error) {
+        console.log('[SELF-TEST] 失敗: ヘルスチェックエンドポイント接続不可', error.message);
+      }
+      // 重要: エラーでも起動継続、終了処理は絶対に呼ばない
+      console.log('[SELF-TEST] 自己テスト完了、サーバー起動継続');
+    }, 1000);
+  });
+    
+    // サーバーエラーハンドリング
+    httpServer.on('error', (error) => {
       console.error('❌ サーバー起動エラー:', error);
+      console.error('エラー詳細:', {
+        code: error.code,
+        errno: error.errno,
+        syscall: error.syscall,
+        address: error.address,
+        port: error.port
+      });
     });
+    
+    // サーバー接続ハンドリング
+    httpServer.on('connection', (socket) => {
+      console.log(`🔗 新しい接続: ${socket.remoteAddress}:${socket.remotePort}`);
+    });
+    
+    // サーバー終了ハンドリング
+    httpServer.on('close', () => {
+      console.log('[HTTP-SERVER] close イベント');
+      console.log('🔄 サーバーが終了しました');
+    });
+    
   } catch (err) {
     console.error('❌ サーバー起動失敗:', err);
+    console.error('エラー詳細:', {
+      name: err.name,
+      message: err.message,
+      stack: err.stack
+    });
+    if (!DEV_NO_EXIT) {
+      console.error('[EXIT-GUARD] サーバー起動失敗経路でprocess.exit(1)を実行');
+      process.exit(1);
+    } else {
+      console.log('[DEV-GUARD] DEV_NO_EXIT=true: サーバー起動失敗でも終了しない');
+    }
   }
-}).catch(err => {
-  console.error("❌ ポート検出エラー:", err);
-  process.exit(1);
-});
+

@@ -132,7 +132,7 @@ class FacebookDiagnostics {
     console.log('\n3️⃣ ユーザー情報を取得中...');
     
     try {
-      const response = await axios.get('https://graph.facebook.com/v18.0/me', {
+      const response = await axios.get('https://graph.facebook.com/v19.0/me', {
         params: {
           access_token: this.accessToken,
           fields: 'id,name,email'
@@ -154,7 +154,7 @@ class FacebookDiagnostics {
     console.log('\n4️⃣ アプリ情報を確認中...');
     
     try {
-      const response = await axios.get(`https://graph.facebook.com/v18.0/${FACEBOOK_APP_ID}`, {
+      const response = await axios.get(`https://graph.facebook.com/v19.0/${FACEBOOK_APP_ID}`, {
         params: {
           access_token: `${FACEBOOK_APP_ID}|${FACEBOOK_APP_SECRET}`,
           fields: 'name,app_type,is_app_in_development_mode'
@@ -184,7 +184,7 @@ class FacebookDiagnostics {
     console.log('\n5️⃣ テスター権限を確認中...');
     
     try {
-      const response = await axios.get(`https://graph.facebook.com/v18.0/${FACEBOOK_APP_ID}/roles`, {
+      const response = await axios.get(`https://graph.facebook.com/v19.0/${FACEBOOK_APP_ID}/roles`, {
         params: {
           access_token: `${FACEBOOK_APP_ID}|${FACEBOOK_APP_SECRET}`
         }
@@ -211,7 +211,7 @@ class FacebookDiagnostics {
     console.log('\n6️⃣ Facebookページアクセスを確認中...');
     
     try {
-      const response = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
+      const response = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
         params: {
           access_token: this.accessToken,
           fields: 'id,name,category,fan_count,verification_status,instagram_business_account{id,username,media_count}'

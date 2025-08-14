@@ -30,7 +30,7 @@ const AccountAnalytics: React.FC = () => {
       try {
         // Instagram Graph APIを使用してアカウント情報を取得
         // 利用可能なフィールド: id, username, media_count, followers_count, follows_count
-        const apiUrl = `https://graph.facebook.com/v18.0/${currentUser.instagramBusinessAccountId}?fields=id,username,media_count,followers_count,follows_count&access_token=${currentUser.accessToken}`;
+        const apiUrl = `https://graph.facebook.com/v19.0/${currentUser.instagramBusinessAccountId}?fields=id,username,media_count,followers_count,follows_count&access_token=${currentUser.accessToken}`;
         console.log('[DEBUG] AccountAnalytics - API URL:', apiUrl.replace(currentUser.accessToken, '***'));
         
         const response = await fetch(apiUrl);

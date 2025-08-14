@@ -3,13 +3,26 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const openai = new OpenAI({
+// OpenAIクライアントの初期化（APIキーがある場合のみ）
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 export class AIPostGenerator {
   static async generateInstagramPost(keywords, targetAudience, hashtagCandidates, tone = 'professional') {
     try {
+      // OpenAI APIキーが設定されていない場合はデモモード
+      if (!openai) {
+        console.log('OpenAI APIキーが設定されていません。デモモードで動作します。');
+        return {
+          caption: `デモモード: ${keywords} に関する魅力的な投稿です！${targetAudience} の皆さんに響く内容になっています。`,
+          hashtags: hashtagCandidates ? hashtagCandidates.split(',').slice(0, 5) : ['#デモ', '#テスト', '#instagram'],
+          cta: 'コメントで感想を教えてください！',
+          engagement_question: 'あなたはどう思いますか？',
+          optimization_tips: ['ハッシュタグを最適化しましょう', 'エンゲージメントを促す質問を追加しましょう']
+        };
+      }
+
       const prompt = `
 以下の情報を基に、Instagram用の最適化された投稿文を生成してください：
 
@@ -61,6 +74,18 @@ JSON形式で返してください：
 
   static async generateThreadsPost(keywords, targetAudience, hashtagCandidates, tone = 'conversational') {
     try {
+      // OpenAI APIキーが設定されていない場合はデモモード
+      if (!openai) {
+        console.log('OpenAI APIキーが設定されていません。デモモードで動作します。');
+        return {
+          post: `デモモード: ${keywords} について話しましょう！${targetAudience} の皆さんはどう思いますか？`,
+          hashtags: hashtagCandidates ? hashtagCandidates.split(',').slice(0, 3) : ['#デモ', '#テスト', '#threads'],
+          follow_up_question: 'あなたの経験を教えてください！',
+          conversation_starters: ['このトピックについてどう思いますか？', '経験談を聞かせてください'],
+          optimization_tips: ['会話を促す質問を追加しましょう', 'コミュニティ参加を促しましょう']
+        };
+      }
+
       const prompt = `
 以下の情報を基に、Threads用の最適化された投稿文を生成してください：
 

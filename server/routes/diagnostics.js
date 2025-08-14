@@ -86,7 +86,7 @@ class FacebookDiagnostics {
 
   async getUserInfo() {
     try {
-      const response = await axios.get('https://graph.facebook.com/v18.0/me', {
+      const response = await axios.get('https://graph.facebook.com/v19.0/me', {
         params: {
           access_token: this.accessToken,
           fields: 'id,name,email'
@@ -102,7 +102,7 @@ class FacebookDiagnostics {
 
   async getAppInfo() {
     try {
-      const response = await axios.get(`https://graph.facebook.com/v18.0/${FACEBOOK_APP_ID}`, {
+      const response = await axios.get(`https://graph.facebook.com/v19.0/${FACEBOOK_APP_ID}`, {
         params: {
           access_token: `${FACEBOOK_APP_ID}|${FACEBOOK_APP_SECRET}`,
           fields: 'name,app_type,is_app_in_development_mode'
@@ -123,7 +123,7 @@ class FacebookDiagnostics {
 
   async checkTesterStatus() {
     try {
-      const response = await axios.get(`https://graph.facebook.com/v18.0/${FACEBOOK_APP_ID}/roles`, {
+      const response = await axios.get(`https://graph.facebook.com/v19.0/${FACEBOOK_APP_ID}/roles`, {
         params: {
           access_token: `${FACEBOOK_APP_ID}|${FACEBOOK_APP_SECRET}`
         }
@@ -143,7 +143,7 @@ class FacebookDiagnostics {
 
   async checkPagesAccess() {
     try {
-      const response = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
+      const response = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
         params: {
           access_token: this.accessToken,
           fields: 'id,name,access_token,instagram_business_account'

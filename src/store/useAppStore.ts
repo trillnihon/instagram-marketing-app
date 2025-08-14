@@ -352,7 +352,7 @@ export const useAppStore = create<AuthState>()(
           const redirectUri = `${window.location.origin}/auth/callback`;
           
           if (facebookAppId) {
-            const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${facebookAppId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=email,public_profile&response_type=code`;
+            const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${facebookAppId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=email,public_profile&response_type=code`;
             window.location.href = authUrl;
           } else {
             alert('Facebook OAuth設定が不完全です。管理者にお問い合わせください。');

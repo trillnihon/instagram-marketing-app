@@ -1,10 +1,9 @@
 import { InstagramAuth } from '../types';
 
-// Instagram Basic Display API認証サービス
+// Instagram Graph API認証サービス
 export class InstagramAuthService {
-  private static readonly INSTAGRAM_AUTH_URL = 'https://api.instagram.com/oauth/authorize';
-  private static readonly INSTAGRAM_TOKEN_URL = 'https://api.instagram.com/oauth/access_token';
-  private static readonly INSTAGRAM_GRAPH_URL = 'https://graph.instagram.com';
+  private static readonly FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v19.0';
+  private static readonly FACEBOOK_AUTH_URL = 'https://www.facebook.com';
 
   // 処理中の認証コードを追跡（重複送信防止）
   private static processingCodes = new Set<string>();
@@ -25,27 +24,28 @@ export class InstagramAuthService {
     document.cookie = 'instagram_auth_state=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
   }
 
-  // 認証URLの生成
+  // 認証URLの生成（Instagram Graph API用）
   static generateAuthUrl(): string {
     const clientId = import.meta.env.VITE_FACEBOOK_APP_ID || '1003724798254754';
-    const redirectUri = import.meta.env.VITE_INSTAGRAM_REDIRECT_URI || 'https://instagram-marketing-app.vercel.app/auth/instagram/callback';
-    const scope = 'instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement,instagram_manage_insights';
+    const redirectUri = import.meta.env.VITE_INSTAGRAM_REDIRECT_URI || 'http://localhost:3001/auth/instagram/callback';
+    const scope = 'instagram_basic,instagram_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement,public_profile,email';
     const state = this.generateState();
 
     // デバッグログ追加
-    console.log('[DEBUG] 環境変数確認:', {
+    console.log('[DEBUG] Instagram Graph API認証設定:', {
       VITE_FACEBOOK_APP_ID: import.meta.env.VITE_FACEBOOK_APP_ID,
       VITE_INSTAGRAM_REDIRECT_URI: import.meta.env.VITE_INSTAGRAM_REDIRECT_URI,
       clientId: clientId,
-      redirectUri: redirectUri
+      redirectUri: redirectUri,
+      scope: scope
     });
 
     // 状態をCookieに保存
     this.setStateCookie(state);
     console.log('保存したstate:', state, '(Cookie)');
 
-    // Instagram Graph APIの認証URL
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
+    // Instagram Graph APIの認証URL（v19.0使用）
+    const authUrl = `${this.FACEBOOK_AUTH_URL}/v19.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
     console.log('[DEBUG] 生成された認証URL:', authUrl);
     return authUrl;
   }
@@ -61,10 +61,10 @@ export class InstagramAuthService {
     this.processingCodes.add(code);
 
     try {
-      const redirectUri = import.meta.env.VITE_INSTAGRAM_REDIRECT_URI || 'https://instagram-marketing-app.vercel.app/auth/instagram/callback';
+      const redirectUri = import.meta.env.VITE_INSTAGRAM_REDIRECT_URI || 'http://localhost:3001/auth/instagram/callback';
       const state = this.getStateCookie() || '';
       
-      console.log('[DEBUG] 認証コード送信開始:', code.substring(0, 20) + '...');
+      console.log('[DEBUG] Instagram Graph API認証コード送信開始:', code.substring(0, 20) + '...');
       
       const response = await fetch(`/api/auth/instagram/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`, {
         credentials: 'include'
@@ -77,15 +77,15 @@ export class InstagramAuthService {
       }
       
       const data = await response.json();
-      console.log('[DEBUG] 認証成功:', data);
+      console.log('[DEBUG] Instagram Graph API認証成功:', data);
       
       // サーバーからのレスポンス形式に合わせて処理
       const authData: InstagramAuth = {
         accessToken: data.access_token || data.longLivedToken,
         userId: data.user?.id || data.user_id || '',
         expiresAt: new Date(Date.now() + (data.expires_in || 5184000) * 1000).toISOString(), // 60日
-        permissions: ['instagram_basic', 'instagram_content_publish', 'pages_show_list', 'pages_read_engagement'],
-        instagramBusinessAccountId: data.user?.id || data.instagram_business_account_id
+        permissions: ['instagram_basic', 'instagram_content_publish', 'instagram_manage_insights', 'pages_show_list', 'pages_read_engagement'],
+        instagramBusinessAccountId: data.instagram_business_account_id || data.user?.instagram_business_account_id
       };
       
       console.log('[DEBUG] 処理された認証データ:', authData);
@@ -102,7 +102,7 @@ export class InstagramAuthService {
     access_token: string;
     expires_in: number;
   }> {
-    const url = `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${import.meta.env.VITE_FACEBOOK_APP_ID}&client_secret=${import.meta.env.VITE_FACEBOOK_APP_SECRET}&fb_exchange_token=${shortLivedToken}`;
+    const url = `${this.FACEBOOK_GRAPH_URL}/oauth/access_token?grant_type=fb_exchange_token&client_id=${import.meta.env.VITE_FACEBOOK_APP_ID}&client_secret=${import.meta.env.VITE_FACEBOOK_APP_SECRET}&fb_exchange_token=${shortLivedToken}`;
 
     const response = await fetch(url);
     
@@ -117,7 +117,7 @@ export class InstagramAuthService {
   static async validateToken(accessToken: string): Promise<boolean> {
     try {
       // Facebook Graph APIでトークンの有効性を確認
-      const url = `https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${accessToken}`;
+      const url = `${this.FACEBOOK_GRAPH_URL}/me?fields=id,name&access_token=${accessToken}`;
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -139,7 +139,7 @@ export class InstagramAuthService {
   }> {
     // Facebook Graph APIでは長期トークンは自動的に更新されるため、
     // 必要に応じて新しい長期トークンを取得
-    const url = `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${import.meta.env.VITE_FACEBOOK_APP_ID}&client_secret=${import.meta.env.VITE_FACEBOOK_APP_SECRET}&fb_exchange_token=${accessToken}`;
+    const url = `${this.FACEBOOK_GRAPH_URL}/oauth/access_token?grant_type=fb_exchange_token&client_id=${import.meta.env.VITE_FACEBOOK_APP_ID}&client_secret=${import.meta.env.VITE_FACEBOOK_APP_SECRET}&fb_exchange_token=${accessToken}`;
 
     const response = await fetch(url);
     

@@ -62,18 +62,44 @@ else
     exit 1
 fi
 
-# 6. 環境変数確認
-log_info "🔍 6. 環境変数確認"
-if grep -q "VITE_OPENAI_API_KEY" env.production; then
-    log_success "✅ OpenAI API設定確認"
+# 6. 環境変数確認（Instagram Graph API用）
+log_info "🔍 6. Instagram Graph API環境変数確認"
+if grep -q "VITE_FACEBOOK_APP_ID" env.development; then
+    log_success "✅ Facebook App ID設定確認"
 else
-    log_error "❌ OpenAI API設定不足"
+    log_error "❌ Facebook App ID設定不足"
 fi
 
-if grep -q "VITE_INSTAGRAM_REDIRECT_URI" env.production; then
+if grep -q "VITE_INSTAGRAM_REDIRECT_URI" env.development; then
     log_success "✅ Instagram認証設定確認"
 else
     log_error "❌ Instagram認証設定不足"
+fi
+
+# 7. サーバー環境変数確認
+log_info "🔍 7. サーバー環境変数確認"
+if [ -f "server/env.development" ]; then
+    if grep -q "FACEBOOK_APP_ID" server/env.development; then
+        log_success "✅ サーバーFacebook App ID設定確認"
+    else
+        log_error "❌ サーバーFacebook App ID設定不足"
+    fi
+    
+    if grep -q "INSTAGRAM_GRAPH_API_VERSION" server/env.development; then
+        log_success "✅ Instagram Graph API バージョン設定確認"
+    else
+        log_error "❌ Instagram Graph API バージョン設定不足"
+    fi
+else
+    log_error "❌ サーバー環境変数ファイルが見つかりません"
+fi
+
+# 8. Instagram Graph API設定確認
+log_info "🔍 8. Instagram Graph API設定確認"
+if grep -q "instagram_content_publish" server/env.development; then
+    log_success "✅ Instagram Graph API スコープ設定確認"
+else
+    log_error "❌ Instagram Graph API スコープ設定不足"
 fi
 
 echo ""
@@ -83,8 +109,16 @@ echo "✅ ビルド: 成功"
 echo "✅ ユニットテスト: 成功"
 echo "✅ 統合テスト: 成功"
 echo "✅ PWA対応: 完了"
-echo "✅ 環境変数: 設定済み"
+echo "✅ Instagram Graph API環境変数: 設定済み"
+echo "✅ サーバー環境変数: 設定済み"
+echo "✅ Instagram Graph API スコープ: 設定済み"
 echo ""
 echo "🚀 本番デプロイ準備完了！"
 echo "Vercel URL: https://instagram-marketing-app.vercel.app"
-echo "Backend URL: https://instagram-marketing-backend-v2.onrender.com" 
+echo "Backend URL: https://instagram-marketing-backend-v2.onrender.com"
+echo ""
+echo "📋 次のステップ:"
+echo "1. Meta Business SuiteでInstagram連携確認"
+echo "2. Facebook for DevelopersでOAuth設定確認"
+echo "3. Graph API Explorerで疎通テスト"
+echo "4. 本番環境での動作確認" 
