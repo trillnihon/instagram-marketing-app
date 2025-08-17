@@ -23,7 +23,8 @@
     "verify:graph": "tsx scripts/verify-graph.ts",
     "verify:graph:report": "tsx scripts/verify-graph.ts --report",
     "token:refresh": "tsx scripts/refresh-long-lived-token.ts",
-    "token:rotate-now": "tsx scripts/refresh-long-lived-token.ts --rotate-now"
+    "token:rotate-now": "tsx scripts/refresh-long-lived-token.ts --rotate-now",
+    "warmup:prod": "node ./server/scripts/warmup.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.0",

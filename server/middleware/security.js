@@ -11,6 +11,9 @@ const getCorsOrigins = () => {
       'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app'
     ];
     
+    // Vercelプレビュードメインのワイルドカード許可
+    origins.push('https://*.vercel.app');
+    
     // 環境変数で追加のオリジンを指定可能
     if (process.env.CORS_ORIGIN) {
       origins.push(process.env.CORS_ORIGIN);

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { apiClient } from '../lib/apiClient';
 
 const AccountAnalytics: React.FC = () => {
   const { currentUser, accountAnalytics } = useAppStore();
@@ -40,7 +41,7 @@ const AccountAnalytics: React.FC = () => {
         const apiUrl = `https://graph.facebook.com/v19.0/${currentUser.instagramBusinessAccountId}?fields=id,username,media_count,followers_count,follows_count&access_token=${currentUser.accessToken}`;
         console.log('[DEBUG] AccountAnalytics - API URL:', apiUrl.replace(currentUser.accessToken, '***'));
         
-        const response = await fetch(apiUrl);
+        const response = await apiClient.get(apiUrl);
         
         if (!response.ok) {
           const errorData = await response.json();
