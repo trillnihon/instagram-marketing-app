@@ -6,27 +6,43 @@
  */
 
 const TARGET_URLS = [
-  'https://instagram-marketing-backend-v2.onrender.com/health',
-  'https://instagram-marketing-backend-v2.onrender.com/api/analytics/dashboard'
+  {
+    url: 'https://instagram-marketing-backend-v2.onrender.com/health',
+    method: 'GET',
+    body: null
+  },
+  {
+    url: 'https://instagram-marketing-backend-v2.onrender.com/api/analytics/dashboard',
+    method: 'POST',
+    body: JSON.stringify({ userId: 'demo_user', period: '7d' })
+  }
 ];
 
 const MAX_RETRIES = 12;
 const RETRY_INTERVAL = 5000; // 5秒
 
-async function warmupEndpoint(url, maxRetries = MAX_RETRIES) {
-  console.log(`🔥 ウォームアップ開始: ${url}`);
+async function warmupEndpoint(endpoint, maxRetries = MAX_RETRIES) {
+  const { url, method, body } = endpoint;
+  console.log(`🔥 ウォームアップ開始: ${method} ${url}`);
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const startTime = Date.now();
     
     try {
-      const response = await fetch(url, {
-        method: 'GET',
+      const fetchOptions = {
+        method: method,
         headers: {
-          'User-Agent': 'Instagram-Marketing-App-Warmup/1.0'
+          'User-Agent': 'Instagram-Marketing-App-Warmup/1.0',
+          'Content-Type': 'application/json'
         },
         signal: AbortSignal.timeout(30000) // 30秒タイムアウト
-      });
+      };
+      
+      if (body) {
+        fetchOptions.body = body;
+      }
+      
+      const response = await fetch(url, fetchOptions);
       
       const elapsed = (Date.now() - startTime) / 1000;
       
@@ -61,9 +77,9 @@ async function main() {
   
   const results = [];
   
-  for (const url of TARGET_URLS) {
-    const success = await warmupEndpoint(url);
-    results.push({ url, success });
+  for (const endpoint of TARGET_URLS) {
+    const success = await warmupEndpoint(endpoint);
+    results.push({ url: endpoint.url, success });
     console.log('─'.repeat(60));
   }
   
