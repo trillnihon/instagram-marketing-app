@@ -8,8 +8,15 @@ const AccountAnalytics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('🔍 [DEBUG] AccountAnalytics - 現在のユーザー情報:', {
+      userId: currentUser?.id,
+      username: currentUser?.username,
+      hasAccessToken: !!currentUser?.accessToken,
+      instagramBusinessAccountId: currentUser?.instagramBusinessAccountId
+    });
+
     // デモユーザーの場合はアクセストークンチェックをスキップ
-    if (currentUser?.userId === 'demo_user' || currentUser?.username === 'demo_user') {
+    if (currentUser?.id === 'demo_user' || currentUser?.username === 'Demo User') {
       console.log('🎭 [DEBUG] AccountAnalytics - デモユーザー、アクセストークンチェックをスキップ');
       setLoading(false);
       return;
@@ -73,7 +80,8 @@ const AccountAnalytics: React.FC = () => {
           <summary>デバッグ情報</summary>
           <pre style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
             {JSON.stringify({
-              userId: currentUser?.userId,
+              userId: currentUser?.id,
+              username: currentUser?.username,
               hasAccessToken: !!currentUser?.accessToken,
               instagramBusinessAccountId: currentUser?.instagramBusinessAccountId
             }, null, 2)}
@@ -85,13 +93,13 @@ const AccountAnalytics: React.FC = () => {
 
   if (!account) {
     // デモユーザーの場合、フォールバックデータを表示
-    if (currentUser?.userId === 'demo_user') {
+    if (currentUser?.id === 'demo_user' || currentUser?.username === 'Demo User') {
       console.log('🎭 [DEBUG] AccountAnalytics - フォールバックデモデータ表示');
       return (
         <div style={{ padding: '1rem', background: '#f3f4f6', borderRadius: '8px', color: '#333' }}>
           <h2>Instagramアカウント情報（デモ）</h2>
           <ul>
-            <li><b>ユーザー名:</b> demo_user</li>
+            <li><b>ユーザー名:</b> Demo User</li>
             <li><b>投稿数:</b> 1</li>
             <li><b>平均エンゲージメント:</b> 8.2</li>
             <li><b>ID:</b> demo_user</li>
@@ -103,7 +111,7 @@ const AccountAnalytics: React.FC = () => {
   }
 
   // デモユーザー用の表示
-  if (currentUser?.userId === 'demo_user') {
+  if (currentUser?.id === 'demo_user' || currentUser?.username === 'Demo User') {
     return (
       <div style={{ padding: '1rem', background: '#f3f4f6', borderRadius: '8px', color: '#333' }}>
         <h2>Instagramアカウント情報（デモ）</h2>

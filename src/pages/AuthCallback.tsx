@@ -155,7 +155,9 @@ const AuthCallback: React.FC = () => {
                 username: 'Demo User',
                 email: 'demo@example.com',
                 profile: {},
-                isAdmin: false
+                isAdmin: false,
+                accessToken: 'demo_access_token_12345',
+                instagramBusinessAccountId: 'demo_instagram_business_account_12345'
               };
               
               setCurrentUser(demoUser);
@@ -168,8 +170,8 @@ const AuthCallback: React.FC = () => {
                   id: demoUser.id,
                   username: demoUser.username,
                   email: demoUser.email,
-                  accessToken: 'demo_token',
-                  instagramBusinessAccountId: 'demo_instagram'
+                  accessToken: demoUser.accessToken,
+                  instagramBusinessAccountId: demoUser.instagramBusinessAccountId
                 };
                 localStorage.setItem('instagram_auth', JSON.stringify(userData));
                 console.log('💾 [DEBUG] デモユーザー情報をlocalStorageに保存:', userData);
@@ -193,7 +195,9 @@ const AuthCallback: React.FC = () => {
               username: 'Demo User',
               email: 'demo@example.com',
               profile: {},
-              isAdmin: false
+              isAdmin: false,
+              accessToken: 'demo_access_token_12345',
+              instagramBusinessAccountId: 'demo_instagram_business_account_12345'
             };
             
             setCurrentUser(demoUser);
@@ -206,19 +210,14 @@ const AuthCallback: React.FC = () => {
                 id: demoUser.id,
                 username: demoUser.username,
                 email: demoUser.email,
-                accessToken: 'demo_token',
-                instagramBusinessAccountId: 'demo_instagram'
+                accessToken: demoUser.accessToken,
+                instagramBusinessAccountId: demoUser.instagramBusinessAccountId
               };
               localStorage.setItem('instagram_auth', JSON.stringify(userData));
-              console.log('💾 [DEBUG] デモユーザー情報をlocalStorageに保存:', userData);
+              console.log('💾 [DEBUG] 通信エラー時 - デモユーザー情報をlocalStorageに保存:', userData);
             } catch (storageError) {
-              console.error('❌ [DEBUG] デモユーザー情報のlocalStorage保存エラー:', storageError);
+              console.error('❌ [DEBUG] 通信エラー時 - デモユーザー情報のlocalStorage保存エラー:', storageError);
             }
-            
-            setTimeout(() => {
-              console.log('🚀 [DEBUG] デモモード - ダッシュボードにリダイレクト開始');
-              window.location.replace('/dashboard');
-            }, 1000);
           }
         }
         // 通常のOAuth: 認証コードがある場合（フォールバック）
