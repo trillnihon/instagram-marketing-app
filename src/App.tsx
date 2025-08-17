@@ -49,12 +49,13 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     (window as any).lastAuthCheck = now;
   }
   
-  // 認証チェックを強化
-  if (!isAuthenticated || !currentUser) {
+  // 認証チェックを修正: currentUserがなくてもisAuthenticatedがtrueなら許可
+  if (!isAuthenticated) {
     console.log('❌ [DEBUG] ProtectedRoute - 認証失敗、ログイン画面にリダイレクト');
     return <Navigate to="/login" replace />;
   }
   
+  // currentUserがなくても認証状態があれば許可（ユーザー情報は後で取得可能）
   console.log('✅ [DEBUG] ProtectedRoute - 認証成功、コンテンツ表示');
   return <>{children}</>;
 };
@@ -62,7 +63,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const App: React.FC = () => {
   // アプリ起動時の認証状態チェックとフォールバック処理
   React.useEffect(() => {
-    const { isAuthenticated, currentUser, setAuthenticated } = useAppStore.getState();
+    const { isAuthenticated, currentUser, setAuthenticated, setCurrentUser } = useAppStore.getState();
     console.log('🚀 [DEBUG] アプリ起動 - 初期認証状態:', {
       isAuthenticated,
       currentUser: currentUser ? {
@@ -74,11 +75,58 @@ const App: React.FC = () => {
       timestamp: new Date().toISOString()
     });
 
+    // localStorageからユーザー情報を復元
+    const storedData = localStorage.getItem('app-storage');
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData);
+        console.log('📦 [DEBUG] localStorageから復元されたデータ:', parsedData);
+        
+        if (parsedData.currentUser && parsedData.isAuthenticated) {
+          console.log('🔄 [DEBUG] localStorageからユーザー情報を復元');
+          setCurrentUser(parsedData.currentUser);
+          setAuthenticated(true);
+        }
+      } catch (error) {
+        console.error('❌ [DEBUG] localStorageデータの解析に失敗:', error);
+      }
+    }
+    
+    // Instagram認証情報も確認
+    const instagramAuth = localStorage.getItem('instagram_auth');
+    if (instagramAuth) {
+      try {
+        const authData = JSON.parse(instagramAuth);
+        console.log('📱 [DEBUG] Instagram認証情報を確認:', authData);
+        
+        if (authData.id && !currentUser) {
+          console.log('🔄 [DEBUG] Instagram認証情報からユーザー情報を復元');
+          const userData = {
+            id: authData.id,
+            username: authData.username,
+            email: authData.email,
+            profile: {},
+            isAdmin: false
+          };
+          setCurrentUser(userData);
+          setAuthenticated(true);
+        }
+      } catch (error) {
+        console.error('❌ [DEBUG] Instagram認証情報の解析に失敗:', error);
+      }
+    }
+
     // リダイレクトループ防止のため、認証状態をリセット
     if (isAuthenticated && !currentUser) {
       console.log('🔄 [DEBUG] 認証状態の不整合を検出、リセットします');
-      setAuthenticated?.(false);
+      setAuthenticated(false);
       localStorage.removeItem('instagram-marketing-app-storage');
+      
+      // 現在のパスがダッシュボードの場合、ログイン画面にリダイレクト
+      if (window.location.pathname === '/dashboard') {
+        console.log('🔄 [DEBUG] ダッシュボードからログイン画面にリダイレクト');
+        window.location.href = '/login';
+      }
     }
 
     // ルーティングデバッグ情報を追加

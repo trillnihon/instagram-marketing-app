@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 const getCorsOrigins = () => {
   if (process.env.NODE_ENV === 'production') {
     const origins = [
+      'https://instagram-marketing-app.vercel.app',
       'https://instagram-marketing-app-v1.vercel.app',
       'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app'
     ];

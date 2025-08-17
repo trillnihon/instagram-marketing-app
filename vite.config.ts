@@ -21,9 +21,11 @@ export default defineConfig({
     open: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        target: process.env.NODE_ENV === 'production' 
+          ? 'https://instagram-marketing-backend-v2.onrender.com' 
+          : 'http://localhost:4000',
         changeOrigin: true,
-        secure: false,
+        secure: process.env.NODE_ENV === 'production',
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },

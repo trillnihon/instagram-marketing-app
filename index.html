@@ -57,9 +57,9 @@
       }, 5000);
     </script>
     
-    <!-- Instagram OAuthコールバック処理 - 簡素化版 -->
+    <!-- Instagram OAuthコールバック処理 - デバッグ強化版 -->
     <script>
-      // Instagram OAuthコールバックの事前処理（簡素化版）
+      // Instagram OAuthコールバックの事前処理（デバッグ強化版）
       (function() {
         // 一度だけ実行されるようにフラグを設定
         if (window.instagramCallbackProcessed) {
@@ -69,17 +69,41 @@
         
         const pathname = window.location.pathname;
         const search = window.location.search;
+        const hash = window.location.hash;
+        
+        console.log('🔍 [HTML DEBUG] ページ読み込み時の状態:', {
+          pathname,
+          search,
+          hash,
+          fullUrl: window.location.href
+        });
         
         // Instagram OAuthコールバックURLの場合のみ処理
         if (pathname === '/auth/instagram/callback') {
-          console.log('🎯 [DEBUG] InstagramコールバックURLを検出');
+          console.log('🎯 [HTML DEBUG] InstagramコールバックURLを検出');
+          
+          // URLハッシュからアクセストークンを確認
+          if (hash && hash.includes('access_token')) {
+            console.log('✅ [HTML DEBUG] アクセストークンをURLハッシュで検出');
+            
+            // アクセストークンの詳細をログ出力
+            const hashParams = new URLSearchParams(hash.substring(1));
+            const accessToken = hashParams.get('access_token');
+            console.log('🔑 [HTML DEBUG] アクセストークン詳細:', {
+              hasToken: !!accessToken,
+              tokenLength: accessToken ? accessToken.length : 0,
+              tokenPreview: accessToken ? accessToken.substring(0, 20) + '...' : 'なし'
+            });
+          } else {
+            console.warn('⚠️ [HTML DEBUG] URLハッシュにアクセストークンが見つかりません');
+          }
           
           const urlParams = new URLSearchParams(search);
           const error = urlParams.get('error');
           
           // エラーの場合のみリダイレクト
           if (error) {
-            console.error('❌ [DEBUG] Instagram認証エラー:', error);
+            console.error('❌ [HTML DEBUG] Instagram認証エラー:', error);
             setTimeout(() => {
               window.location.href = '/?auth_error=' + encodeURIComponent(error);
             }, 1000);

@@ -6,8 +6,8 @@ import {
   InstagramInsight 
 } from '../types';
 
-// API_BASE_URLの直接設定（環境変数依存を排除）
-const API_BASE_URL = 'http://localhost:4000';
+// API_BASE_URLの環境変数ベース設定
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://instagram-marketing-backend-v2.onrender.com';
 
 // Instagram認証開始
 export const startInstagramAuth = (): void => {

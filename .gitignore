@@ -98,3 +98,4 @@ SECRETS.md
 secrets/
 CREDENTIALS_BACKUP.txt 
 .vercel
+.env*.local

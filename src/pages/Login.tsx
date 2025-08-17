@@ -43,12 +43,12 @@ const Login: React.FC = () => {
     
     // Facebook OAuth URLを構築
     const facebookAppId = import.meta.env.VITE_INSTAGRAM_APP_ID;
-    const redirectUri = import.meta.env.VITE_INSTAGRAM_REDIRECT_URI || 'https://instagram-marketing-app.vercel.app/auth/facebook/callback';
+    const redirectUri = import.meta.env.VITE_FACEBOOK_REDIRECT_URI || 'https://instagram-marketing-app.vercel.app/auth/callback';
     
     // 開発環境の場合はlocalhostを使用
     const isDevelopment = window.location.hostname === 'localhost';
     const finalRedirectUri = isDevelopment 
-      ? 'http://localhost:3001/auth/facebook/callback'
+      ? 'http://localhost:3001/auth/callback'
       : redirectUri;
     
     // Facebook Login for BusinessのOAuth URL（Metaドキュメント準拠）

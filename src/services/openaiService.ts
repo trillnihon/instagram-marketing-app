@@ -8,7 +8,7 @@ import {
 } from '../types';
 
 // APIベースURL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com';
 
 // キャプション生成サービス
 export class OpenAIService {

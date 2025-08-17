@@ -1,0 +1,26 @@
+[
+  {
+    "request": {
+      "url": "https://www.facebook.com/v19.0/dialog/oauth?client_id=1003724798254754&redirect_uri=https%3A//instagram-marketing-app.vercel.app/auth/instagram/callback&scope=instagram_basic,instagram_content_publish&response_type=code",
+      "method": "GET"
+    },
+    "response": {
+      "status": 302,
+      "headers": [
+        {
+          "name": "Location",
+          "value": "https://instagram-marketing-app.vercel.app/auth/instagram/callback?code=AQB123456789&state=abc123"
+        }
+      ]
+    }
+  },
+  {
+    "request": {
+      "url": "https://example.com/auth/facebook/callback?redirect_uri=https%3A//example.com/dashboard",
+      "method": "GET"
+    },
+    "response": {
+      "status": 200
+    }
+  }
+]

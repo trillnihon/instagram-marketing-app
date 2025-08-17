@@ -1,0 +1,143 @@
+{
+  "log": {
+    "version": "1.2",
+    "creator": {
+      "name": "Facebook OAuth Test",
+      "version": "1.0"
+    },
+    "entries": [
+      {
+        "startedDateTime": "2025-08-14T10:00:00.000Z",
+        "time": 150,
+        "request": {
+          "method": "GET",
+          "url": "https://www.facebook.com/v19.0/dialog/oauth?client_id=1003724798254754&redirect_uri=https%3A//instagram-marketing-app.vercel.app/auth/instagram/callback&scope=instagram_basic,instagram_content_publish&response_type=code",
+          "httpVersion": "HTTP/2.0",
+          "headers": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            }
+          ],
+          "queryString": [
+            {
+              "name": "client_id",
+              "value": "1003724798254754"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "https://instagram-marketing-app.vercel.app/auth/instagram/callback"
+            },
+            {
+              "name": "scope",
+              "value": "instagram_basic,instagram_content_publish"
+            },
+            {
+              "name": "response_type",
+              "value": "code"
+            }
+          ]
+        },
+        "response": {
+          "status": 302,
+          "statusText": "Found",
+          "httpVersion": "HTTP/2.0",
+          "headers": [
+            {
+              "name": "Location",
+              "value": "https://instagram-marketing-app.vercel.app/auth/instagram/callback?code=AQB123456789&state=abc123"
+            },
+            {
+              "name": "Content-Type",
+              "value": "text/html; charset=utf-8"
+            }
+          ]
+        }
+      },
+      {
+        "startedDateTime": "2025-08-14T10:00:15.000Z",
+        "time": 200,
+        "request": {
+          "method": "GET",
+          "url": "https://instagram-marketing-app.vercel.app/auth/instagram/callback?code=AQB123456789&state=abc123",
+          "httpVersion": "HTTP/2.0",
+          "headers": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+          ],
+          "queryString": [
+            {
+              "name": "code",
+              "value": "AQB123456789"
+            },
+            {
+              "name": "state",
+              "value": "abc123"
+            }
+          ]
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/2.0",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/html; charset=utf-8"
+            }
+          ]
+        }
+      },
+      {
+        "startedDateTime": "2025-08-14T10:00:30.000Z",
+        "time": 300,
+        "request": {
+          "method": "POST",
+          "url": "https://graph.facebook.com/v19.0/oauth/access_token?client_id=1003724798254754&client_secret=secret&redirect_uri=https%3A//instagram-marketing-app.vercel.app/auth/instagram/callback&code=AQB123456789",
+          "httpVersion": "HTTP/2.0",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ],
+          "queryString": [
+            {
+              "name": "client_id",
+              "value": "1003724798254754"
+            },
+            {
+              "name": "client_secret",
+              "value": "secret"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "https://instagram-marketing-app.vercel.app/auth/instagram/callback"
+            },
+            {
+              "name": "code",
+              "value": "AQB123456789"
+            }
+          ]
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/2.0",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

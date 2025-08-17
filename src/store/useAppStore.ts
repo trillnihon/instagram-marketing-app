@@ -64,6 +64,7 @@ interface AuthState {
   
   // 追加のメソッド
   setAuthenticated: (authenticated: boolean) => void;
+  setCurrentUser: (user: User | null) => void;
   setDemoAuth: (user: User) => void;
   suggestions?: any[];
   setAccountAnalytics?: (analytics: any) => void;
@@ -85,6 +86,12 @@ export const useAppStore = create<AuthState>()(
       setAuthenticated: (authenticated: boolean) => {
         console.log('[DEBUG] setAuthenticated called:', authenticated);
         set({ isAuthenticated: authenticated });
+      },
+
+      // ユーザー情報を設定するメソッド
+      setCurrentUser: (user: User | null) => {
+        console.log('[DEBUG] setCurrentUser called:', user);
+        set({ currentUser: user });
       },
 
       // デモモード用の認証設定
@@ -117,10 +124,8 @@ export const useAppStore = create<AuthState>()(
           
           console.log('[DEBUG] ログイン開始:', { email });
           
-          // 環境に応じてAPI_BASE_URLを切り替え
-          const API_BASE_URL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:4000' 
-            : 'https://instagram-marketing-backend-v2.onrender.com';
+          // 環境変数からAPI_BASE_URLを取得
+          const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://instagram-marketing-backend-v2.onrender.com';
           
           console.log('[DEBUG] ログイン - API_BASE_URL:', API_BASE_URL);
           
@@ -184,10 +189,8 @@ export const useAppStore = create<AuthState>()(
         try {
           set({ isLoading: true });
           
-          // 環境に応じてAPI_BASE_URLを切り替え
-          const API_BASE_URL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:4000' 
-            : 'https://instagram-marketing-backend-v2.onrender.com';
+          // 環境変数からAPI_BASE_URLを取得
+          const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://instagram-marketing-backend-v2.onrender.com';
           
           const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
             method: 'POST',
