@@ -3,7 +3,7 @@
     { "source": "/auth/facebook/callback", "destination": "/" },
     { "source": "/auth/instagram/callback", "destination": "/" },
     { "source": "/auth/(.*)", "destination": "/" },
-    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/api/(.*)", "destination": "https://instagram-marketing-backend-v2.onrender.com/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "buildCommand": "npm run build",

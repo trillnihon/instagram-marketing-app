@@ -99,17 +99,30 @@ const App: React.FC = () => {
         const authData = JSON.parse(instagramAuth);
         console.log('📱 [DEBUG] Instagram認証情報を確認:', authData);
         
-        if (authData.id && !currentUser) {
+        if (authData.id && (!currentUser || !isAuthenticated)) {
           console.log('🔄 [DEBUG] Instagram認証情報からユーザー情報を復元');
           const userData = {
             id: authData.id,
-            username: authData.username,
-            email: authData.email,
+            username: authData.username || 'Instagram User',
+            email: authData.email || `${authData.id}@instagram.com`,
             profile: {},
             isAdmin: false
           };
           setCurrentUser(userData);
           setAuthenticated(true);
+          
+          // app-storageにも保存して永続化
+          try {
+            const appStorage = {
+              isAuthenticated: true,
+              currentUser: userData,
+              token: authData.accessToken || 'demo_token'
+            };
+            localStorage.setItem('app-storage', JSON.stringify(appStorage));
+            console.log('💾 [DEBUG] app-storageにユーザー情報を保存:', appStorage);
+          } catch (storageError) {
+            console.error('❌ [DEBUG] app-storage保存エラー:', storageError);
+          }
         }
       } catch (error) {
         console.error('❌ [DEBUG] Instagram認証情報の解析に失敗:', error);
@@ -120,7 +133,9 @@ const App: React.FC = () => {
     if (isAuthenticated && !currentUser) {
       console.log('🔄 [DEBUG] 認証状態の不整合を検出、リセットします');
       setAuthenticated(false);
-      localStorage.removeItem('instagram-marketing-app-storage');
+      // 正しいlocalStorageキーを使用
+      localStorage.removeItem('app-storage');
+      localStorage.removeItem('instagram_auth');
       
       // 現在のパスがダッシュボードの場合、ログイン画面にリダイレクト
       if (window.location.pathname === '/dashboard') {
