@@ -42,7 +42,7 @@ const Login: React.FC = () => {
     console.log('📸 [DEBUG] Facebook Login for Business認証開始');
     
     // Facebook OAuth URLを構築
-    const facebookAppId = import.meta.env.VITE_INSTAGRAM_APP_ID;
+    const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID;
     const redirectUri = import.meta.env.VITE_FACEBOOK_REDIRECT_URI || 'https://instagram-marketing-app.vercel.app/auth/callback';
     
     // 開発環境の場合はlocalhostを使用
