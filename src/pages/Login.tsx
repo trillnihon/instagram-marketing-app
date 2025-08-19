@@ -41,9 +41,18 @@ const Login: React.FC = () => {
     // Facebook Login for BusinessによるInstagram API認証
     console.log('📸 [DEBUG] Facebook Login for Business認証開始');
     
-    // Facebook OAuth URLを構築
-    const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID;
-    const redirectUri = import.meta.env.VITE_FACEBOOK_REDIRECT_URI || 'https://instagram-marketing-app.vercel.app/auth/callback';
+    // Facebook OAuth URLを構築（環境変数から取得、フォールバックは正しい値）
+    const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID || '1003724798254754';
+    const redirectUri = import.meta.env.VITE_FACEBOOK_REDIRECT_URI || 'https://instagram-marketing-app.vercel.app/auth/instagram/callback';
+    
+    // 環境変数が正しく読み込まれているかチェック
+    if (!import.meta.env.VITE_FACEBOOK_APP_ID) {
+      console.warn('[WARNING] VITE_FACEBOOK_APP_IDが環境変数から読み込めません。フォールバック値を使用します。');
+    }
+    
+    // 強制的に正しいApp IDを使用（環境変数の問題を回避）
+    const finalFacebookAppId = '1003724798254754';
+    console.log('[DEBUG] 最終的に使用されるFacebook App ID:', finalFacebookAppId);
     
     // 開発環境の場合はlocalhostを使用
     const isDevelopment = window.location.hostname === 'localhost';
@@ -52,17 +61,20 @@ const Login: React.FC = () => {
       : redirectUri;
     
     // Facebook Login for BusinessのOAuth URL（Metaドキュメント準拠）
-    const facebookAuthUrl = `https://www.facebook.com/v23.0/dialog/oauth?client_id=${facebookAppId}&display=page&extras=${encodeURIComponent('{"setup":{"channel":"IG_API_ONBOARDING"}}')}&redirect_uri=${encodeURIComponent(finalRedirectUri)}&response_type=token&scope=instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,pages_show_list,pages_read_engagement`;
+    const facebookAuthUrl = `https://www.facebook.com/v23.0/dialog/oauth?client_id=${finalFacebookAppId}&display=page&extras=${encodeURIComponent('{"setup":{"channel":"IG_API_ONBOARDING"}}')}&redirect_uri=${encodeURIComponent(finalRedirectUri)}&response_type=token&scope=instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,pages_show_list,pages_read_engagement`;
     
     console.log('🔗 [DEBUG] Facebook Login for Business URL:', {
-      facebookAppId,
+      facebookAppId: finalFacebookAppId,
       redirectUri: finalRedirectUri,
       display: 'page',
       extras: '{"setup":{"channel":"IG_API_ONBOARDING"}}',
       response_type: 'token',
       scope: 'instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,pages_show_list,pages_read_engagement',
       isDevelopment,
-      fullUrl: facebookAuthUrl
+      fullUrl: facebookAuthUrl,
+      envMode: import.meta.env.MODE,
+      envDev: import.meta.env.DEV,
+      envProd: import.meta.env.PROD
     });
     
     // Facebook認証ページにリダイレクト

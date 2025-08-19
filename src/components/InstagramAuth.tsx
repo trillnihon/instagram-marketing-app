@@ -9,8 +9,10 @@ import {
 } from '../services/instagramApi';
 import { InstagramBusinessAccount, InstagramMedia } from '../types';
 import Navigation from './Navigation';
+import { useAppStore } from '../store/useAppStore';
 
 const InstagramAuth: React.FC = () => {
+  const { currentUser, isAuthenticated } = useAppStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authData, setAuthData] = useState<{
@@ -21,6 +23,9 @@ const InstagramAuth: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
+    console.log('[DEBUG] InstagramAuth - 現在のユーザー情報:', currentUser);
+    console.log('[DEBUG] InstagramAuth - 認証状態:', isAuthenticated);
+    
     // URLパラメータをチェックしてコールバック処理を行う
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
@@ -35,7 +40,7 @@ const InstagramAuth: React.FC = () => {
         setAuthData(existingAuth);
       }
     }
-  }, []);
+  }, [currentUser, isAuthenticated]);
 
   const handleAuthCallback = async (code: string, state: string) => {
     setIsLoading(true);
@@ -194,7 +199,7 @@ const InstagramAuth: React.FC = () => {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">認証エラー</h3>
+                    <h3 className="text-sm font-medium text-red-800">エラーが発生しました</h3>
                     <div className="mt-2 text-sm text-red-700">
                       <p>{error}</p>
                     </div>
@@ -202,6 +207,25 @@ const InstagramAuth: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* 認証状態の表示 */}
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">認証状態</h3>
+                  <div className="mt-2 text-sm text-blue-700">
+                    <p>Facebook認証: {isAuthenticated ? '✅ 認証済み' : '❌ 未認証'}</p>
+                    <p>ユーザー: {currentUser?.username || currentUser?.email || '不明'}</p>
+                    <p>Instagram連携: {authData ? '✅ 連携済み' : '❌ 未連携'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {!authData ? (
               <div className="text-center">
@@ -266,24 +290,35 @@ const InstagramAuth: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="bg-white rounded-lg p-4 mb-6">
                     <h3 className="text-lg font-medium text-gray-900 mb-3">アカウント情報</h3>
                     <dl className="space-y-2">
                       <div>
                         <dt className="text-sm font-medium text-gray-500">ユーザー名</dt>
-                        <dd className="text-sm text-gray-900">@{authData.instagramBusinessAccount.username}</dd>
+                        <dd className="text-sm text-gray-900">
+                          {authData.instagramBusinessAccount?.username ? 
+                            `@${authData.instagramBusinessAccount.username}` : 
+                            '取得中...'
+                          }
+                        </dd>
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-gray-500">アカウントID</dt>
-                        <dd className="text-sm text-gray-900 font-mono">{authData.instagramBusinessAccount.id}</dd>
+                        <dd className="text-sm text-gray-900 font-mono">
+                          {authData.instagramBusinessAccount?.id || '取得中...'}
+                        </dd>
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-gray-500">投稿数</dt>
-                        <dd className="text-sm text-gray-900">{authData.instagramBusinessAccount.media_count}件</dd>
+                        <dd className="text-sm text-gray-900">
+                          {authData.instagramBusinessAccount?.media_count || 0}件
+                        </dd>
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-gray-500">連携ページ</dt>
-                        <dd className="text-sm text-gray-900">{authData.instagramBusinessAccount.page_name}</dd>
+                        <dd className="text-sm text-gray-900">
+                          {authData.instagramBusinessAccount?.page_name || '取得中...'}
+                        </dd>
                       </div>
                     </dl>
                   </div>

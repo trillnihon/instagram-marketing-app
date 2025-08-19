@@ -26,26 +26,41 @@ export class InstagramAuthService {
 
   // 認証URLの生成（Instagram Graph API用）
   static generateAuthUrl(): string {
+    // 環境変数からApp IDを取得、フォールバックは正しい値を使用
     const clientId = import.meta.env.VITE_FACEBOOK_APP_ID || '1003724798254754';
-    const redirectUri = import.meta.env.VITE_INSTAGRAM_REDIRECT_URI || 'http://localhost:3001/auth/instagram/callback';
+    const redirectUri = import.meta.env.VITE_INSTAGRAM_REDIRECT_URI || 'https://instagram-marketing-app.vercel.app/auth/instagram/callback';
     const scope = 'instagram_basic,instagram_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement,public_profile,email';
     const state = this.generateState();
 
-    // デバッグログ追加
+    // デバッグログ強化
     console.log('[DEBUG] Instagram Graph API認証設定:', {
       VITE_FACEBOOK_APP_ID: import.meta.env.VITE_FACEBOOK_APP_ID,
       VITE_INSTAGRAM_REDIRECT_URI: import.meta.env.VITE_INSTAGRAM_REDIRECT_URI,
       clientId: clientId,
       redirectUri: redirectUri,
-      scope: scope
+      scope: scope,
+      envMode: import.meta.env.MODE,
+      envDev: import.meta.env.DEV,
+      envProd: import.meta.env.PROD,
+      // 強制的に正しいApp IDを使用
+      forcedAppId: '1003724798254754'
     });
+
+    // 環境変数が正しく読み込まれているかチェック
+    if (!import.meta.env.VITE_FACEBOOK_APP_ID) {
+      console.warn('[WARNING] VITE_FACEBOOK_APP_IDが環境変数から読み込めません。フォールバック値を使用します。');
+    }
+
+    // 強制的に正しいApp IDを使用（環境変数の問題を回避）
+    const finalClientId = '1003724798254754';
+    console.log('[DEBUG] 最終的に使用されるApp ID:', finalClientId);
 
     // 状態をCookieに保存
     this.setStateCookie(state);
     console.log('保存したstate:', state, '(Cookie)');
 
     // Instagram Graph APIの認証URL（v19.0使用）
-    const authUrl = `${this.FACEBOOK_AUTH_URL}/v19.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
+    const authUrl = `${this.FACEBOOK_AUTH_URL}/v19.0/dialog/oauth?client_id=${finalClientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
     console.log('[DEBUG] 生成された認証URL:', authUrl);
     return authUrl;
   }
