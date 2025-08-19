@@ -22,8 +22,23 @@ const InstagramAuth: React.FC = () => {
     savedAt?: string;
   } | null>(null);
 
+  // 安全なユーザー情報の取得
+  const safeUsername = currentUser && currentUser.username ? currentUser.username : null;
+  const safeEmail = currentUser && currentUser.email ? currentUser.email : null;
+  const displayName = safeUsername || safeEmail || '不明';
+
   useEffect(() => {
-    console.log('[DEBUG] InstagramAuth - 現在のユーザー情報:', currentUser);
+    // 安全なユーザー情報のログ出力
+    if (currentUser) {
+      console.log('[DEBUG] InstagramAuth - 現在のユーザー情報:', {
+        id: currentUser.id,
+        username: currentUser.username || 'undefined',
+        email: currentUser.email || 'undefined',
+        hasProfile: !!currentUser.profile
+      });
+    } else {
+      console.log('[DEBUG] InstagramAuth - 現在のユーザー情報: null');
+    }
     console.log('[DEBUG] InstagramAuth - 認証状態:', isAuthenticated);
     
     // URLパラメータをチェックしてコールバック処理を行う
@@ -176,6 +191,35 @@ const InstagramAuth: React.FC = () => {
     );
   }
 
+  // ユーザー情報が存在しない場合のエラー表示
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation activeTab="instagram" onTabChange={() => {}} showAdminLink={true} />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-red-50 border border-red-200 rounded-md p-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">ユーザー情報が取得できません</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>ユーザー情報が正しく読み込まれていません。再ログインしてください。</p>
+                    <p className="mt-2">デバッグ情報: currentUser = {JSON.stringify(currentUser)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation activeTab="instagram" onTabChange={() => {}} showAdminLink={true} />
@@ -240,7 +284,7 @@ const InstagramAuth: React.FC = () => {
                   <h3 className="text-sm font-medium text-blue-800">認証状態</h3>
                   <div className="mt-2 text-sm text-blue-700">
                     <p>Facebook認証: {isAuthenticated ? '✅ 認証済み' : '❌ 未認証'}</p>
-                    <p>ユーザー: {currentUser?.username || currentUser?.email || '不明'}</p>
+                                         <p>ユーザー: {displayName}</p>
                     <p>Instagram連携: {authData ? '✅ 連携済み' : '❌ 未連携'}</p>
                   </div>
                 </div>
