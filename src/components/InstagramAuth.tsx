@@ -178,7 +178,7 @@ const InstagramAuth: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-              <Navigation activeTab="instagram" onTabChange={() => {}} showAdminLink={true} />
+      <Navigation activeTab="instagram" onTabChange={() => {}} showAdminLink={true} />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -189,6 +189,26 @@ const InstagramAuth: React.FC = () => {
               Meta公式のInstagram Graph APIを使って、実際のInstagramビジネスアカウントと接続し、
               投稿データやインサイトを取得できるようにします。
             </p>
+            
+            {/* 安全なデータアクセスのためのデバッグ情報 */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-yellow-800">デバッグ情報</h3>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    <p>authData: {authData ? '存在' : 'null'}</p>
+                    <p>instagramBusinessAccount: {authData?.instagramBusinessAccount ? '存在' : 'null'}</p>
+                    <p>accessToken: {authData?.accessToken ? '存在' : 'null'}</p>
+                    <p>recentPosts: {authData?.recentPosts ? `${authData.recentPosts.length}件` : 'null'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
@@ -296,7 +316,7 @@ const InstagramAuth: React.FC = () => {
                       <div>
                         <dt className="text-sm font-medium text-gray-500">ユーザー名</dt>
                         <dd className="text-sm text-gray-900">
-                          {authData.instagramBusinessAccount?.username ? 
+                          {authData.instagramBusinessAccount && authData.instagramBusinessAccount.username ? 
                             `@${authData.instagramBusinessAccount.username}` : 
                             '取得中...'
                           }
@@ -329,7 +349,7 @@ const InstagramAuth: React.FC = () => {
                       <div>
                         <dt className="text-sm font-medium text-gray-500">トークン（一部表示）</dt>
                         <dd className="text-sm text-gray-900 font-mono">
-                          {authData.accessToken.substring(0, 20)}...
+                          {authData.accessToken ? authData.accessToken.substring(0, 20) + '...' : '取得中...'}
                         </dd>
                       </div>
                       <div>
@@ -342,11 +362,11 @@ const InstagramAuth: React.FC = () => {
                   </div>
                 </div>
 
-                {authData.recentPosts.length > 0 && (
+                {authData.recentPosts && authData.recentPosts.length > 0 && (
                   <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">最新投稿（{authData.recentPosts.length}件）</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">最新投稿（{authData.recentPosts ? authData.recentPosts.length : 0}件）</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {authData.recentPosts.map((post) => (
+                      {authData.recentPosts && authData.recentPosts.map((post) => (
                         <div key={post.id} className="bg-white rounded-lg p-4 border">
                           <div className="flex items-center mb-2">
                             <span className="text-lg mr-2">{getMediaTypeIcon(post.media_type)}</span>
