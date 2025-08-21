@@ -251,6 +251,248 @@ export class InstagramAuthService {
       return null;
     }
   }
+
+  // Instagramアカウント情報の取得
+  static async getInstagramAccountInfo(accessToken: string): Promise<{
+    id: string;
+    username: string;
+    media_count: number;
+    followers_count: number;
+    follows_count: number;
+    biography: string;
+    profile_picture_url: string;
+  } | null> {
+    try {
+      console.log('[DEBUG] Instagramアカウント情報取得開始');
+      
+      // 方法1: 直接ユーザー情報からInstagramビジネスアカウントを取得（最優先）
+      console.log('[DEBUG] 方法1: 直接ユーザー情報からInstagramビジネスアカウントを取得');
+      // より安全なアプローチ: まず基本的なユーザー情報を取得
+      const userUrl = `${this.FACEBOOK_GRAPH_URL}/me?fields=id,name&access_token=${accessToken}`;
+      console.log('[DEBUG] 方法1 URL:', userUrl);
+      
+      const userResponse = await fetch(userUrl);
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        console.log('[DEBUG] 方法1 基本ユーザー情報取得成功:', userData);
+        
+        // ユーザー情報が取得できた場合、方法2に進む
+        console.log('[DEBUG] 方法1: 基本ユーザー情報確認完了、方法2に進行');
+      } else {
+        console.warn('[WARNING] 方法1基本ユーザー情報取得失敗:', userResponse.status, userResponse.statusText);
+        // エラーの詳細を確認
+        try {
+          const errorData = await userResponse.json();
+          console.error('[ERROR] 方法1エラー詳細:', errorData);
+        } catch (e) {
+          console.error('[ERROR] 方法1エラーレスポンスの解析に失敗:', e);
+        }
+      }
+      
+      // 方法2: Facebookページ経由でInstagramビジネスアカウントを取得
+      console.log('[DEBUG] 方法2: Facebookページ経由でInstagramビジネスアカウントを取得');
+      const pagesUrl = `${this.FACEBOOK_GRAPH_URL}/me/accounts?access_token=${accessToken}`;
+      console.log('[DEBUG] 方法2 URL:', pagesUrl);
+      
+      const pagesResponse = await fetch(pagesUrl);
+      if (pagesResponse.ok) {
+        const pagesData = await pagesResponse.json();
+        console.log('[DEBUG] 方法2 Facebookページ取得成功:', pagesData);
+        
+        if (pagesData.data && pagesData.data.length > 0) {
+          // 各ページをチェックしてInstagramビジネスアカウントを探す
+          for (const page of pagesData.data) {
+            console.log('[DEBUG] ページチェック:', page);
+            
+            if (page.instagram_business_account) {
+              console.log('[DEBUG] Instagramビジネスアカウント発見:', page.instagram_business_account);
+              
+              // Instagramビジネスアカウントの詳細情報を取得
+              const instagramAccountId = page.instagram_business_account.id;
+              const instagramUrl = `${this.FACEBOOK_GRAPH_URL}/${instagramAccountId}?fields=id,username,media_count,followers_count,follows_count,biography,profile_picture_url&access_token=${accessToken}`;
+              console.log('[DEBUG] Instagram詳細取得URL:', instagramUrl);
+              
+              const instagramResponse = await fetch(instagramUrl);
+              if (instagramResponse.ok) {
+                const instagramData = await instagramResponse.json();
+                console.log('[DEBUG] 方法2でInstagram詳細取得成功:', instagramData);
+                return instagramData;
+              } else {
+                console.warn('[WARNING] Instagram詳細取得失敗:', instagramResponse.status, instagramResponse.statusText);
+              }
+            }
+          }
+        } else {
+          console.warn('[WARNING] Facebookページが見つかりません');
+        }
+      } else {
+        console.warn('[WARNING] 方法2失敗:', pagesResponse.status, pagesResponse.statusText);
+      }
+      
+      // 方法3: ユーザーのInstagramアカウント一覧を直接取得
+      console.log('[DEBUG] 方法3: ユーザーのInstagramアカウント一覧を直接取得');
+      const instagramAccountsUrl = `${this.FACEBOOK_GRAPH_URL}/me/accounts?fields=instagram_business_account{id,username,media_count,followers_count,follows_count,biography,profile_picture_url}&access_token=${accessToken}`;
+      console.log('[DEBUG] 方法3 URL:', instagramAccountsUrl);
+      
+      const instagramAccountsResponse = await fetch(instagramAccountsUrl);
+      if (instagramAccountsResponse.ok) {
+        const instagramAccountsData = await instagramAccountsResponse.json();
+        console.log('[DEBUG] 方法3 成功:', instagramAccountsData);
+        
+        if (instagramAccountsData.data && instagramAccountsData.data.length > 0) {
+          for (const account of instagramAccountsData.data) {
+            if (account.instagram_business_account) {
+              console.log('[DEBUG] 方法3でInstagramビジネスアカウント発見:', account.instagram_business_account);
+              return account.instagram_business_account;
+            }
+          }
+        }
+      } else {
+        console.warn('[WARNING] 方法3失敗:', instagramAccountsResponse.status, instagramAccountsResponse.statusText);
+      }
+      
+      console.error('[ERROR] 全ての方法でInstagramビジネスアカウント情報の取得に失敗しました');
+      return null;
+      
+    } catch (error) {
+      console.error('[ERROR] Instagramアカウント情報取得エラー:', error);
+      return null;
+    }
+  }
+
+  // Instagram投稿一覧の取得
+  static async getInstagramPosts(accessToken: string, limit: number = 10): Promise<{
+    id: string;
+    caption: string;
+    media_type: string;
+    media_url: string;
+    permalink: string;
+    timestamp: string;
+    like_count: number;
+    comments_count: number;
+  }[] | null> {
+    try {
+      console.log('[DEBUG] Instagram投稿一覧取得開始');
+      
+      // 方法1: 直接ユーザー情報からInstagramビジネスアカウントIDを取得
+      console.log('[DEBUG] 方法1: 直接ユーザー情報からInstagramビジネスアカウントIDを取得');
+      // より安全なアプローチ: まず基本的なユーザー情報を取得
+      const userUrl = `${this.FACEBOOK_GRAPH_URL}/me?fields=id,name&access_token=${accessToken}`;
+      console.log('[DEBUG] 方法1 URL:', userUrl);
+      
+      const userResponse = await fetch(userUrl);
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        console.log('[DEBUG] 方法1 基本ユーザー情報取得成功:', userData);
+        
+        // ユーザー情報が取得できた場合、方法2に進む
+        console.log('[DEBUG] 方法1: 基本ユーザー情報確認完了、方法2に進行');
+      } else {
+        console.warn('[WARNING] 方法1基本ユーザー情報取得失敗:', userResponse.status, userResponse.statusText);
+        // エラーの詳細を確認
+        try {
+          const errorData = await userResponse.json();
+          console.error('[ERROR] 方法1エラー詳細:', errorData);
+        } catch (e) {
+          console.error('[ERROR] 方法1エラーレスポンスの解析に失敗:', e);
+        }
+      }
+      
+      // 方法2: Facebookページ経由でInstagramビジネスアカウントを取得
+      console.log('[DEBUG] 方法2: Facebookページ経由でInstagramビジネスアカウントを取得');
+      const pagesUrl = `${this.FACEBOOK_GRAPH_URL}/me/accounts?access_token=${accessToken}`;
+      console.log('[DEBUG] 方法2 URL:', pagesUrl);
+      
+      const pagesResponse = await fetch(pagesUrl);
+      if (pagesResponse.ok) {
+        const pagesData = await pagesResponse.json();
+        console.log('[DEBUG] 方法2 Facebookページ取得成功:', pagesData);
+        
+        if (pagesData.data && pagesData.data.length > 0) {
+          // 各ページをチェックしてInstagramビジネスアカウントを探す
+          for (const page of pagesData.data) {
+            console.log('[DEBUG] ページチェック:', page);
+            
+            if (page.instagram_business_account) {
+              console.log('[DEBUG] Instagramビジネスアカウント発見:', page.instagram_business_account);
+              
+              const instagramAccountId = page.instagram_business_account.id;
+              const postsUrl = `${this.FACEBOOK_GRAPH_URL}/${instagramAccountId}/media?fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&limit=${limit}&access_token=${accessToken}`;
+              console.log('[DEBUG] 方法2投稿取得URL:', postsUrl);
+              
+              const postsResponse = await fetch(postsUrl);
+              if (postsResponse.ok) {
+                const postsData = await postsResponse.json();
+                console.log('[DEBUG] 方法2で投稿取得成功:', postsData);
+                return postsData.data || [];
+              } else {
+                console.warn('[WARNING] 方法2投稿取得失敗:', postsResponse.status, postsResponse.statusText);
+              }
+            }
+          }
+        } else {
+          console.warn('[WARNING] Facebookページが見つかりません');
+        }
+      } else {
+        console.warn('[WARNING] 方法2失敗:', pagesResponse.status, pagesResponse.statusText);
+      }
+      
+      // 方法3: ユーザーのInstagramアカウント一覧を直接取得
+      console.log('[DEBUG] 方法3: ユーザーのInstagramアカウント一覧を直接取得');
+      const instagramAccountsUrl = `${this.FACEBOOK_GRAPH_URL}/me/accounts?fields=instagram_business_account{id}&access_token=${accessToken}`;
+      console.log('[DEBUG] 方法3 URL:', instagramAccountsUrl);
+      
+      const instagramAccountsResponse = await fetch(instagramAccountsUrl);
+      if (instagramAccountsResponse.ok) {
+        const instagramAccountsData = await instagramAccountsResponse.json();
+        console.log('[DEBUG] 方法3 成功:', instagramAccountsData);
+        
+        if (instagramAccountsData.data && instagramAccountsData.data.length > 0) {
+          for (const account of instagramAccountsData.data) {
+            if (account.instagram_business_account) {
+              console.log('[DEBUG] 方法3でInstagramビジネスアカウント発見:', account.instagram_business_account);
+              
+              const instagramAccountId = account.instagram_business_account.id;
+              const postsUrl = `${this.FACEBOOK_GRAPH_URL}/${instagramAccountId}/media?fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&limit=${limit}&access_token=${accessToken}`;
+              console.log('[DEBUG] 方法3投稿取得URL:', postsUrl);
+              
+              const postsResponse = await fetch(postsUrl);
+              console.log('[DEBUG] 方法3投稿取得レスポンス:', postsResponse.status, postsResponse.statusText);
+              
+              if (postsResponse.ok) {
+                const postsData = await postsResponse.json();
+                console.log('[DEBUG] 方法3で投稿取得成功:', postsData);
+                console.log('[DEBUG] 投稿データ詳細:', {
+                  hasData: !!postsData.data,
+                  dataLength: postsData.data?.length || 0,
+                  dataType: typeof postsData.data,
+                  fullResponse: postsData
+                });
+                return postsData.data || [];
+              } else {
+                console.warn('[WARNING] 方法3投稿取得失敗:', postsResponse.status, postsResponse.statusText);
+                try {
+                  const errorData = await postsResponse.json();
+                  console.error('[ERROR] 方法3エラー詳細:', errorData);
+                } catch (e) {
+                  console.error('[ERROR] 方法3エラーレスポンスの解析に失敗:', e);
+                }
+              }
+            }
+          }
+        }
+      } else {
+        console.warn('[WARNING] 方法3失敗:', instagramAccountsResponse.status, instagramAccountsResponse.statusText);
+      }
+      
+      console.error('[ERROR] 全ての方法でInstagram投稿一覧の取得に失敗しました');
+      return null;
+      
+    } catch (error) {
+      console.error('[ERROR] Instagram投稿一覧取得エラー:', error);
+      return null;
+    }
+  }
 }
 
 export const instagramAuth = InstagramAuthService; 

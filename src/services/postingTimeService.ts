@@ -51,7 +51,18 @@ export const fetchPostingTimeData = async (
 ): Promise<PostingTimeData[]> => {
   try {
     const response = await fetch(
-              `${import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com'}/api/instagram/posting-times/${userId}?period=${period}&access_token=${accessToken}`
+              `${import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com'}/api/instagram/posting-time-analysis`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accountId: userId,
+          days: period === 'week' ? 7 : period === 'month' ? 30 : 90,
+          accessToken: accessToken
+        })
+      }
     );
     
     if (!response.ok) {

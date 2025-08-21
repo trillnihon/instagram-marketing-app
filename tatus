@@ -1,5 +1,10 @@
-[33mdade592[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m 📝 Update: 開発継続・改善状況の記録 - ステップ別ログ機能とデバッグ機能の実装状況を追記
-[33me02ef90[m 🔧 デバッグ機能強化: ステップ別ログ追加・デバッグモード制御実装 - Instagram連携問題特定のための詳細ログ機能
-[33m60f1386[m 🚨 緊急修正: index.htmlのInstagram OAuthコールバック処理完全復旧 - 404エラーの根本的解決
-[33m923c2c1[m 🚨 最終修正: index.htmlとApp.tsxのInstagram OAuthコールバック処理完全修正 - 404エラーの根本的解決
-[33m86a2e14[m 🚨 緊急修正: App.tsxのInstagram OAuthコールバックルート修正 - 404エラーの根本原因解決
+[33m5e1d418[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix: update redirect URIs to use correct production domain (instagram-marketing-app.vercel.app)
+[33m2e6ed06[m fix: restore correct Facebook App ID (1003724798254754) from Meta Developer Console
+[33m0f43d21[m fix: update Facebook App ID to match actual OAuth client_id from error (1193533602546658)
+[33m0dadf24[m fix: align Facebook App ID and redirect URIs with Meta Developer Console settings
+[33mb45f7e6[m fix: update Facebook App ID to match actual OAuth client_id (1193533602546658)
+[33mb97e12c[m fix: use correct VITE_FACEBOOK_APP_ID for Facebook OAuth authentication
+[33mfbb5a55[m fix: update Facebook user token to resolve Instagram integration ID error
+[33mc27a525[m fix: warmup script - correct HTTP methods for analytics endpoint
+[33m557fef6[m chore: warmup script + api retry + CORS preview wildcard
+[33m4c854de[m fix: demo user complete setup + AccountAnalytics improvements

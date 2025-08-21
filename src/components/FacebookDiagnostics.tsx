@@ -11,6 +11,34 @@ interface DiagnosticResults {
   isTester: boolean;
   userInfo: any;
   errors: string[];
+  methodSuccessRates?: {
+    method1: boolean;
+    method2: boolean;
+    method3: boolean;
+  };
+  methodErrorAnalysis?: {
+    method1: {
+      success: boolean;
+      status: number;
+      statusText: string;
+      error: string | null;
+      recommendation: string | null;
+    };
+    method2: {
+      success: boolean;
+      status: number;
+      statusText: string;
+      error: string | null;
+      recommendation: string | null;
+    };
+    method3: {
+      success: boolean;
+      status: number;
+      statusText: string;
+      error: string | null;
+      recommendation: string | null;
+    };
+  };
 }
 
 interface DiagnosticResponse {
@@ -210,6 +238,83 @@ const FacebookDiagnostics: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* 3段階データ取得方法の成功率 */}
+            {results.results.methodSuccessRates && (
+              <div className="border rounded-lg p-4">
+                <h4 className="font-semibold mb-2">🔄 3段階データ取得方法の成功率</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>方法1: 基本ユーザー情報取得</span>
+                    <span className={results.results.methodSuccessRates.method1 ? 'text-green-600' : 'text-red-600'}>
+                      {getStatusIcon(results.results.methodSuccessRates.method1)} {results.results.methodSuccessRates.method1 ? '成功' : '失敗'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>方法2: Facebookページ経由取得</span>
+                    <span className={results.results.methodSuccessRates.method2 ? 'text-green-600' : 'text-red-600'}>
+                      {getStatusIcon(results.results.methodSuccessRates.method2)} {results.results.methodSuccessRates.method2 ? '成功' : '失敗'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>方法3: Instagramアカウント直接取得</span>
+                    <span className={results.results.methodSuccessRates.method3 ? 'text-green-600' : 'text-red-600'}>
+                      {getStatusIcon(results.results.methodSuccessRates.method3)} {results.results.methodSuccessRates.method3 ? '成功' : '失敗'}
+                    </span>
+                  </div>
+                  
+                  {/* 成功率サマリー */}
+                  <div className="mt-3 pt-3 border-t">
+                    <div className="flex justify-between font-medium">
+                      <span>総合成功率:</span>
+                      <span className="text-blue-600">
+                        {Object.values(results.results.methodSuccessRates).filter(Boolean).length}/
+                        {Object.keys(results.results.methodSuccessRates).length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 詳細なエラー分析 */}
+            {results.results.methodErrorAnalysis && (
+              <div className="border rounded-lg p-4">
+                <h4 className="font-semibold mb-2">🔍 詳細なエラー分析</h4>
+                <div className="space-y-3">
+                  {Object.entries(results.results.methodErrorAnalysis).map(([methodKey, analysis]) => (
+                    <div key={methodKey} className={`p-3 rounded-lg ${analysis.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                      <div className="font-medium mb-2">
+                        {methodKey === 'method1' && '方法1: 基本ユーザー情報取得'}
+                        {methodKey === 'method2' && '方法2: Facebookページ経由取得'}
+                        {methodKey === 'method3' && '方法3: Instagramアカウント直接取得'}
+                      </div>
+                      
+                      <div className="text-sm space-y-1">
+                        <div className="flex justify-between">
+                          <span>ステータス:</span>
+                          <span className={analysis.success ? 'text-green-600' : 'text-red-600'}>
+                            {analysis.status} {analysis.statusText}
+                          </span>
+                        </div>
+                        
+                        {!analysis.success && analysis.error && (
+                          <div className="text-red-600">
+                            <strong>エラー:</strong> {analysis.error}
+                          </div>
+                        )}
+                        
+                        {!analysis.success && analysis.recommendation && (
+                          <div className="text-blue-600">
+                            <strong>推奨事項:</strong> {analysis.recommendation}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* エラー情報 */}
             {results.results.errors.length > 0 && (

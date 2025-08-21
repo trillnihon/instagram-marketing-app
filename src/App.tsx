@@ -41,7 +41,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
       isAuthenticated,
       currentUser: currentUser ? {
         id: currentUser.id,
-        username: currentUser.username
+        username: currentUser?.username || '不明'
       } : null,
       pathname: window.location.pathname,
       timestamp: new Date().toISOString()
@@ -68,7 +68,7 @@ const App: React.FC = () => {
       isAuthenticated,
       currentUser: currentUser ? {
         id: currentUser.id,
-        username: currentUser.username
+        username: currentUser?.username || '不明'
       } : null,
       pathname: window.location.pathname,
       search: window.location.search,

@@ -273,10 +273,10 @@ const Profile: React.FC = () => {
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <h3 className="text-md font-medium text-gray-900 mb-2">アカウント情報</h3>
                       <div className="space-y-2 text-sm text-gray-600">
-                        <p><strong>ユーザー名:</strong> {currentUser.username}</p>
-                        <p><strong>メールアドレス:</strong> {currentUser.email}</p>
-                        <p><strong>最終ログイン:</strong> {currentUser.lastLogin ? new Date(currentUser.lastLogin).toLocaleString('ja-JP') : '不明'}</p>
-                        <p><strong>アカウント作成日:</strong> {currentUser.createdAt ? new Date(currentUser.createdAt).toLocaleDateString('ja-JP') : '不明'}</p>
+                        <p><strong>ユーザー名:</strong> {currentUser?.username || '不明'}</p>
+                        <p><strong>メールアドレス:</strong> {currentUser?.email || '不明'}</p>
+                        <p><strong>最終ログイン:</strong> {currentUser?.lastLogin ? new Date(currentUser.lastLogin).toLocaleString('ja-JP') : '不明'}</p>
+                        <p><strong>アカウント作成日:</strong> {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString('ja-JP') : '不明'}</p>
                       </div>
                     </div>
 

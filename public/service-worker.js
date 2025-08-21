@@ -83,12 +83,26 @@ self.addEventListener('fetch', (event) => {
 
         return fetch(request)
           .then((fetchResponse) => {
-            // 成功したレスポンスのみキャッシュ
-            if (fetchResponse && fetchResponse.status === 200) {
+            // 成功したレスポンスのみキャッシュ（GETリクエストのみ、かつ適切なリソースタイプ）
+            if (fetchResponse && 
+                fetchResponse.status === 200 && 
+                request.method === 'GET' && 
+                request.destination !== 'document' &&
+                !request.url.includes('/api/') &&
+                !request.url.includes('/auth/')) {
+              
               const responseClone = fetchResponse.clone();
               caches.open(DYNAMIC_CACHE)
                 .then((cache) => {
-                  cache.put(request, responseClone);
+                  // 安全なキャッシュ処理
+                  try {
+                    cache.put(request, responseClone);
+                  } catch (error) {
+                    console.warn('Service Worker: Cache put failed for:', request.url, error);
+                  }
+                })
+                .catch((error) => {
+                  console.warn('Service Worker: Cache operation failed:', error);
                 });
             }
             return fetchResponse;

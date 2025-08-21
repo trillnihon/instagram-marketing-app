@@ -343,4 +343,170 @@ router.get('/errors', async (req, res) => {
   }
 });
 
+// 投稿時間分析API
+router.post('/posting-time-analysis', async (req, res) => {
+  try {
+    let access_token = req.body.access_token;
+    const { accountId, days = 30 } = req.body;
+    
+    // アクセストークンが指定されていない場合はDBから取得
+    if (!access_token) {
+      const tokenData = await TokenService.getValidLongLivedToken();
+      if (!tokenData) {
+        return res.status(400).json({
+          success: false,
+          error: 'access_token パラメータが必要です。DBに有効な長期トークンがありません。'
+        });
+      }
+      access_token = tokenData.token;
+    }
+
+    if (!accountId) {
+      return res.status(400).json({
+        success: false,
+        error: 'accountId パラメータが必要です'
+      });
+    }
+
+    console.log('📊 投稿時間分析開始:', { accountId, days });
+    
+    const instagramAPI = new InstagramAPI(access_token);
+    const analysis = await instagramAPI.analyzePostingTimes(accountId, parseInt(days));
+    
+    res.json({
+      success: true,
+      data: analysis,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ 投稿時間分析エラー:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// AI投稿生成API
+router.post('/ai/generate-post', async (req, res) => {
+  try {
+    let access_token = req.body.access_token;
+    const { 
+      accountId, 
+      contentType = 'post', 
+      tone = 'professional', 
+      targetAudience = 'general',
+      industry = 'general',
+      postLength = 'medium',
+      includeHashtags = true,
+      language = 'ja'
+    } = req.body;
+    
+    // アクセストークンが指定されていない場合はDBから取得
+    if (!access_token) {
+      const tokenData = await TokenService.getValidLongLivedToken();
+      if (!tokenData) {
+        return res.status(400).json({
+          success: false,
+          error: 'access_token パラメータが必要です。DBに有効な長期トークンがありません。'
+        });
+      }
+      access_token = tokenData.token;
+    }
+
+    if (!accountId) {
+      return res.status(400).json({
+        success: false,
+        error: 'accountId パラメータが必要です'
+      });
+    }
+
+    console.log('🤖 AI投稿生成開始:', { 
+      accountId, 
+      contentType, 
+      tone, 
+      targetAudience, 
+      industry, 
+      postLength, 
+      includeHashtags, 
+      language 
+    });
+    
+    const instagramAPI = new InstagramAPI(access_token);
+    const generatedPost = await instagramAPI.generateAIPost({
+      accountId,
+      contentType,
+      tone,
+      targetAudience,
+      industry,
+      postLength,
+      includeHashtags,
+      language
+    });
+    
+    res.json({
+      success: true,
+      data: generatedPost,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ AI投稿生成エラー:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 投稿パフォーマンス分析API
+router.get('/performance-analysis/:accountId', async (req, res) => {
+  try {
+    let access_token = req.query.access_token;
+    const { accountId } = req.params;
+    const { period = '30d', metric = 'engagement' } = req.query;
+    
+    // アクセストークンが指定されていない場合はDBから取得
+    if (!access_token) {
+      const tokenData = await TokenService.getValidLongLivedToken();
+      if (!tokenData) {
+        return res.status(400).json({
+          success: false,
+          error: 'access_token パラメータが必要です。DBに有効な長期トークンがありません。'
+        });
+      }
+      access_token = tokenData.token;
+    }
+
+    if (!accountId) {
+      return res.status(400).json({
+        success: false,
+        error: 'accountId パラメータが必要です'
+      });
+    }
+
+    console.log('📈 パフォーマンス分析開始:', { accountId, period, metric });
+    
+    const instagramAPI = new InstagramAPI(access_token);
+    const performance = await instagramAPI.analyzePerformance(accountId, period, metric);
+    
+    res.json({
+      success: true,
+      data: performance,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ パフォーマンス分析エラー:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 export default router; 

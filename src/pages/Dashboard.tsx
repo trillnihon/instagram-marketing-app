@@ -52,7 +52,7 @@ const Dashboard: React.FC = () => {
 
     try {
       // デモユーザーの場合はAPI呼び出しをスキップ
-      if (currentUser?.userId === 'demo_user') {
+      if (currentUser?.id === 'demo_user') {
         console.log('🎭 [DEBUG] デモユーザーのためAPI呼び出しをスキップ');
         // デモユーザーの場合は既にストアにダミーデータが設定されているはず
         setLoading?.(false);
@@ -67,9 +67,9 @@ const Dashboard: React.FC = () => {
         const authData = JSON.parse(instagramAuth);
         
         // Instagram投稿データを取得
-        if (authData.accessToken && authData.instagramBusinessAccount?.id && currentUser?.userId) {
+        if (authData.accessToken && authData.instagramBusinessAccount?.id && currentUser?.id) {
           const posts = await fetchInstagramPosts(
-            currentUser.userId,
+            currentUser.id,
             authData.accessToken,
             authData.instagramBusinessAccount.id
           );
@@ -105,7 +105,7 @@ const Dashboard: React.FC = () => {
   };
 
   // 管理者権限の判定（デモユーザーまたは特定のユーザーID）
-  const isAdmin = currentUser?.userId === 'demo_user' || currentUser?.userId === 'admin';
+  const isAdmin = currentUser?.id === 'demo_user' || currentUser?.id === 'admin';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -117,7 +117,7 @@ const Dashboard: React.FC = () => {
             Instagram マーケティング ダッシュボード
           </h1>
           <p className="mt-2 text-gray-600">
-            {currentUser?.userId} としてログイン中
+            {currentUser?.id} としてログイン中
           </p>
         </div>
 

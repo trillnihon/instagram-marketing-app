@@ -8,16 +8,51 @@ const AccountAnalytics: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 安全なユーザー情報の取得
+  const safeUsername = currentUser?.username || '不明';
+  const safeUserId = currentUser?.id || '不明';
+  
+  // Instagram認証情報を正しく取得（文字列からパース）
+  const getInstagramAuth = () => {
+    try {
+      const instagramAuthStr = localStorage.getItem('instagram_auth');
+      if (instagramAuthStr) {
+        const parsed = JSON.parse(instagramAuthStr);
+        console.log('[DEBUG] AccountAnalytics - パースされたInstagram認証情報:', parsed);
+        return parsed;
+      }
+    } catch (error) {
+      console.error('[ERROR] AccountAnalytics - Instagram認証情報のパースエラー:', error);
+    }
+    return null;
+  };
+
+  const instagramAuth = getInstagramAuth();
+  const safeAccessToken = instagramAuth?.accessToken || currentUser?.accessToken;
+  const safeInstagramBusinessAccountId = instagramAuth?.instagramBusinessAccountId || currentUser?.instagramBusinessAccountId;
+
   useEffect(() => {
     console.log('🔍 [DEBUG] AccountAnalytics - 現在のユーザー情報:', {
-      userId: currentUser?.id,
-      username: currentUser?.username,
-      hasAccessToken: !!currentUser?.accessToken,
-      instagramBusinessAccountId: currentUser?.instagramBusinessAccountId
+      userId: safeUserId,
+      username: safeUsername,
+      hasAccessToken: !!safeAccessToken,
+      instagramBusinessAccountId: safeInstagramBusinessAccountId
+    });
+
+    // 詳細なデバッグ情報を追加
+    console.log('🔍 [DEBUG] AccountAnalytics - 詳細なユーザー情報:', {
+      currentUser: currentUser,
+      instagramAuth: instagramAuth,
+      accessToken: safeAccessToken,
+      instagramBusinessAccountId: safeInstagramBusinessAccountId,
+      localStorage: {
+        instagram_auth: localStorage.getItem('instagram_auth'),
+        app_storage: localStorage.getItem('app-storage')
+      }
     });
 
     // デモユーザーの場合はアクセストークンチェックをスキップ
-    if (currentUser?.id === 'demo_user' || currentUser?.username === 'Demo User') {
+    if (safeUserId === 'demo_user' || safeUsername === 'Demo User') {
       console.log('🎭 [DEBUG] AccountAnalytics - デモユーザー、アクセストークンチェックをスキップ');
       setLoading(false);
       return;
@@ -25,9 +60,15 @@ const AccountAnalytics: React.FC = () => {
 
     // 本番ユーザーのみAPI通信
     const fetchAccount = async () => {
-      if (!currentUser?.accessToken) {
+      if (!safeAccessToken) {
         console.error('[ERROR] AccountAnalytics - アクセストークンがありません');
-        setError('アクセストークンがありません。再ログインしてください。');
+        console.error('[DEBUG] AccountAnalytics - アクセストークン詳細:', {
+          safeAccessToken,
+          currentUserAccessToken: currentUser?.accessToken,
+          instagramAuth: instagramAuth,
+          rawInstagramAuth: localStorage.getItem('instagram_auth')
+        });
+        setError('アクセストークンがありません。Instagram連携を再実行してください。');
         return;
       }
 
@@ -38,8 +79,8 @@ const AccountAnalytics: React.FC = () => {
       try {
         // Instagram Graph APIを使用してアカウント情報を取得
         // 利用可能なフィールド: id, username, media_count, followers_count, follows_count
-        const apiUrl = `https://graph.facebook.com/v19.0/${currentUser.instagramBusinessAccountId}?fields=id,username,media_count,followers_count,follows_count&access_token=${currentUser.accessToken}`;
-        console.log('[DEBUG] AccountAnalytics - API URL:', apiUrl.replace(currentUser.accessToken, '***'));
+        const apiUrl = `https://graph.facebook.com/v19.0/${safeInstagramBusinessAccountId}?fields=id,username,media_count,followers_count,follows_count&access_token=${safeAccessToken}`;
+        console.log('[DEBUG] AccountAnalytics - API URL:', apiUrl.replace(safeAccessToken, '***'));
         
         const response = await apiClient.get(apiUrl);
         
@@ -68,7 +109,7 @@ const AccountAnalytics: React.FC = () => {
     };
 
     fetchAccount();
-  }, [currentUser, accountAnalytics]);
+  }, [currentUser, accountAnalytics, safeUserId, safeUsername, safeAccessToken, safeInstagramBusinessAccountId]);
 
   if (loading) return <div>アカウント情報を取得中...</div>;
   
@@ -81,10 +122,10 @@ const AccountAnalytics: React.FC = () => {
           <summary>デバッグ情報</summary>
           <pre style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
             {JSON.stringify({
-              userId: currentUser?.id,
-              username: currentUser?.username,
-              hasAccessToken: !!currentUser?.accessToken,
-              instagramBusinessAccountId: currentUser?.instagramBusinessAccountId
+              userId: safeUserId,
+              username: safeUsername,
+              hasAccessToken: !!safeAccessToken,
+              instagramBusinessAccountId: safeInstagramBusinessAccountId
             }, null, 2)}
           </pre>
         </details>
@@ -93,31 +134,60 @@ const AccountAnalytics: React.FC = () => {
   }
 
   if (!account) {
+    // Instagram連携が成功している場合の表示
+    if (instagramAuth && safeAccessToken) {
+      console.log('🎯 [DEBUG] AccountAnalytics - Instagram連携成功、基本情報表示');
+      return (
+        <div style={{ padding: '1rem', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', color: '#065f46' }}>
+          <h2>✅ Instagram連携完了</h2>
+          <p>Instagramビジネスアカウントとの連携が完了しました。</p>
+          <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#f0fdf4', borderRadius: '4px' }}>
+            <h3>連携情報</h3>
+            <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
+              <li><b>ユーザー名:</b> {instagramAuth.username || '取得中...'}</li>
+              <li><b>アカウントID:</b> {instagramAuth.instagramBusinessAccountId || '取得中...'}</li>
+              <li><b>連携状態:</b> ✅ アクティブ</li>
+              <li><b>アクセストークン:</b> {safeAccessToken ? '✅ 有効' : '❌ 無効'}</li>
+            </ul>
+          </div>
+          <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#047857' }}>
+            詳細なアカウント情報の取得中です。しばらくお待ちください。
+          </p>
+        </div>
+      );
+    }
+    
     // デモユーザーの場合、フォールバックデータを表示
-    if (currentUser?.id === 'demo_user' || currentUser?.username === 'Demo User') {
+    if (safeUserId === 'demo_user' || safeUsername === 'Demo User') {
       console.log('🎭 [DEBUG] AccountAnalytics - フォールバックデモデータ表示');
       return (
         <div style={{ padding: '1rem', background: '#f3f4f6', borderRadius: '8px', color: '#333' }}>
           <h2>Instagramアカウント情報（デモ）</h2>
           <ul>
-            <li><b>ユーザー名:</b> Demo User</li>
+            <li><b>ユーザー名:</b> {safeUsername}</li>
             <li><b>投稿数:</b> 1</li>
             <li><b>平均エンゲージメント:</b> 8.2</li>
-            <li><b>ID:</b> demo_user</li>
+            <li><b>ID:</b> {safeUserId}</li>
           </ul>
         </div>
       );
     }
-    return <div>アカウント情報がありません。</div>;
+    
+    return (
+      <div style={{ padding: '1rem', background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '8px', color: '#92400e' }}>
+        <h3>⚠️ Instagram連携が必要です</h3>
+        <p>アカウント情報を表示するには、Instagram連携を完了してください。</p>
+      </div>
+    );
   }
 
   // デモユーザー用の表示
-  if (currentUser?.id === 'demo_user' || currentUser?.username === 'Demo User') {
+  if (safeUserId === 'demo_user' || safeUsername === 'Demo User') {
     return (
       <div style={{ padding: '1rem', background: '#f3f4f6', borderRadius: '8px', color: '#333' }}>
         <h2>Instagramアカウント情報（デモ）</h2>
         <ul>
-          <li><b>ユーザー名:</b> {account.username}</li>
+          <li><b>ユーザー名:</b> {safeUsername}</li>
           <li><b>投稿数:</b> {account.totalPosts}</li>
           <li><b>平均エンゲージメント:</b> {account.averageEngagement}</li>
           <li><b>ID:</b> {account.accountId}</li>

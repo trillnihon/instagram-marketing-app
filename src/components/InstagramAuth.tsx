@@ -10,9 +10,10 @@ import {
 import { InstagramBusinessAccount, InstagramMedia } from '../types';
 import Navigation from './Navigation';
 import { useAppStore } from '../store/useAppStore';
+import { instagramAuth } from '../services/instagramAuth';
 
 const InstagramAuth: React.FC = () => {
-  const { currentUser, isAuthenticated } = useAppStore();
+  const { currentUser, isAuthenticated, setCurrentUser } = useAppStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authData, setAuthData] = useState<{
@@ -21,31 +22,35 @@ const InstagramAuth: React.FC = () => {
     recentPosts: InstagramMedia[];
     savedAt?: string;
   } | null>(null);
+  
+  // アカウント情報の状態
+  const [accountInfo, setAccountInfo] = useState<{
+    id: string;
+    username: string;
+    media_count: number;
+    followers_count: number;
+    follows_count: number;
+    biography: string;
+    profile_picture_url: string;
+  } | null>(null);
+  
+  // 投稿一覧の状態
+  const [posts, setPosts] = useState<any[]>([]);
 
   // 安全なユーザー情報の取得
   const safeUsername = currentUser && currentUser.username ? currentUser.username : null;
   const safeEmail = currentUser && currentUser.email ? currentUser.email : null;
   const displayName = safeUsername || safeEmail || '不明';
 
+  // 認証状態とユーザー情報の監視
   useEffect(() => {
-    // 安全なユーザー情報のログ出力
-    if (currentUser) {
-      console.log('[DEBUG] InstagramAuth - 現在のユーザー情報:', {
-        id: currentUser.id,
-        username: currentUser.username || 'undefined',
-        email: currentUser.email || 'undefined',
-        hasProfile: !!currentUser.profile
-      });
-    } else {
-      console.log('[DEBUG] InstagramAuth - 現在のユーザー情報: null');
-    }
-    console.log('[DEBUG] InstagramAuth - 認証状態:', isAuthenticated);
+    console.log('[DEBUG] InstagramAuth - useEffect実行:', { isAuthenticated, hasCurrentUser: !!currentUser });
     
-    // URLパラメータをチェックしてコールバック処理を行う
+    // URLパラメータから認証コードとstateを取得
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const state = urlParams.get('state');
-
+    
     if (code && state) {
       handleAuthCallback(code, state);
     } else {
@@ -53,9 +58,90 @@ const InstagramAuth: React.FC = () => {
       const existingAuth = getInstagramAuth();
       if (existingAuth) {
         setAuthData(existingAuth);
+        // 既存の認証情報でcurrentUserを更新（無限ループ防止のため条件付き）
+        if (!currentUser?.accessToken || currentUser?.accessToken !== existingAuth.accessToken) {
+          updateCurrentUserWithInstagramAuth(existingAuth);
+        }
+        
+        // 既存の認証情報からユーザー名とアカウントIDを取得してcurrentUserを更新
+        if (currentUser && (existingAuth.username || existingAuth.instagramBusinessAccountId)) {
+          const updatedUser = {
+            ...currentUser,
+            username: existingAuth.username || currentUser.username,
+            instagramBusinessAccountId: existingAuth.instagramBusinessAccountId || currentUser.instagramBusinessAccountId
+          };
+          setCurrentUser(updatedUser);
+          console.log('[DEBUG] InstagramAuth - 既存認証情報でcurrentUserを更新:', updatedUser);
+        }
+        
+        // 既存の認証情報がある場合は、アカウント情報を取得
+        if (existingAuth.accessToken) {
+          fetchAccountInfo(existingAuth.accessToken);
+        }
       }
     }
-  }, [currentUser, isAuthenticated]);
+  }, [isAuthenticated]); // currentUserを依存配列から削除して無限ループを防止
+
+  // 認証状態が変更されたときにアカウント情報を取得
+  useEffect(() => {
+    if (isAuthenticated && authData?.accessToken && !accountInfo) {
+      console.log('[DEBUG] InstagramAuth - 認証済み、アカウント情報取得開始');
+      fetchAccountInfo(authData.accessToken);
+    }
+  }, [isAuthenticated, authData?.accessToken, accountInfo]); // accountInfoを依存配列に追加
+
+  // 認証データが変更されたときにアカウント情報を再取得
+  useEffect(() => {
+    if (authData?.accessToken && !accountInfo) {
+      console.log('[DEBUG] InstagramAuth - 認証データ変更、アカウント情報取得開始');
+      fetchAccountInfo(authData.accessToken);
+    }
+  }, [authData, accountInfo]);
+
+  // Instagramアカウント情報を取得する関数
+  const fetchAccountInfo = async (accessToken: string) => {
+    try {
+      console.log('[DEBUG] InstagramAuth - アカウント情報取得開始');
+      setIsLoading(true);
+      
+      const accountData = await instagramAuth.getInstagramAccountInfo(accessToken);
+      if (accountData) {
+        setAccountInfo(accountData);
+        console.log('[DEBUG] InstagramAuth - アカウント情報取得成功:', accountData);
+      }
+      
+      // 投稿一覧も取得
+      const postsData = await instagramAuth.getInstagramPosts(accessToken, 10);
+      if (postsData) {
+        setPosts(postsData);
+        console.log('[DEBUG] InstagramAuth - 投稿一覧取得成功:', postsData);
+      }
+    } catch (error) {
+      console.error('[ERROR] InstagramAuth - アカウント情報取得エラー:', error);
+      setError('アカウント情報の取得に失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Instagram認証情報でcurrentUserを更新する関数
+  const updateCurrentUserWithInstagramAuth = (authInfo: any) => {
+    if (currentUser && authInfo.accessToken) {
+      // 無限ループ防止のため、既存のトークンと異なる場合のみ更新
+      if (currentUser.accessToken !== authInfo.accessToken) {
+        const updatedUser = {
+          ...currentUser,
+          accessToken: authInfo.accessToken,
+          username: authInfo.username || currentUser?.username,
+          instagramBusinessAccountId: authInfo.instagramBusinessAccountId || authInfo.instagramBusinessAccount?.id
+        };
+        setCurrentUser(updatedUser);
+        console.log('[DEBUG] InstagramAuth - currentUserを更新:', updatedUser);
+      } else {
+        console.log('[DEBUG] InstagramAuth - アクセストークンは既に最新です');
+      }
+    }
+  };
 
   const handleAuthCallback = async (code: string, state: string) => {
     setIsLoading(true);
@@ -67,13 +153,80 @@ const InstagramAuth: React.FC = () => {
       if (response.success && response.data) {
         const authInfo = {
           accessToken: response.data.access_token,
+          username: response.data.instagram_business_account?.username,
+          instagramBusinessAccountId: response.data.instagram_business_account?.id,
           instagramBusinessAccount: response.data.instagram_business_account,
           recentPosts: response.data.recent_posts
         };
 
+        console.log('[DEBUG] Instagram認証成功、認証情報:', authInfo);
+
         // ローカルストレージに保存
         saveInstagramAuth(authInfo);
         setAuthData(authInfo);
+
+        // currentUserを更新（無限ループ防止のため条件付き）
+        if (!currentUser?.accessToken || currentUser?.accessToken !== authInfo.accessToken) {
+          updateCurrentUserWithInstagramAuth(authInfo);
+        }
+
+        // アカウント情報を取得（重要: 認証直後に実行）
+        if (authInfo.accessToken) {
+          console.log('[DEBUG] アカウント情報取得開始');
+          try {
+            // 少し待機してからAPI呼び出し（認証完了の確認）
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const accountData = await instagramAuth.getInstagramAccountInfo(authInfo.accessToken);
+            if (accountData) {
+              setAccountInfo(accountData);
+              console.log('[DEBUG] アカウント情報取得成功:', accountData);
+              
+              // 認証情報を更新（アカウント情報を含む）
+              const updatedAuthInfo = {
+                ...authInfo,
+                instagramBusinessAccount: {
+                  ...authInfo.instagramBusinessAccount,
+                  ...accountData
+                }
+              };
+              setAuthData(updatedAuthInfo);
+              saveInstagramAuth(updatedAuthInfo);
+            } else {
+              console.warn('[WARNING] アカウント情報が取得できませんでした');
+              
+              // 再試行（少し待機してから）
+              console.log('[DEBUG] アカウント情報取得を再試行します');
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              
+              const retryAccountData = await instagramAuth.getInstagramAccountInfo(authInfo.accessToken);
+              if (retryAccountData) {
+                setAccountInfo(retryAccountData);
+                console.log('[DEBUG] 再試行でアカウント情報取得成功:', retryAccountData);
+                
+                const updatedAuthInfo = {
+                  ...authInfo,
+                  instagramBusinessAccount: {
+                    ...authInfo.instagramBusinessAccount,
+                    ...retryAccountData
+                  }
+                };
+                setAuthData(updatedAuthInfo);
+                saveInstagramAuth(updatedAuthInfo);
+              }
+            }
+            
+            // 投稿一覧も取得
+            const postsData = await instagramAuth.getInstagramPosts(authInfo.accessToken, 10);
+            if (postsData) {
+              setPosts(postsData);
+              console.log('[DEBUG] 投稿一覧取得成功:', postsData);
+            }
+          } catch (fetchError) {
+            console.error('[ERROR] アカウント情報取得エラー:', fetchError);
+            // アカウント情報取得に失敗しても認証自体は成功している
+          }
+        }
 
         // URLからパラメータをクリア
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -191,25 +344,27 @@ const InstagramAuth: React.FC = () => {
     );
   }
 
-  // ユーザー情報が存在しない場合のエラー表示
+  // ユーザー情報が存在しない場合の処理
   if (!currentUser) {
+    // ユーザー情報の初期化を待機
+    console.log('[DEBUG] InstagramAuth - currentUserが存在しないため、初期化を待機中');
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation activeTab="instagram" onTabChange={() => {}} showAdminLink={true} />
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-red-50 border border-red-200 rounded-md p-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-6">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">ユーザー情報が取得できません</h3>
-                  <div className="mt-2 text-sm text-red-700">
-                    <p>ユーザー情報が正しく読み込まれていません。再ログインしてください。</p>
-                    <p className="mt-2">デバッグ情報: currentUser = {JSON.stringify(currentUser)}</p>
+                  <h3 className="text-sm font-medium text-blue-800">ユーザー認証を確認中</h3>
+                  <div className="mt-2 text-sm text-blue-700">
+                    <p>ユーザー認証情報を読み込んでいます。しばらくお待ちください。</p>
+                    <p className="mt-2 text-xs text-blue-600">
+                      認証が完了していない場合は、ログイン画面に戻って再認証してください。
+                    </p>
                   </div>
                 </div>
               </div>
@@ -272,24 +427,29 @@ const InstagramAuth: React.FC = () => {
               </div>
             )}
 
-            {/* 認証状態の表示 */}
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-800">認証状態</h3>
-                  <div className="mt-2 text-sm text-blue-700">
-                    <p>Facebook認証: {isAuthenticated ? '✅ 認証済み' : '❌ 未認証'}</p>
-                                         <p>ユーザー: {displayName}</p>
-                    <p>Instagram連携: {authData ? '✅ 連携済み' : '❌ 未連携'}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+                         {/* 認証状態の表示 */}
+             <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+               <div className="flex items-center">
+                 <div className="flex-shrink-0">
+                   <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" clipRule="evenodd" />
+                   </svg>
+                 </div>
+                 <div className="ml-3">
+                   <h3 className="text-sm font-medium text-blue-800">認証状態</h3>
+                   <div className="mt-2 text-sm text-blue-700">
+                     <p>Facebook認証: {isAuthenticated ? '✅ 認証済み' : '❌ 未認証'}</p>
+                     <p>ユーザー: {displayName}</p>
+                     <p>Instagram連携: {authData ? '✅ 連携済み' : '❌ 未連携'}</p>
+                     {!isAuthenticated && (
+                       <p className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded">
+                         ⚠️ Facebook認証が必要です。ログイン画面で認証を完了してください。
+                       </p>
+                     )}
+                   </div>
+                 </div>
+               </div>
+             </div>
 
             {!authData ? (
               <div className="text-center">
@@ -360,22 +520,37 @@ const InstagramAuth: React.FC = () => {
                       <div>
                         <dt className="text-sm font-medium text-gray-500">ユーザー名</dt>
                         <dd className="text-sm text-gray-900">
-                          {authData.instagramBusinessAccount && authData.instagramBusinessAccount.username ? 
+                          {accountInfo ? `@${accountInfo.username}` : 
+                           (authData.instagramBusinessAccount && authData.instagramBusinessAccount.username ? 
                             `@${authData.instagramBusinessAccount.username}` : 
-                            '取得中...'
+                            '取得中...')
                           }
                         </dd>
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-gray-500">アカウントID</dt>
                         <dd className="text-sm text-gray-900 font-mono">
-                          {authData.instagramBusinessAccount?.id || '取得中...'}
+                          {accountInfo ? accountInfo.id : 
+                           (authData.instagramBusinessAccount?.id || '取得中...')}
                         </dd>
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-gray-500">投稿数</dt>
                         <dd className="text-sm text-gray-900">
-                          {authData.instagramBusinessAccount?.media_count || 0}件
+                          {accountInfo ? `${accountInfo.media_count}件` : 
+                           `${authData.instagramBusinessAccount?.media_count || 0}件`}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">フォロワー数</dt>
+                        <dd className="text-sm text-gray-900">
+                          {accountInfo ? `${accountInfo.followers_count}人` : '取得中...'}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">フォロー数</dt>
+                        <dd className="text-sm text-gray-900">
+                          {accountInfo ? `${accountInfo.follows_count}人` : '取得中...'}
                         </dd>
                       </div>
                       <div>
@@ -421,16 +596,43 @@ const InstagramAuth: React.FC = () => {
                           {post.media_url && (
                             <img 
                               src={post.media_url} 
-                              alt="投稿画像" 
+                              alt={post.caption || 'Instagram投稿'} 
                               className="w-full h-32 object-cover rounded mb-2"
                             />
                           )}
                           {post.caption && (
-                            <p className="text-sm text-gray-700 line-clamp-3 mb-2">
-                              {post.caption}
-                            </p>
+                            <p className="text-sm text-gray-700 line-clamp-2">{post.caption}</p>
                           )}
-                          <div className="flex justify-between text-xs text-gray-500">
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 新しく取得した投稿一覧の表示 */}
+                {posts && posts.length > 0 && (
+                  <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                    <h3 className="text-lg font-medium text-blue-900 mb-4">最新投稿（{posts.length}件）</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {posts.map((post) => (
+                        <div key={post.id} className="bg-white rounded-lg p-4 border">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-lg">{getMediaTypeIcon(post.media_type)}</span>
+                            <span className="text-sm text-gray-500">
+                              {formatDate(post.timestamp)}
+                            </span>
+                          </div>
+                          {post.media_url && (
+                            <img 
+                              src={post.media_url} 
+                              alt={post.caption || 'Instagram投稿'} 
+                              className="w-full h-32 object-cover rounded mb-2"
+                            />
+                          )}
+                          {post.caption && (
+                            <p className="text-sm text-gray-700 line-clamp-2">{post.caption}</p>
+                          )}
+                          <div className="flex items-center justify-between mt-2 text-sm text-gray-500">
                             <span>❤️ {post.like_count || 0}</span>
                             <span>💬 {post.comments_count || 0}</span>
                           </div>

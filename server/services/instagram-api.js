@@ -258,6 +258,310 @@ class InstagramAPI {
   }
 
   /**
+   * 投稿時間分析を実行
+   * @param {string} accountId - Instagram Business Account ID
+   * @param {number} days - 分析対象日数（デフォルト: 30日）
+   * @returns {Promise<object>} 投稿時間分析結果
+   */
+  async analyzePostingTimes(accountId, days = 30) {
+    try {
+      console.log(`📊 投稿時間分析開始: ${accountId} (${days}日間)`);
+      
+      // 投稿データを取得
+      const media = await this.getMedia(accountId, 100); // 最大100件取得
+      
+      if (!media || media.length === 0) {
+        return {
+          accountId,
+          analysisPeriod: days,
+          totalPosts: 0,
+          postingTimes: [],
+          bestPostingTimes: [],
+          recommendations: ['投稿データが不足しています']
+        };
+      }
+
+      // 投稿時間を分析
+      const postingTimes = media.map(post => {
+        const timestamp = new Date(post.timestamp);
+        return {
+          hour: timestamp.getHours(),
+          dayOfWeek: timestamp.getDay(),
+          timestamp: timestamp.toISOString(),
+          engagement: post.like_count || 0
+        };
+      });
+
+      // 時間帯別投稿数
+      const hourlyStats = new Array(24).fill(0);
+      const dailyStats = new Array(7).fill(0);
+      
+      postingTimes.forEach(time => {
+        hourlyStats[time.hour]++;
+        dailyStats[time.dayOfWeek]++;
+      });
+
+      // 最適な投稿時間を特定
+      const bestHours = hourlyStats
+        .map((count, hour) => ({ hour, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3)
+        .map(item => item.hour);
+
+      const bestDays = dailyStats
+        .map((count, day) => ({ day, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3)
+        .map(item => item.day);
+
+      // 推奨事項を生成
+      const recommendations = [
+        `最も投稿が多い時間帯: ${bestHours.map(h => `${h}時`).join(', ')}`,
+        `最も投稿が多い曜日: ${bestDays.map(d => ['日', '月', '火', '水', '木', '金', '土'][d]).join(', ')}`,
+        `平均投稿頻度: ${(media.length / days).toFixed(1)}件/日`
+      ];
+
+      const analysis = {
+        accountId,
+        analysisPeriod: days,
+        totalPosts: media.length,
+        postingTimes: postingTimes.slice(0, 20), // 最新20件のみ
+        hourlyDistribution: hourlyStats,
+        dailyDistribution: dailyStats,
+        bestPostingTimes: {
+          hours: bestHours,
+          days: bestDays
+        },
+        recommendations,
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('✅ 投稿時間分析完了');
+      return analysis;
+
+    } catch (error) {
+      console.error('❌ 投稿時間分析失敗:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * AI投稿を生成
+   * @param {object} options - 生成オプション
+   * @returns {Promise<object>} 生成された投稿
+   */
+  async generateAIPost(options) {
+    try {
+      const {
+        accountId,
+        contentType = 'post',
+        tone = 'professional',
+        targetAudience = 'general',
+        industry = 'general',
+        postLength = 'medium',
+        includeHashtags = true,
+        language = 'ja'
+      } = options;
+
+      console.log(`🤖 AI投稿生成開始: ${accountId}`);
+
+      // アカウント情報を取得してコンテキストを生成
+      let accountContext = '';
+      try {
+        const accountInfo = await this.getInstagramAccount(accountId);
+        accountContext = `アカウント名: ${accountInfo.username || 'N/A'}, フォロワー数: ${accountInfo.followers_count || 'N/A'}`;
+      } catch (error) {
+        console.warn('⚠️ アカウント情報取得失敗、デフォルトコンテキストを使用');
+        accountContext = 'Instagram Business Account';
+      }
+
+      // 投稿テンプレートを生成
+      const templates = {
+        professional: {
+          general: {
+            short: '📱 今日のインスピレーション\n\n{content}\n\n#インスタグラム #ビジネス #成長',
+            medium: '📱 今日のインスピレーション\n\n{content}\n\n私たちは常に{industry}の最前線で、お客様に最高の価値を提供することを目指しています。\n\n#インスタグラム #ビジネス #成長 #プロフェッショナル',
+            long: '📱 今日のインスピレーション\n\n{content}\n\n私たちは常に{industry}の最前線で、お客様に最高の価値を提供することを目指しています。\n\n毎日の小さな積み重ねが、大きな成果につながります。一緒に成長していきましょう。\n\n#インスタグラム #ビジネス #成長 #プロフェッショナル #成功'
+          }
+        },
+        casual: {
+          general: {
+            short: '✨ 今日の気分\n\n{content}\n\n#インスタグラム #日常 #楽しい',
+            medium: '✨ 今日の気分\n\n{content}\n\nみんなで一緒に楽しもう！\n\n#インスタグラム #日常 #楽しい #仲間',
+            long: '✨ 今日の気分\n\n{content}\n\nみんなで一緒に楽しもう！\n\n人生は短いから、毎日を大切に過ごしたいよね。小さな幸せを見つけることが、豊かな人生の秘訣だと思う。\n\n#インスタグラム #日常 #楽しい #仲間 #幸せ'
+          }
+        }
+      };
+
+      // コンテンツを生成
+      const contentIdeas = {
+        general: [
+          '新しい発見がありました！',
+          '今日も頑張りましょう！',
+          '素敵な一日になりますように',
+          '小さな進歩も大切です',
+          '感謝の気持ちを忘れずに'
+        ],
+        business: [
+          'ビジネスの新しいアイデア',
+          'お客様からのフィードバック',
+          'チームの成長を実感',
+          '新しいプロジェクトの開始',
+          '目標達成への道のり'
+        ]
+      };
+
+      // ランダムなコンテンツを選択
+      const contentCategory = industry === 'business' ? 'business' : 'general';
+      const randomContent = contentIdeas[contentCategory][Math.floor(Math.random() * contentIdeas[contentCategory].length)];
+
+      // テンプレートを選択
+      const selectedTemplate = templates[tone]?.[targetAudience]?.[postLength] || templates.professional.general.medium;
+
+      // 投稿を生成
+      const generatedPost = selectedTemplate
+        .replace('{content}', randomContent)
+        .replace('{industry}', industry === 'business' ? 'ビジネス' : '業界');
+
+      // ハッシュタグを追加
+      let hashtags = '';
+      if (includeHashtags) {
+        const baseHashtags = ['#インスタグラム', '#SNS', '#マーケティング'];
+        const industryHashtags = industry === 'business' ? ['#ビジネス', '#起業', '#成功'] : ['#ライフスタイル', '#日常', '#楽しい'];
+        const toneHashtags = tone === 'professional' ? ['#プロフェッショナル', '#成長'] : ['#カジュアル', '#楽しい'];
+        
+        hashtags = '\n\n' + [...baseHashtags, ...industryHashtags, ...toneHashtags].join(' ');
+      }
+
+      const result = {
+        accountId,
+        contentType,
+        tone,
+        targetAudience,
+        industry,
+        postLength,
+        content: generatedPost + hashtags,
+        characterCount: (generatedPost + hashtags).length,
+        hashtags: includeHashtags ? hashtags.trim().split(' ').filter(tag => tag.startsWith('#')) : [],
+        recommendations: [
+          '投稿時間は午前9-11時、午後7-9時がおすすめ',
+          '画像や動画と組み合わせると効果的',
+          '定期的な投稿でフォロワーとの関係を構築',
+          'エンゲージメントを高めるために質問を投げかける'
+        ],
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('✅ AI投稿生成完了');
+      return result;
+
+    } catch (error) {
+      console.error('❌ AI投稿生成失敗:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * パフォーマンス分析を実行
+   * @param {string} accountId - Instagram Business Account ID
+   * @param {string} period - 分析期間 (7d, 30d, 90d)
+   * @param {string} metric - 分析指標 (engagement, reach, impressions)
+   * @returns {Promise<object>} パフォーマンス分析結果
+   */
+  async analyzePerformance(accountId, period = '30d', metric = 'engagement') {
+    try {
+      console.log(`📈 パフォーマンス分析開始: ${accountId} (${period}, ${metric})`);
+
+      // アカウントインサイトを取得
+      const accountInsights = await this.getAccountInsights(accountId);
+      
+      // 投稿データを取得
+      const media = await this.getMedia(accountId, 50);
+      
+      if (!media || media.length === 0) {
+        return {
+          accountId,
+          period,
+          metric,
+          totalPosts: 0,
+          averageEngagement: 0,
+          totalReach: 0,
+          totalImpressions: 0,
+          topPosts: [],
+          recommendations: ['投稿データが不足しています']
+        };
+      }
+
+      // 投稿ごとのパフォーマンスを計算
+      const postPerformance = media.map(post => {
+        const engagement = (post.like_count || 0) + (post.comments_count || 0);
+        const reach = post.insights?.reach || 0;
+        const impressions = post.insights?.impressions || 0;
+        
+        return {
+          id: post.id,
+          timestamp: post.timestamp,
+          engagement,
+          reach,
+          impressions,
+          engagementRate: post.followers_count ? (engagement / post.followers_count * 100) : 0
+        };
+      });
+
+      // 統計を計算
+      const totalPosts = media.length;
+      const totalEngagement = postPerformance.reduce((sum, post) => sum + post.engagement, 0);
+      const totalReach = postPerformance.reduce((sum, post) => sum + post.reach, 0);
+      const totalImpressions = postPerformance.reduce((sum, post) => sum + post.impressions, 0);
+      
+      const averageEngagement = totalPosts > 0 ? totalEngagement / totalPosts : 0;
+      const averageEngagementRate = postPerformance.reduce((sum, post) => sum + post.engagementRate, 0) / totalPosts;
+
+      // トップ投稿を特定
+      const topPosts = postPerformance
+        .sort((a, b) => b.engagement - a.engagement)
+        .slice(0, 5);
+
+      // 推奨事項を生成
+      const recommendations = [];
+      
+      if (averageEngagementRate < 1) {
+        recommendations.push('エンゲージメント率を向上させるために、より魅力的なコンテンツの作成を検討してください');
+      }
+      
+      if (totalPosts < 10) {
+        recommendations.push('投稿頻度を増やして、フォロワーとの関係を構築してください');
+      }
+      
+      if (topPosts.length > 0) {
+        recommendations.push(`最も人気のある投稿の要素を分析し、同様のアプローチを試してください`);
+      }
+
+      const analysis = {
+        accountId,
+        period,
+        metric,
+        totalPosts,
+        averageEngagement: Math.round(averageEngagement * 100) / 100,
+        averageEngagementRate: Math.round(averageEngagementRate * 100) / 100,
+        totalReach,
+        totalImpressions,
+        topPosts,
+        performanceTrend: 'stable', // 将来的には時系列分析を追加
+        recommendations,
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('✅ パフォーマンス分析完了');
+      return analysis;
+
+    } catch (error) {
+      console.error('❌ パフォーマンス分析失敗:', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * 結果をクリア
    */
   clearResults() {
