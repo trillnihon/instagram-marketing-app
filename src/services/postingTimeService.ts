@@ -70,7 +70,14 @@ export const fetchPostingTimeData = async (
     }
     
     const data = await response.json();
-    return data.postingTimes || [];
+    console.log('[DEBUG] 投稿時間分析APIレスポンス:', data);
+    
+    if (data.success && data.data) {
+      return data.data.postingTimes || [];
+    } else {
+      console.warn('[WARNING] APIレスポンスが不正:', data);
+      return [];
+    }
   } catch (error) {
     console.warn('API接続エラー、モックデータを使用:', error);
     // API接続エラー時はモックデータを返す

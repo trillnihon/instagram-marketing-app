@@ -346,7 +346,7 @@ router.get('/errors', async (req, res) => {
 // 投稿時間分析API
 router.post('/posting-time-analysis', async (req, res) => {
   try {
-    let access_token = req.body.access_token;
+    let access_token = req.body.accessToken || req.body.access_token;
     const { accountId, days = 30 } = req.body;
     
     // アクセストークンが指定されていない場合はDBから取得
@@ -355,7 +355,7 @@ router.post('/posting-time-analysis', async (req, res) => {
       if (!tokenData) {
         return res.status(400).json({
           success: false,
-          error: 'access_token パラメータが必要です。DBに有効な長期トークンがありません。'
+          error: 'accessToken または access_token パラメータが必要です。DBに有効な長期トークンがありません。'
         });
       }
       access_token = tokenData.token;
@@ -369,13 +369,23 @@ router.post('/posting-time-analysis', async (req, res) => {
     }
 
     console.log('📊 投稿時間分析開始:', { accountId, days });
+    console.log('📊 リクエストボディ:', req.body);
+    console.log('📊 アクセストークン:', access_token ? '設定済み' : '未設定');
     
     const instagramAPI = new InstagramAPI(access_token);
     const analysis = await instagramAPI.analyzePostingTimes(accountId, parseInt(days));
     
     res.json({
       success: true,
-      data: analysis,
+      data: {
+        postingTimes: analysis.postingTimes || [],
+        hourlyDistribution: analysis.hourlyDistribution || [],
+        dailyDistribution: analysis.dailyDistribution || [],
+        bestPostingTimes: analysis.bestPostingTimes || {},
+        recommendations: analysis.recommendations || [],
+        totalPosts: analysis.totalPosts || 0,
+        analysisPeriod: analysis.analysisPeriod || days
+      },
       timestamp: new Date().toISOString()
     });
     
@@ -392,7 +402,7 @@ router.post('/posting-time-analysis', async (req, res) => {
 // AI投稿生成API
 router.post('/ai/generate-post', async (req, res) => {
   try {
-    let access_token = req.body.access_token;
+    let access_token = req.body.accessToken || req.body.access_token;
     const { 
       accountId, 
       contentType = 'post', 
@@ -410,7 +420,7 @@ router.post('/ai/generate-post', async (req, res) => {
       if (!tokenData) {
         return res.status(400).json({
           success: false,
-          error: 'access_token パラメータが必要です。DBに有効な長期トークンがありません。'
+          error: 'accessToken または access_token パラメータが必要です。DBに有効な長期トークンがありません。'
         });
       }
       access_token = tokenData.token;
@@ -433,6 +443,8 @@ router.post('/ai/generate-post', async (req, res) => {
       includeHashtags, 
       language 
     });
+    console.log('🤖 リクエストボディ:', req.body);
+    console.log('🤖 アクセストークン:', access_token ? '設定済み' : '未設定');
     
     const instagramAPI = new InstagramAPI(access_token);
     const generatedPost = await instagramAPI.generateAIPost({
@@ -448,7 +460,12 @@ router.post('/ai/generate-post', async (req, res) => {
     
     res.json({
       success: true,
-      data: generatedPost,
+      data: {
+        content: generatedPost.content || '',
+        hashtags: generatedPost.hashtags || [],
+        recommendations: generatedPost.recommendations || [],
+        metadata: generatedPost.metadata || {}
+      },
       timestamp: new Date().toISOString()
     });
     
@@ -489,13 +506,21 @@ router.get('/performance-analysis/:accountId', async (req, res) => {
     }
 
     console.log('📈 パフォーマンス分析開始:', { accountId, period, metric });
+    console.log('📈 クエリパラメータ:', req.query);
+    console.log('📈 アクセストークン:', access_token ? '設定済み' : '未設定');
     
     const instagramAPI = new InstagramAPI(access_token);
     const performance = await instagramAPI.analyzePerformance(accountId, period, metric);
     
     res.json({
       success: true,
-      data: performance,
+      data: {
+        metrics: performance.metrics || {},
+        insights: performance.insights || [],
+        recommendations: performance.recommendations || [],
+        period: performance.period || period,
+        accountId: performance.accountId || accountId
+      },
       timestamp: new Date().toISOString()
     });
     

@@ -268,9 +268,12 @@ class InstagramAPI {
       console.log(`📊 投稿時間分析開始: ${accountId} (${days}日間)`);
       
       // 投稿データを取得
+      console.log(`📊 メディアデータ取得開始: ${accountId}`);
       const media = await this.getMedia(accountId, 100); // 最大100件取得
+      console.log(`📊 メディアデータ取得結果: ${media?.length || 0}件`);
       
       if (!media || media.length === 0) {
+        console.log(`📊 投稿データなし - 空の分析結果を返します`);
         return {
           accountId,
           analysisPeriod: days,
