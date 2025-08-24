@@ -168,7 +168,11 @@ const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SEC
 // Facebook API設定（フロントエンドと統一）
 const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || process.env.FACEBOOK_CLIENT_ID || '1003724798254754';
 const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || process.env.FACEBOOK_CLIENT_SECRET || 'fd6a61c31a9f1f5798b4d48a927d8f0c';
-const REDIRECT_URI = 'https://localhost:3000/auth/callback';
+
+// 環境に応じてリダイレクトURIを設定
+const REDIRECT_URI = process.env.NODE_ENV === 'production' 
+  ? 'https://instagram-marketing-app.vercel.app/auth/instagram/callback'
+  : 'http://localhost:3000/auth/callback';
 
 // インメモリユーザーストア（本番ではDBを使用）
 const users = new Map();
@@ -1806,11 +1810,11 @@ app.get('/api/usage', async (req, res) => {
 app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/api/analysis-history', analysisHistoryRouter);
 app.use('/api/diagnostics', diagnosticsRouter);
-app.use('/api', urlAnalysisRouter);
+app.use('/api/instagram', instagramApiRouter);
 app.use('/threads/api', threadsRouter);
 
-// Instagram Graph APIルートを追加
-app.use('/api/instagram', instagramApiRouter);
+// 汎用APIルート（最後に設定）
+app.use('/api', urlAnalysisRouter);
 
 // AI分析APIエンドポイント
 app.post('/api/ai/analyze', async (req, res) => {
