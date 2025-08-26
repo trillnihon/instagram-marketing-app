@@ -68,7 +68,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ userId }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: userId || currentUser?.userId || 'demo_user',
+          userId: userId || currentUser?.id || 'demo_user',
           period: selectedPeriod
         }),
       });

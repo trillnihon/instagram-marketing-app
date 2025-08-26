@@ -18,6 +18,7 @@ import {
   analyzeOptimalPostingTimes, 
   generatePostingRecommendations 
 } from '../services/postingTimeService';
+import { useAppStore } from '../store/useAppStore';
 
 const PostingTimeAnalysisPage: React.FC = () => {
   const [postingTimeData, setPostingTimeData] = useState<PostingTimeData[]>([]);
@@ -34,8 +35,29 @@ const PostingTimeAnalysisPage: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        // モックデータを使用（実際のAPI接続時は認証情報を渡す）
-        const data = await fetchPostingTimeData('mock-user-id', 'mock-token', selectedPeriod);
+        // Instagram認証情報を取得（複数のソースから）
+        let instagramBusinessAccountId = currentUser?.instagramBusinessAccountId;
+        let accessToken = currentUser?.accessToken;
+        
+        // ローカルストレージからも取得を試行
+        if (!instagramBusinessAccountId || !accessToken) {
+          const instagramAuth = localStorage.getItem('instagram_auth');
+          if (instagramAuth) {
+            const authData = JSON.parse(instagramAuth);
+            instagramBusinessAccountId = instagramBusinessAccountId || authData.instagramBusinessAccount?.id;
+            accessToken = accessToken || authData.accessToken;
+          }
+        }
+        
+        if (!instagramBusinessAccountId || !accessToken) {
+          throw new Error('Instagram認証情報が不足しています。Instagram連携を再度実行してください。');
+        }
+        
+        const data = await fetchPostingTimeData(
+          instagramBusinessAccountId, 
+          accessToken, 
+          selectedPeriod
+        );
         setPostingTimeData(data);
         
         // 分析実行

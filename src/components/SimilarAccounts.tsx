@@ -41,7 +41,7 @@ const SimilarAccounts: React.FC<SimilarAccountsProps> = ({ competitorUrl }) => {
         },
         body: JSON.stringify({
           competitorUrl,
-          userId: currentUser?.userId || 'demo_user'
+          userId: currentUser?.id || 'demo_user'
         }),
       });
 

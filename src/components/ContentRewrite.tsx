@@ -39,7 +39,7 @@ const ContentRewrite: React.FC<ContentRewriteProps> = ({ originalContent: initia
         },
         body: JSON.stringify({
           originalContent: originalContent.trim(),
-          userId: currentUser?.userId || 'demo_user'
+          userId: currentUser?.id || 'demo_user'
         }),
       });
 

@@ -1,9 +1,47 @@
+# Instagram マーケティングアプリ
+
+## 🚨 重要：次のチャットへの引き継ぎ情報
+
+### 📋 現在の状況（2025-08-25）
+- **主要修正完了**: ユーザーID参照ミス（`currentUser?.userId` → `currentUser?.id`）を全コンポーネントで修正
+- **API パス修正完了**: `/instagram/history/:userId` と `/scheduler/posts` の正しい呼び出しに修正
+- **認証ロジック改善**: 投稿分析ページでの誤った認証エラー表示を修正
+
+### ❌ 残存する問題
+1. **バックエンドAPI 404エラー**: `/instagram/history/:userId` と `/scheduler/posts` が404を返す
+2. **Mock API 残存**: 本番APIが失敗した場合にMock APIが呼ばれ、`via.placeholder.com` の503エラーが発生
+
+### 🔧 次のステップ
+1. **バックエンドAPI動作確認**: Render側でAPIが正常応答するかテスト
+2. **Mock API 完全切り替え**: 本番APIが正常動作する場合、Mock API の呼び出しを停止
+3. **エラーハンドリング改善**: 404エラーに対する適切なフォールバック処理
+
+### 🚫 絶対に変更禁止
+- 環境変数キー `VITE_API_BASE_URL`
+- Instagram Graph API 認証フロー
+- `ProtectedRoute` の認証チェック処理
+
+### 📖 詳細情報
+詳細な引き継ぎ情報は `HANDOVER_REPORT_2025-08-25.md` を参照してください。
+
+---
+
 # Instagram Marketing App
 
 [![Graph API v19.0](https://img.shields.io/badge/Graph%20API-v19.0-blue.svg)](https://developers.facebook.com/docs/graph-api)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+## 🔒 安全な運用方法
+
+**重要**: このプロジェクトでは、設定の安全性を確保するため、以下の運用方法を採用しています：
+
+- **絶対変更禁止設定**: [immutable-config.md](./immutable-config.md) を参照
+- **作業進捗**: [progress-report.md](./progress-report.md) で管理
+- **設定変更**: immutable-config.mdに記載されている設定は絶対に変更しない
+
+詳細は各ファイルを参照してください。
 
 Instagram Graph API v19.0を使用した投稿管理・分析ツール。PWA（Progressive Web App）として実装され、オフライン対応とモバイル最適化を提供します。
 

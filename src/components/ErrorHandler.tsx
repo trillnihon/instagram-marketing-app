@@ -175,7 +175,7 @@ const ErrorHandler: React.FC<ErrorHandlerProps> = ({
                       <strong>エラータイプ:</strong> {errorType}
                     </div>
                     <div className="mb-1">
-                      <strong>ユーザーID:</strong> {currentUser?.userId || '不明'}
+                      <strong>ユーザーID:</strong> {currentUser?.id || '不明'}
                     </div>
                     <div className="mb-1">
                       <strong>Instagram連携:</strong> {currentUser?.instagramBusinessAccountId ? 'あり' : 'なし'}

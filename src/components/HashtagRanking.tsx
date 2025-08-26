@@ -22,7 +22,7 @@ const HashtagRanking: React.FC = () => {
   const fetchHashtagRanking = async () => {
     try {
       setLoading(true);
-      const userId = currentUser?.userId || 'demo_user';
+      const userId = currentUser?.id || 'demo_user';
       
       const response = await fetch(`/api/threads/hashtag-ranking?userId=${userId}`);
       const data = await response.json();

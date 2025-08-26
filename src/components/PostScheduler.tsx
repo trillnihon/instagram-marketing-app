@@ -31,10 +31,13 @@ const PostScheduler: React.FC<PostSchedulerProps> = ({ onPostSelect }) => {
     setError(null);
 
     try {
+      // 現在のユーザーIDを取得
+      const userId = currentUser?.id || 'demo_user';
+      
       // モックAPIを使用（フォールバック付き）
-      const data = await apiWithFallback.getScheduledPosts();
+      const data = await apiWithFallback.getScheduledPosts(userId);
 
-      if (data.success) {
+      if (data.success && data.data && Array.isArray(data.data)) {
         // モックデータをScheduledPost形式に変換
         const convertedPosts: ScheduledPost[] = data.data.map((post: any) => ({
           id: post.id,
@@ -46,7 +49,11 @@ const PostScheduler: React.FC<PostSchedulerProps> = ({ onPostSelect }) => {
         }));
         setScheduledPosts(convertedPosts);
       } else {
-        setError(data.error || 'スケジュール済み投稿の取得に失敗しました');
+        // データが存在しない場合は空配列を設定
+        setScheduledPosts([]);
+        if (!data.success) {
+          setError(data.error || 'スケジュール済み投稿の取得に失敗しました');
+        }
       }
     } catch (err) {
       console.error('Scheduled posts fetch error:', err);
@@ -71,7 +78,7 @@ const PostScheduler: React.FC<PostSchedulerProps> = ({ onPostSelect }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: currentUser?.userId || 'demo_user'
+          userId: currentUser?.id || 'demo_user'
         }),
       });
 
@@ -97,7 +104,7 @@ const PostScheduler: React.FC<PostSchedulerProps> = ({ onPostSelect }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: currentUser?.userId || 'demo_user',
+          userId: currentUser?.id || 'demo_user',
           updates
         }),
       });

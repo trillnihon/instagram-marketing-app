@@ -53,7 +53,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({ posts, userId }) 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: userId || currentUser?.userId || 'demo_user',
+          userId: userId || currentUser?.id || 'demo_user',
           timeRange: selectedTimeRange,
           posts: posts
         }),

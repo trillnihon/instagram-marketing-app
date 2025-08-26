@@ -63,7 +63,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({ onImageSelect }) => {
         body: JSON.stringify({
           prompt: `${prompt} ${stylePresets[selectedStyle as keyof typeof stylePresets]} style`,
           size: aspectRatios[selectedAspectRatio as keyof typeof aspectRatios].size,
-          userId: currentUser?.userId || 'demo_user'
+          userId: currentUser?.id || 'demo_user'
         }),
       });
 

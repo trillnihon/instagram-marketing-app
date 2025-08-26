@@ -43,7 +43,7 @@ const BestPostingTimes: React.FC<BestPostingTimesProps> = ({ competitorUrl }) =>
         },
         body: JSON.stringify({
           competitorUrl,
-          userId: currentUser?.userId || 'demo_user'
+          userId: currentUser?.id || 'demo_user'
         }),
       });
 

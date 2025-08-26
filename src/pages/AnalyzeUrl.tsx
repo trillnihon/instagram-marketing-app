@@ -71,7 +71,7 @@ const AnalyzeUrl: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('https://localhost:4000/api/analyze-url', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api'}/analyze-url`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ const AnalyzeUrl: React.FC = () => {
         body: JSON.stringify({ 
           url, 
           template: analysisTemplate,
-          userId: currentUser?.userId || 'anonymous'
+          userId: currentUser?.id || 'anonymous'
         }),
       });
 

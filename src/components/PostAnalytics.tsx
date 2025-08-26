@@ -22,17 +22,49 @@ const PostAnalytics: React.FC<PostAnalyticsProps> = ({
 
   // 投稿履歴を取得
   const fetchPosts = async () => {
-    if (!accessToken || !instagramBusinessAccountId) {
-      setLocalError('Instagram認証が必要です');
-      return;
+    // 認証情報のチェックを緩和
+    // 実際にGraph APIでデータが取得できている場合は認証エラーを出さない
+    if (!accessToken && !instagramBusinessAccountId) {
+      // ローカルストレージからInstagram認証情報を確認
+      const instagramAuth = localStorage.getItem('instagram_auth');
+      if (instagramAuth) {
+        const authData = JSON.parse(instagramAuth);
+        if (authData.accessToken && authData.instagramBusinessAccount?.id) {
+          // 認証情報が存在する場合は、それを使用してデータ取得を試行
+          console.log('[DEBUG] ローカルストレージからInstagram認証情報を取得');
+        } else {
+          setLocalError('Instagram認証が必要です');
+          return;
+        }
+      } else {
+        setLocalError('Instagram認証が必要です');
+        return;
+      }
     }
 
     setLocalLoading(true);
     setLocalError(null);
 
     try {
+      // 認証情報を決定（propsまたはローカルストレージから）
+      let token = accessToken;
+      let accountId = instagramBusinessAccountId;
+      
+      if (!token || !accountId) {
+        const instagramAuth = localStorage.getItem('instagram_auth');
+        if (instagramAuth) {
+          const authData = JSON.parse(instagramAuth);
+          token = token || authData.accessToken;
+          accountId = accountId || authData.instagramBusinessAccount?.id;
+        }
+      }
+      
+      if (!token || !accountId) {
+        throw new Error('Instagram認証情報が不足しています');
+      }
+
       const response = await fetch(
-        `/api/instagram/posts/${currentUser?.userId || 'demo'}?access_token=${accessToken}&instagram_business_account_id=${instagramBusinessAccountId}`
+        `/api/instagram/posts/${currentUser?.id || 'demo_user'}?access_token=${token}&instagram_business_account_id=${accountId}`
       );
 
       const result = await response.json();
@@ -158,7 +190,7 @@ const PostAnalytics: React.FC<PostAnalyticsProps> = ({
   };
 
   useEffect(() => {
-    if (accessToken && instagramBusinessAccountId) {
+    if (accessToken || instagramBusinessAccountId) {
       fetchPosts();
     }
   }, [accessToken, instagramBusinessAccountId]);

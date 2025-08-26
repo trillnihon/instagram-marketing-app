@@ -1,4 +1,27 @@
-// モックAPIサービス - バックエンドが利用できない場合のフォールバック
+/**
+ * Instagram マーケティングアプリ - Mock API サービス
+ * 
+ * 🚨 次のチャットへの引き継ぎ情報（2025-08-25）
+ * 
+ * 現在の状況:
+ * - ユーザーID参照ミス（currentUser?.userId → currentUser?.id）を修正完了
+ * - API パスとパラメータの修正完了
+ * - デバッグログを追加してAPI呼び出しの詳細を可視化
+ * 
+ * 残存する問題:
+ * - バックエンドAPIが404エラーを返す（/instagram/history/:userId, /scheduler/posts）
+ * - 本番API失敗時にMock APIが呼ばれ、via.placeholder.com の503エラーが発生
+ * 
+ * 次のステップ:
+ * 1. バックエンドAPIの動作確認
+ * 2. 本番APIが正常動作する場合、Mock APIの呼び出しを完全停止
+ * 3. エラーハンドリングの改善
+ * 
+ * 絶対に変更禁止:
+ * - 環境変数キー VITE_API_BASE_URL
+ * - Instagram Graph API 認証フロー
+ * - ProtectedRoute の認証チェック処理
+ */
 
 // デモ投稿データ
 const mockPosts = [
@@ -203,73 +226,120 @@ export const mockApi = {
 // 実際のAPI呼び出しを試行し、失敗した場合はモックAPIを使用
 export const apiWithFallback = {
   // 投稿履歴取得（フォールバック付き）
-  getInstagramHistory: async () => {
+  getInstagramHistory: async (userId: string = 'demo_user') => {
     try {
-      const response = await fetch('http://localhost:4000/api/instagram/history/demo');
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
+      const apiUrl = `${apiBaseUrl}/instagram/history/${userId}`;
+      console.log(`🔍 [DEBUG] 本番API呼び出し: ${apiUrl}`);
+      console.log(`🔍 [DEBUG] ユーザーID: ${userId}`);
+      
+      const response = await fetch(apiUrl);
+      console.log(`🔍 [DEBUG] 本番APIレスポンス: ${response.status} ${response.statusText}`);
+      
       if (response.ok) {
-        return await response.json();
+        const data = await response.json();
+        console.log(`✅ [SUCCESS] 本番API成功: データ件数 ${data.data?.length || 0}`);
+        return data;
+      } else {
+        console.log(`❌ [ERROR] 本番API失敗: ${response.status} ${response.statusText}`);
+        // 本番APIが失敗した場合のみMock APIにフォールバック
+        console.log('🔄 [FALLBACK] 本番API失敗のため、Mock APIにフォールバック');
+        return await mockApi.getInstagramHistory();
       }
     } catch (error) {
-      console.log('⚠️ [API FALLBACK] バックエンドAPI接続失敗、モックAPIを使用');
+      console.log('⚠️ [ERROR] 本番API接続エラー、Mock APIにフォールバック:', error);
+      return await mockApi.getInstagramHistory();
     }
-    return await mockApi.getInstagramHistory();
   },
 
   // スケジュール済み投稿取得（フォールバック付き）
-  getScheduledPosts: async () => {
+  getScheduledPosts: async (userId: string = 'demo_user', month?: number, year?: number) => {
     try {
-      const response = await fetch('http://localhost:4000/api/scheduler/posts', {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
+      const apiUrl = `${apiBaseUrl}/scheduler/posts`;
+      console.log(`🔍 [DEBUG] 本番スケジュールAPI呼び出し: ${apiUrl}`);
+      console.log(`🔍 [DEBUG] ユーザーID: ${userId}, 月: ${month}, 年: ${year}`);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, month, year })
       });
+      console.log(`🔍 [DEBUG] 本番スケジュールAPIレスポンス: ${response.status} ${response.statusText}`);
+      
       if (response.ok) {
-        return await response.json();
+        const data = await response.json();
+        console.log(`✅ [SUCCESS] 本番スケジュールAPI成功: データ件数 ${data.posts?.length || 0}`);
+        return data;
+      } else {
+        console.log(`❌ [ERROR] 本番スケジュールAPI失敗: ${response.status} ${response.statusText}`);
+        // 本番APIが失敗した場合のみMock APIにフォールバック
+        console.log('🔄 [FALLBACK] 本番スケジュールAPI失敗のため、Mock APIにフォールバック');
+        return await mockApi.getScheduledPosts();
       }
     } catch (error) {
-      console.log('⚠️ [API FALLBACK] バックエンドAPI接続失敗、モックAPIを使用');
+      console.log('⚠️ [ERROR] 本番スケジュールAPI接続エラー、Mock APIにフォールバック:', error);
+      return await mockApi.getScheduledPosts();
     }
-    return await mockApi.getScheduledPosts();
   },
 
   // アナリティクスデータ取得（フォールバック付き）
   getAnalyticsData: async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/analytics/dashboard', {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
+      const response = await fetch(`${apiBaseUrl}/analytics/dashboard`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
       if (response.ok) {
+        console.log('✅ [SUCCESS] 本番アナリティクスAPI成功');
         return await response.json();
+      } else {
+        console.log(`❌ [ERROR] 本番アナリティクスAPI失敗: ${response.status} ${response.statusText}`);
+        console.log('🔄 [FALLBACK] 本番アナリティクスAPI失敗のため、Mock APIにフォールバック');
+        return await mockApi.getAnalyticsData();
       }
     } catch (error) {
-      console.log('⚠️ [API FALLBACK] バックエンドAPI接続失敗、モックAPIを使用');
+      console.log('⚠️ [ERROR] 本番アナリティクスAPI接続エラー、Mock APIにフォールバック:', error);
+      return await mockApi.getAnalyticsData();
     }
-    return await mockApi.getAnalyticsData();
   },
 
   // ハッシュタグ分析データ取得（フォールバック付き）
   getHashtagData: async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/hashtags/analysis');
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
+      const response = await fetch(`${apiBaseUrl}/hashtags/analysis`);
       if (response.ok) {
+        console.log('✅ [SUCCESS] 本番ハッシュタグAPI成功');
         return await response.json();
+      } else {
+        console.log(`❌ [ERROR] 本番ハッシュタグAPI失敗: ${response.status} ${response.statusText}`);
+        console.log('🔄 [FALLBACK] 本番ハッシュタグAPI失敗のため、Mock APIにフォールバック');
+        return await mockApi.getHashtagData();
       }
     } catch (error) {
-      console.log('⚠️ [API FALLBACK] バックエンドAPI接続失敗、モックAPIを使用');
+      console.log('⚠️ [ERROR] 本番ハッシュタグAPI接続エラー、Mock APIにフォールバック:', error);
+      return await mockApi.getHashtagData();
     }
-    return await mockApi.getHashtagData();
   },
 
   // ヘルスチェック（フォールバック付き）
   healthCheck: async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/health');
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
+      const response = await fetch(`${apiBaseUrl}/health`);
       if (response.ok) {
+        console.log('✅ [SUCCESS] 本番ヘルスチェックAPI成功');
         return await response.json();
+      } else {
+        console.log(`❌ [ERROR] 本番ヘルスチェックAPI失敗: ${response.status} ${response.statusText}`);
+        console.log('🔄 [FALLBACK] 本番ヘルスチェックAPI失敗のため、Mock APIにフォールバック');
+        return await mockApi.healthCheck();
       }
     } catch (error) {
-      console.log('⚠️ [API FALLBACK] バックエンドAPI接続失敗、モックAPIを使用');
+      console.log('⚠️ [ERROR] 本番ヘルスチェックAPI接続エラー、Mock APIにフォールバック:', error);
+      return await mockApi.healthCheck();
     }
-    return await mockApi.healthCheck();
   }
 }; 

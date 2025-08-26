@@ -25,7 +25,7 @@ const AnalyticsDashboardPage: React.FC = () => {
           )}
         </div>
 
-        <AnalyticsDashboard userId={currentUser?.userId} />
+        <AnalyticsDashboard userId={currentUser?.id} />
       </div>
     </div>
   );

@@ -25,7 +25,7 @@ const TrendPosts: React.FC = () => {
   const fetchTrendPosts = async () => {
     try {
       setLoading(true);
-      const userId = currentUser?.userId || 'demo_user';
+      const userId = currentUser?.id || 'demo_user';
       
       const response = await fetch(`/api/threads/trend-posts?userId=${userId}&days=30`);
       const data = await response.json();

@@ -27,8 +27,11 @@ const PostHistory: React.FC<PostHistoryProps> = ({
     setLocalError(null);
 
     try {
+      // 現在のユーザーIDを取得
+      const userId = currentUser?.id || 'demo_user';
+      
       // モックAPIを使用（フォールバック付き）
-      const result = await apiWithFallback.getInstagramHistory();
+      const result = await apiWithFallback.getInstagramHistory(userId);
 
       if (!result.success) {
         throw new Error(result.error || '投稿履歴の取得に失敗しました');

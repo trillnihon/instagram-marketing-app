@@ -41,7 +41,7 @@ const PDFReport: React.FC<PDFReportProps> = ({ analysis }) => {
         },
         body: JSON.stringify({
           analysis,
-          userId: currentUser?.userId || 'demo_user'
+          userId: currentUser?.id || 'demo_user'
         }),
       });
 

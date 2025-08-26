@@ -70,7 +70,7 @@ const ThreadsCompetitorAnalysis: React.FC<ThreadsCompetitorAnalysisProps> = ({ o
         },
         body: JSON.stringify({
           competitorUrl,
-          userId: currentUser?.userId || 'demo_user'
+          userId: currentUser?.id || 'demo_user'
         }),
       });
 
@@ -107,7 +107,7 @@ const ThreadsCompetitorAnalysis: React.FC<ThreadsCompetitorAnalysisProps> = ({ o
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: currentUser?.userId || 'demo_user',
+          userId: currentUser?.id || 'demo_user',
           analysis: analysisData
         }),
       });

@@ -208,7 +208,7 @@ const HashtagAnalysis: React.FC = () => {
   }, []);
 
   // 管理者権限の判定（デモユーザーまたは特定のユーザーID）
-  const isAdmin = currentUser?.userId === 'demo_user' || currentUser?.userId === 'admin';
+  const isAdmin = currentUser?.id === 'demo_user' || currentUser?.id === 'admin';
 
   // スコアに応じた色クラスを取得
   const getScoreColorClass = (score: number): string => {
