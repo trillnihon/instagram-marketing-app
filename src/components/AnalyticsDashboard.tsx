@@ -78,7 +78,14 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ userId }) => {
       if (data.success) {
         setAnalyticsData(data.analytics);
       } else {
-        setError(data.error || 'データの取得に失敗しました');
+        // レスポンスステータスに基づく詳細なエラーハンドリング
+        if (response.status === 404) {
+          setError('バックエンドにアナリティクスデータが存在しません。初回利用か、まだデータが保存されていません。');
+        } else if (response.status >= 500) {
+          setError('バックエンドサーバーエラーが発生しました。しばらくしてから再試行してください。');
+        } else {
+          setError(data.error || 'データの取得に失敗しました');
+        }
       }
     } catch (err) {
       console.error('Analytics dashboard error:', err);

@@ -54,20 +54,32 @@ const PostingTimeAnalysisPage: React.FC = () => {
           throw new Error('Instagram認証情報が不足しています。Instagram連携を再度実行してください。');
         }
         
-        const data = await fetchPostingTimeData(
-          instagramBusinessAccountId, 
-          accessToken, 
-          selectedPeriod
-        );
-        setPostingTimeData(data);
-        
-        // 分析実行
-        const analysisResult = analyzeOptimalPostingTimes(data);
-        setAnalysis(analysisResult);
-        
-        // 推奨事項生成
-        const recommendationsResult = generatePostingRecommendations(data);
-        setRecommendations(recommendationsResult);
+        try {
+          const data = await fetchPostingTimeData(
+            instagramBusinessAccountId, 
+            accessToken, 
+            selectedPeriod
+          );
+          setPostingTimeData(data);
+          
+          // 分析実行
+          const analysisResult = analyzeOptimalPostingTimes(data);
+          setAnalysis(analysisResult);
+          
+          // 推奨事項生成
+          const recommendationsResult = generatePostingRecommendations(data);
+          setRecommendations(recommendationsResult);
+        } catch (apiError: any) {
+          // APIエラーの詳細な処理
+          if (apiError.status === 404) {
+            setError('バックエンドに履歴データが存在しません。初回利用か、まだ投稿データが保存されていません。');
+          } else if (apiError.status >= 500) {
+            setError('バックエンドサーバーエラーが発生しました。しばらくしてから再試行してください。');
+          } else {
+            setError('データの取得に失敗しました');
+          }
+          console.error('投稿時間分析APIエラー:', apiError);
+        }
         
       } catch (err) {
         setError('データの取得に失敗しました');
