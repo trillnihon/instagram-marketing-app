@@ -107,10 +107,11 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ userId }) => {
     return '→';
   };
 
+  // データが読み込み中またはエラーの場合
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="text-center py-8">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">アナリティクスデータを読み込み中...</p>
         </div>
@@ -120,53 +121,90 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ userId }) => {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800">{error}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">エラーが発生しました</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={fetchAnalyticsData}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            再試行
+          </button>
         </div>
       </div>
     );
   }
 
+  // データが存在しない場合
   if (!analyticsData) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <p className="text-gray-600">データがありません</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-500 text-6xl mb-4">📊</div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">データがありません</h2>
+          <p className="text-gray-600 mb-4">アナリティクスデータを取得できませんでした</p>
+          <button 
+            onClick={fetchAnalyticsData}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            再試行
+          </button>
+        </div>
       </div>
     );
   }
 
+  // データの安全なアクセス用ヘルパー関数
+  const safeGet = (obj: any, path: string, defaultValue: any = 0) => {
+    try {
+      return path.split('.').reduce((current, key) => current?.[key], obj) ?? defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* 期間選択 */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">分析期間</h3>
-          <select
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value as any)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="7days">過去7日間</option>
-            <option value="30days">過去30日間</option>
-            <option value="90days">過去90日間</option>
-          </select>
+    <div className="min-h-screen bg-gray-50 p-6">
+      {/* ヘッダー */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">📊 アナリティクスダッシュボード</h1>
+        <p className="text-gray-600">Instagramアカウントのパフォーマンスを分析</p>
+        
+        {/* 期間選択 */}
+        <div className="mt-4 flex space-x-2">
+          {(['7days', '30days', '90days'] as const).map((period) => (
+            <button
+              key={period}
+              onClick={() => setSelectedPeriod(period)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedPeriod === period
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+              }`}
+            >
+              {period === '7days' ? '7日間' : period === '30days' ? '30日間' : '90日間'}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* 主要指標 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* 主要メトリクス */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">フォロワー数</p>
-              <p className="text-2xl font-bold text-gray-900">{analyticsData.followers.total.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {safeGet(analyticsData, 'followers.total', 0).toLocaleString()}
+              </p>
             </div>
             <div className="text-2xl">👥</div>
           </div>
           <div className="mt-2 flex items-center">
-            <span className={`text-sm font-medium ${getGrowthColor(analyticsData.followers.growth)}`}>
-              {getGrowthIcon(analyticsData.followers.growth)} {Math.abs(analyticsData.followers.growth)}%
+            <span className={`text-sm font-medium ${getGrowthColor(safeGet(analyticsData, 'followers.growth', 0))}`}>
+              {getGrowthIcon(safeGet(analyticsData, 'followers.growth', 0))} {Math.abs(safeGet(analyticsData, 'followers.growth', 0))}%
             </span>
             <span className="text-sm text-gray-500 ml-1">前月比</span>
           </div>
@@ -176,7 +214,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ userId }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">平均エンゲージメント率</p>
-              <p className="text-2xl font-bold text-gray-900">{analyticsData.engagement.average.toFixed(2)}%</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {safeGet(analyticsData, 'engagement.average', 0).toFixed(2)}%
+              </p>
             </div>
             <div className="text-2xl">📈</div>
           </div>
@@ -189,12 +229,14 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ userId }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">総投稿数</p>
-              <p className="text-2xl font-bold text-gray-900">{analyticsData.posts.total}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {safeGet(analyticsData, 'posts.total', 0)}
+              </p>
             </div>
             <div className="text-2xl">📸</div>
           </div>
           <div className="mt-2">
-            <span className="text-sm text-gray-500">今月: {analyticsData.posts.thisMonth}件</span>
+            <span className="text-sm text-gray-500">今月: {safeGet(analyticsData, 'posts.thisMonth', 0)}件</span>
           </div>
         </div>
 
@@ -202,7 +244,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ userId }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">平均リーチ</p>
-              <p className="text-2xl font-bold text-gray-900">{analyticsData.reach.average.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {safeGet(analyticsData, 'reach.average', 0).toLocaleString()}
+              </p>
             </div>
             <div className="text-2xl">👁️</div>
           </div>
@@ -241,68 +285,25 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ userId }) => {
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">🔥 人気投稿 TOP 5</h3>
         <div className="space-y-4">
-          {analyticsData.topPosts.map((post, index) => (
-            <div key={post.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+          {safeGet(analyticsData, 'topPosts', []).map((post: any, index: number) => (
+            <div key={post.id || index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold mr-3">
                   {index + 1}
                 </div>
                 <div>
                   <p className="font-medium text-gray-900 line-clamp-2">
-                    {post.caption.length > 50 ? `${post.caption.substring(0, 50)}...` : post.caption}
+                    {safeGet(post, 'caption', '投稿').length > 50 ? `${safeGet(post, 'caption', '投稿').substring(0, 50)}...` : safeGet(post, 'caption', '投稿')}
                   </p>
-                  <p className="text-sm text-gray-500">{post.date}</p>
+                  <p className="text-sm text-gray-500">{safeGet(post, 'date', '日付不明')}</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-semibold text-gray-900">{post.engagement.toLocaleString()}</p>
+                <p className="font-semibold text-gray-900">{safeGet(post, 'engagement', 0).toLocaleString()}</p>
                 <p className="text-sm text-gray-500">エンゲージメント</p>
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* インサイト */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">💡 主要インサイト</h3>
-          <div className="space-y-3">
-            <div className="flex items-start">
-              <span className="text-green-500 mr-2">✓</span>
-              <p className="text-sm text-gray-700">投稿頻度が週3回で最適なエンゲージメント率を達成</p>
-            </div>
-            <div className="flex items-start">
-              <span className="text-green-500 mr-2">✓</span>
-              <p className="text-sm text-gray-700">19:00-21:00の投稿時間が最も高いリーチ率を記録</p>
-            </div>
-            <div className="flex items-start">
-              <span className="text-blue-500 mr-2">💡</span>
-              <p className="text-sm text-gray-700">質問形式の投稿が平均2.3倍のコメント率を達成</p>
-            </div>
-            <div className="flex items-start">
-              <span className="text-yellow-500 mr-2">⚠️</span>
-              <p className="text-sm text-gray-700">ストーリーズ投稿の頻度を増やすことでフォロワー成長を加速</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">🎯 改善提案</h3>
-          <div className="space-y-3">
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm font-medium text-blue-800">投稿頻度の最適化</p>
-              <p className="text-xs text-blue-600 mt-1">週3-4回の投稿でエンゲージメント率を15%向上</p>
-            </div>
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm font-medium text-green-800">最適時間の活用</p>
-              <p className="text-xs text-green-600 mt-1">19:00-21:00の投稿でリーチ率を25%向上</p>
-            </div>
-            <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-              <p className="text-sm font-medium text-purple-800">コンテンツ戦略</p>
-              <p className="text-xs text-purple-600 mt-1">質問形式の投稿を週1回追加でコメント率向上</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
