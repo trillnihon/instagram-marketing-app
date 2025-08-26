@@ -124,12 +124,12 @@ export const useAppStore = create<AuthState>()(
           
           console.log('[DEBUG] ログイン開始:', { email });
           
-          // 環境変数からAPI_BASE_URLを取得
-          const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://instagram-marketing-backend-v2.onrender.com';
+          // 環境変数からAPI_BASE_URLを取得（/apiを含む）
+          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
           
           console.log('[DEBUG] ログイン - API_BASE_URL:', API_BASE_URL);
           
-          const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+          const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

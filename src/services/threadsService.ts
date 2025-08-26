@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// APIのベースURL
+// APIのベースURL（環境変数から取得、/apiを含む）
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
 
 // axiosインスタンスの作成
@@ -29,7 +29,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error.response?.data || error.message);
+    console.error('API Error:', error);
     return Promise.reject(error);
   }
 );

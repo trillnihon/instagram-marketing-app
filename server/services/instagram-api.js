@@ -128,16 +128,30 @@ class InstagramAPI {
    */
   async getMedia(instagramBusinessAccountId, limit = 25) {
     try {
+      if (!instagramBusinessAccountId) {
+        throw new Error('Instagram Business Account IDが必要です');
+      }
+
       const media = await this.makeRequest(`/${instagramBusinessAccountId}/media`, {
         fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
         limit: limit
       });
       
-      console.log(`✅ Instagram投稿取得成功: ${media.data?.length || 0}件`);
-      return media.data || [];
+      // データの安全性チェック
+      if (!media || !media.data) {
+        console.log(`📊 メディアデータなし: ${instagramBusinessAccountId}`);
+        return [];
+      }
+      
+      // データが配列でない場合は配列に変換
+      const mediaArray = Array.isArray(media.data) ? media.data : [media.data];
+      
+      console.log(`✅ Instagram投稿取得成功: ${mediaArray.length}件`);
+      return mediaArray;
     } catch (error) {
       console.error('❌ Instagram投稿取得失敗:', error.message);
-      throw error;
+      // エラーの場合は空配列を返す（アプリケーションのクラッシュを防ぐ）
+      return [];
     }
   }
 
@@ -272,62 +286,103 @@ class InstagramAPI {
       const media = await this.getMedia(accountId, 100); // 最大100件取得
       console.log(`📊 メディアデータ取得結果: ${media?.length || 0}件`);
       
-      if (!media || media.length === 0) {
-        console.log(`📊 投稿データなし - 空の分析結果を返します`);
+      // データの安全性チェックを強化
+      if (!media || !Array.isArray(media) || media.length === 0) {
+        console.log(`📊 投稿データなしまたは無効なデータ - 空の分析結果を返します`);
         return {
           accountId,
           analysisPeriod: days,
           totalPosts: 0,
           postingTimes: [],
-          bestPostingTimes: [],
-          recommendations: ['投稿データが不足しています']
+          hourlyDistribution: new Array(24).fill(0),
+          dailyDistribution: new Array(7).fill(0),
+          bestPostingTimes: {
+            hours: [],
+            days: []
+          },
+          recommendations: ['投稿データが不足しています。Instagramアカウントに投稿があるか確認してください。'],
+          timestamp: new Date().toISOString()
         };
       }
 
-      // 投稿時間を分析
-      const postingTimes = media.map(post => {
-        const timestamp = new Date(post.timestamp);
-        return {
-          hour: timestamp.getHours(),
-          dayOfWeek: timestamp.getDay(),
-          timestamp: timestamp.toISOString(),
-          engagement: post.like_count || 0
-        };
-      });
+      // 投稿時間を分析（データの安全性チェック付き）
+      const postingTimes = media
+        .filter(post => post && post.timestamp) // 無効な投稿を除外
+        .map(post => {
+          try {
+            const timestamp = new Date(post.timestamp);
+            if (isNaN(timestamp.getTime())) {
+              console.warn(`⚠️ 無効なタイムスタンプ: ${post.timestamp}`);
+              return null;
+            }
+            return {
+              hour: timestamp.getHours(),
+              dayOfWeek: timestamp.getDay(),
+              timestamp: timestamp.toISOString(),
+              engagement: post.like_count || 0
+            };
+          } catch (error) {
+            console.warn(`⚠️ 投稿データ処理エラー:`, error.message);
+            return null;
+          }
+        })
+        .filter(time => time !== null); // nullを除外
 
-      // 時間帯別投稿数
+      // 時間帯別投稿数（安全性チェック付き）
       const hourlyStats = new Array(24).fill(0);
       const dailyStats = new Array(7).fill(0);
       
-      postingTimes.forEach(time => {
-        hourlyStats[time.hour]++;
-        dailyStats[time.dayOfWeek]++;
-      });
+      if (postingTimes.length > 0) {
+        postingTimes.forEach(time => {
+          if (time && typeof time.hour === 'number' && time.hour >= 0 && time.hour < 24) {
+            hourlyStats[time.hour]++;
+          }
+          if (time && typeof time.dayOfWeek === 'number' && time.dayOfWeek >= 0 && time.dayOfWeek < 7) {
+            dailyStats[time.dayOfWeek]++;
+          }
+        });
+      }
 
-      // 最適な投稿時間を特定
+      // 最適な投稿時間を特定（安全性チェック付き）
       const bestHours = hourlyStats
         .map((count, hour) => ({ hour, count }))
+        .filter(item => item.count > 0) // 投稿数が0の時間帯を除外
         .sort((a, b) => b.count - a.count)
         .slice(0, 3)
         .map(item => item.hour);
 
       const bestDays = dailyStats
         .map((count, day) => ({ day, count }))
+        .filter(item => item.count > 0) // 投稿数が0の曜日を除外
         .sort((a, b) => b.count - a.count)
         .slice(0, 3)
         .map(item => item.day);
 
-      // 推奨事項を生成
-      const recommendations = [
-        `最も投稿が多い時間帯: ${bestHours.map(h => `${h}時`).join(', ')}`,
-        `最も投稿が多い曜日: ${bestDays.map(d => ['日', '月', '火', '水', '木', '金', '土'][d]).join(', ')}`,
-        `平均投稿頻度: ${(media.length / days).toFixed(1)}件/日`
-      ];
+      // 推奨事項を生成（安全性チェック付き）
+      const recommendations = [];
+      
+      if (bestHours.length > 0) {
+        recommendations.push(`最も投稿が多い時間帯: ${bestHours.map(h => `${h}時`).join(', ')}`);
+      } else {
+        recommendations.push('投稿データが不足しているため、最適な投稿時間を特定できません');
+      }
+      
+      if (bestDays.length > 0) {
+        recommendations.push(`最も投稿が多い曜日: ${bestDays.map(d => ['日', '月', '火', '水', '木', '金', '土'][d]).join(', ')}`);
+      } else {
+        recommendations.push('投稿データが不足しているため、最適な投稿曜日を特定できません');
+      }
+      
+      if (postingTimes.length > 0) {
+        recommendations.push(`平均投稿頻度: ${(postingTimes.length / days).toFixed(1)}件/日`);
+      } else {
+        recommendations.push('投稿データが不足しているため、投稿頻度を計算できません');
+      }
 
       const analysis = {
         accountId,
         analysisPeriod: days,
-        totalPosts: media.length,
+        totalPosts: postingTimes.length, // 有効な投稿数のみ
         postingTimes: postingTimes.slice(0, 20), // 最新20件のみ
         hourlyDistribution: hourlyStats,
         dailyDistribution: dailyStats,
@@ -495,30 +550,39 @@ class InstagramAPI {
         };
       }
 
-      // 投稿ごとのパフォーマンスを計算
-      const postPerformance = media.map(post => {
-        const engagement = (post.like_count || 0) + (post.comments_count || 0);
-        const reach = post.insights?.reach || 0;
-        const impressions = post.insights?.impressions || 0;
-        
-        return {
-          id: post.id,
-          timestamp: post.timestamp,
-          engagement,
-          reach,
-          impressions,
-          engagementRate: post.followers_count ? (engagement / post.followers_count * 100) : 0
-        };
-      });
+      // 投稿ごとのパフォーマンスを計算（安全性チェック付き）
+      const postPerformance = media
+        .filter(post => post && post.id) // 無効な投稿を除外
+        .map(post => {
+          try {
+            const engagement = (post.like_count || 0) + (post.comments_count || 0);
+            const reach = post.insights?.reach || 0;
+            const impressions = post.insights?.impressions || 0;
+            
+            return {
+              id: post.id,
+              timestamp: post.timestamp || new Date().toISOString(),
+              engagement,
+              reach,
+              impressions,
+              engagementRate: post.followers_count ? (engagement / post.followers_count * 100) : 0
+            };
+          } catch (error) {
+            console.warn(`⚠️ 投稿パフォーマンス計算エラー:`, error.message);
+            return null;
+          }
+        })
+        .filter(post => post !== null); // nullを除外
 
-      // 統計を計算
-      const totalPosts = media.length;
-      const totalEngagement = postPerformance.reduce((sum, post) => sum + post.engagement, 0);
-      const totalReach = postPerformance.reduce((sum, post) => sum + post.reach, 0);
-      const totalImpressions = postPerformance.reduce((sum, post) => sum + post.impressions, 0);
+      // 統計を計算（安全性チェック付き）
+      const totalPosts = postPerformance.length; // 有効な投稿数のみ
+      const totalEngagement = postPerformance.reduce((sum, post) => sum + (post.engagement || 0), 0);
+      const totalReach = postPerformance.reduce((sum, post) => sum + (post.reach || 0), 0);
+      const totalImpressions = postPerformance.reduce((sum, post) => sum + (post.impressions || 0), 0);
       
       const averageEngagement = totalPosts > 0 ? totalEngagement / totalPosts : 0;
-      const averageEngagementRate = postPerformance.reduce((sum, post) => sum + post.engagementRate, 0) / totalPosts;
+      const averageEngagementRate = totalPosts > 0 ? 
+        postPerformance.reduce((sum, post) => sum + (post.engagementRate || 0), 0) / totalPosts : 0;
 
       // トップ投稿を特定
       const topPosts = postPerformance

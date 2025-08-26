@@ -1,108 +1,175 @@
-# 本番モード切替・一括実行スクリプト
+# 🚀 Instagram Marketing App 自動化スクリプト
 
-## 概要
+このディレクトリには、Instagram Marketing Appの開発・デプロイ・引き継ぎを自動化するスクリプトが含まれています。
 
-このスクリプトは、Instagram Marketing Appを本番モードに切替え、以下の処理を一括で実行します：
+## 📋 スクリプト一覧
 
-1. `env.development`を元に`env.production`を更新
-2. `FB_USER_OR_LL_TOKEN`を新しいトークンで更新
-3. `scripts/refreshAndVerify.js`を使ってサーバー起動
-4. `/health`確認
-5. `verify:graph`実行
-6. ブラウザ自動起動
+### 1. `auto-handover.js` - 引き継ぎ書自動作成
+- 修正完了ごとに自動で引き継ぎ書を生成
+- Git変更履歴とコミット履歴を自動取得
+- 絶対に変更禁止の箇所を明記
 
-## ファイル構成
+### 2. `auto-deploy.js` - 自動デプロイ
+- 変更を自動コミット・プッシュ
+- Vercel（フロントエンド）とRender（バックエンド）の自動デプロイ
+- デプロイ状況の自動確認
 
-- `production-deploy.js` - メインのNode.jsスクリプト
-- `production-deploy.bat` - Windows環境用バッチファイル
-- `production-deploy.ps1` - PowerShell環境用スクリプト
+### 3. `auto-verification.js` - 動作確認ログ自動生成
+- フロントエンドページの動作確認
+- バックエンドAPIの動作確認
+- パフォーマンステストとセキュリティチェック
 
-## 使用方法
+### 4. `complete-workflow.js` - 統合ワークフロー
+- 上記3つのスクリプトを順次実行
+- 修正 → 引き継ぎ書生成 → デプロイ → 動作確認の完全自動化
 
-### Node.jsスクリプト（推奨）
+### 5. `run-workflow.ps1` - PowerShell実行スクリプト
+- Windows環境での簡単実行
+- メニュー形式でのタスク選択
+
+## 🚀 使用方法
+
+### 基本的な使用方法
 
 ```bash
-# プロジェクトルートディレクトリで実行
-node scripts/production-deploy.js "EAAxxxx..."
+# 引き継ぎ書の自動作成のみ
+npm run handover
+
+# 自動デプロイのみ
+npm run deploy
+
+# 動作確認ログの生成のみ
+npm run verify:deploy
+
+# 完全自動ワークフロー（推奨）
+npm run workflow
 ```
 
-### Windowsバッチファイル
-
-```cmd
-# プロジェクトルートディレクトリで実行
-scripts\production-deploy.bat "EAAxxxx..."
-```
-
-### PowerShellスクリプト
+### PowerShellでの実行
 
 ```powershell
-# プロジェクトルートディレクトリで実行
-.\scripts\production-deploy.ps1 -Token "EAAxxxx..."
+# 完全自動ワークフロー
+.\scripts\run-workflow.ps1 -FullWorkflow
+
+# 引き継ぎ書のみ
+.\scripts\run-workflow.ps1 -HandoverOnly
+
+# 自動デプロイのみ
+.\scripts\run-workflow.ps1 -DeployOnly
+
+# 動作確認のみ
+.\scripts\run-workflow.ps1 -VerifyOnly
 ```
 
-## 前提条件
+### 直接実行
 
-- Node.js がインストールされていること
-- 必要な依存関係がインストールされていること（`npm install`済み）
-- 有効なFacebookアクセストークン（EAAxxxx...形式）を所持していること
+```bash
+# Node.jsで直接実行
+node scripts/auto-handover.js
+node scripts/auto-deploy.js
+node scripts/auto-verification.js
+node scripts/complete-workflow.js
+```
 
-## 実行フロー
+## 📁 出力ファイル
 
-1. **環境設定ファイル更新**
-   - `env.development`の内容を確認
-   - `env.production`の`FB_USER_OR_LL_TOKEN`を更新
+### 引き継ぎ書
+- 保存場所: `docs/handoff/引継ぎ書_YYYY-MM-DD.md`
+- 内容:
+  - ✅ 完了した修正内容
+  - 🚨 絶対に変更禁止の箇所
+  - 📝 次のステップ
+  - 📊 完了率
+  - 🚀 デプロイ実行結果
+  - 🧪 動作確認ログ
 
-2. **refreshAndVerify.js実行**
-   - 既存プロセスの終了
-   - サーバー起動（ポート4000）
-   - 環境変数の設定
+## ⚠️ 重要な注意事項
 
-3. **ヘルスチェック**
-   - `/health`エンドポイントへの接続確認
-   - 最大10回のリトライ
+### 絶対に変更禁止の箇所
+- **環境変数キー**: `VITE_API_BASE_URL`
+- **本番URL**: `https://instagram-marketing-backend-v2.onrender.com/api`
+- **Instagram Graph API 認証フロー**
+- **ProtectedRoute の認証チェック処理**
 
-4. **Graph API検証**
-   - `npm run verify:graph`の実行
-   - 検証結果の表示
+### 設定ファイル
+- `server/config/database.js` - データベース接続設定
+- `server/middleware/auth.js` - 認証ミドルウェア
+- `src/components/ProtectedRoute.tsx` - 認証チェック処理
 
-5. **ブラウザ起動**
-   - 自動的にブラウザで`http://localhost:4000`を開く
+## 🔧 カスタマイズ
 
-## エラーハンドリング
+### 設定の変更
+`config.json` ファイルで以下の設定を変更できます：
 
-- 各ステップでエラーが発生した場合、適切なエラーメッセージを表示
-- ヘルスチェック失敗時は以降の処理をスキップ
-- タイムアウト処理（refreshAndVerify.js: 2分、Graph API検証: 60秒）
+- デプロイ待機時間
+- パフォーマンス閾値
+- 保護対象ファイル
+- 確認対象URL
 
-## ログ出力
+### スクリプトの拡張
+各スクリプトはクラスベースで設計されており、必要に応じて機能を追加できます。
 
-- 色付きのログで各ステップの進行状況を表示
-- 成功/失敗/警告をアイコン付きで表示
-- 詳細なエラー情報とサマリーを提供
+## 📊 ワークフローの流れ
 
-## 注意事項
+```
+修正完了
+    ↓
+1. 引き継ぎ書自動作成
+    ↓
+2. 変更の自動コミット
+    ↓
+3. mainブランチへの自動プッシュ
+    ↓
+4. Vercel/Renderでの自動デプロイ
+    ↓
+5. デプロイ完了待機
+    ↓
+6. 動作確認ログの自動生成
+    ↓
+7. 最終レポートの生成
+    ↓
+完了！
+```
 
-- 本番環境用の設定ファイルを更新するため、実行前に内容を確認してください
-- アクセストークンは機密情報のため、適切に管理してください
-- サーバー起動時は既存のプロセスが自動的に終了されます
-- ブラウザの自動起動が失敗した場合は、手動で`http://localhost:4000`にアクセスしてください
-
-## トラブルシューティング
+## 🐛 トラブルシューティング
 
 ### よくある問題
 
-1. **ポート4000が使用中**
-   - スクリプトが自動的に既存プロセスを終了します
-   - 手動で確認する場合は`netstat -ano | findstr :4000`（Windows）または`lsof -ti:4000`（Unix）
+1. **Node.jsが見つからない**
+   - Node.jsをインストールしてください
+   - バージョン20.18.1以上が必要
 
-2. **アクセストークンが無効**
-   - Facebook Developer Consoleでトークンの有効性を確認
-   - 必要に応じて新しいトークンを生成
+2. **Gitが見つからない**
+   - Gitをインストールしてください
 
-3. **依存関係の問題**
-   - `npm install`を実行して依存関係を更新
-   - Node.jsのバージョンを確認
+3. **実行ポリシーエラー（PowerShell）**
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
+
+4. **権限エラー**
+   - 管理者権限で実行してください
 
 ### ログの確認
+- 各スクリプトの実行ログはコンソールに表示されます
+- エラーが発生した場合は、手動で確認してください
 
-スクリプト実行時の詳細なログは、各ステップで色付きで表示されます。エラーが発生した場合は、表示されるメッセージを確認してください。
+## 📞 サポート
+
+問題が発生した場合：
+
+1. エラーメッセージを確認
+2. 手動で該当箇所を確認
+3. 必要に応じて手動で修正
+4. 再度スクリプトを実行
+
+## 🎯 推奨ワークフロー
+
+1. **開発完了後**: `npm run workflow` で完全自動化
+2. **引き継ぎ書のみ**: `npm run handover`
+3. **デプロイのみ**: `npm run deploy`
+4. **動作確認のみ**: `npm run verify:deploy`
+
+---
+
+**注意**: このスクリプトは開発・テスト環境での使用を想定しています。本番環境での使用前に十分なテストを行ってください。

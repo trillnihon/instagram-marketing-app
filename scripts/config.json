@@ -1,0 +1,71 @@
+{
+  "project": {
+    "name": "Instagram Marketing App",
+    "version": "1.0.0",
+    "description": "Instagram Marketing App with Auto Workflow"
+  },
+  "deployment": {
+    "frontend": {
+      "platform": "Vercel",
+      "autoDeploy": true,
+      "healthCheckUrl": "https://instagram-marketing-app-xxx.vercel.app",
+      "deployWaitTime": 5000
+    },
+    "backend": {
+      "platform": "Render",
+      "autoDeploy": true,
+      "healthCheckUrl": "https://instagram-marketing-backend-v2.onrender.com/api/health",
+      "deployWaitTime": 10000
+    }
+  },
+  "immutableConfigs": {
+    "envKey": "VITE_API_BASE_URL",
+    "productionUrl": "https://instagram-marketing-backend-v2.onrender.com/api",
+    "protectedRoutes": [
+      "Instagram Graph API 認証フロー",
+      "ProtectedRoute の認証チェック処理"
+    ],
+    "protectedFiles": [
+      "server/config/database.js",
+      "server/middleware/auth.js",
+      "src/components/ProtectedRoute.tsx"
+    ]
+  },
+  "verification": {
+    "frontendPages": [
+      "/history",
+      "/scheduler",
+      "/posting-time-analysis"
+    ],
+    "backendEndpoints": [
+      "/api/health",
+      "/api/scheduler/posts"
+    ],
+    "performanceThresholds": {
+      "frontendLoadTime": 2000,
+      "apiResponseTime": 1000
+    }
+  },
+  "workflow": {
+    "autoCommit": true,
+    "autoPush": true,
+    "autoDeploy": true,
+    "autoVerify": true,
+    "waitTimes": {
+      "deployStart": 5000,
+      "deployComplete": 15000,
+      "verification": 5000
+    }
+  },
+  "git": {
+    "defaultBranch": "main",
+    "commitMessageTemplate": "Auto workflow: {date} - {timestamp}",
+    "autoStash": true
+  },
+  "logging": {
+    "level": "info",
+    "file": "logs/workflow.log",
+    "maxSize": "10MB",
+    "maxFiles": 5
+  }
+}

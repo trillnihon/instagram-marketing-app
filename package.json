@@ -24,7 +24,11 @@
     "verify:graph:report": "tsx scripts/verify-graph.ts --report",
     "token:refresh": "tsx scripts/refresh-long-lived-token.ts",
     "token:rotate-now": "tsx scripts/refresh-long-lived-token.ts --rotate-now",
-    "warmup:prod": "node ./server/scripts/warmup.mjs"
+    "warmup:prod": "node ./server/scripts/warmup.mjs",
+    "handover": "node scripts/auto-handover.js",
+    "deploy": "node scripts/auto-deploy.js",
+    "verify:deploy": "node scripts/auto-verification.js",
+    "workflow": "node scripts/complete-workflow.js"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.0",

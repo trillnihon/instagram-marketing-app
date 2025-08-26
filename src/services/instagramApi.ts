@@ -6,13 +6,13 @@ import {
   InstagramInsight 
 } from '../types';
 
-// API_BASE_URLの環境変数ベース設定
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://instagram-marketing-backend-v2.onrender.com';
+// API_BASE_URLの環境変数ベース設定（/apiを含む）
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
 
 // Instagram認証開始
 export const startInstagramAuth = (): void => {
   // バックエンドのInstagram認証エンドポイントにリダイレクト
-  const authUrl = `${API_BASE_URL}/auth/instagram`;
+  const authUrl = `${API_BASE_URL}/instagram/auth`;
   console.log('[DEBUG] Instagram認証開始:', {
     API_BASE_URL,
     authUrl,
@@ -25,16 +25,35 @@ export const startInstagramAuth = (): void => {
 // Instagram認証コールバック処理
 export const handleInstagramCallback = async (): Promise<InstagramAuthResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/instagram/callback${window.location.search}`);
-    const data = await response.json();
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    
+    if (!code) {
+      throw new Error('認証コードが取得できませんでした');
+    }
+    
+    console.log('[DEBUG] Instagram認証コールバック処理開始:', { code, state });
+    
+    // バックエンドで認証コードを処理
+    const response = await fetch(`${API_BASE_URL}/instagram/callback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code, state }),
+    });
     
     if (!response.ok) {
-      throw new Error(data.error || 'Instagram認証に失敗しました');
+      throw new Error(`認証処理に失敗しました: ${response.status}`);
     }
+    
+    const data = await response.json();
+    console.log('[DEBUG] Instagram認証成功:', data);
     
     return data;
   } catch (error) {
-    console.error('[ERROR] Instagram認証コールバック処理失敗:', error);
+    console.error('[ERROR] Instagram認証コールバック処理エラー:', error);
     throw error;
   }
 };
@@ -47,7 +66,7 @@ export const fetchInstagramPosts = async (
 ): Promise<InstagramMedia[]> => {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/instagram/posts/${userId}?access_token=${accessToken}&instagram_business_account_id=${instagramBusinessAccountId}`
+      `${API_BASE_URL}/instagram/posts/${userId}?access_token=${accessToken}&instagram_business_account_id=${instagramBusinessAccountId}`
     );
     const data: InstagramPostsResponse = await response.json();
     
@@ -69,7 +88,7 @@ export const fetchInstagramInsights = async (
 ): Promise<InstagramInsight[]> => {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/instagram/insights/${mediaId}?access_token=${accessToken}`
+      `${API_BASE_URL}/instagram/insights/${mediaId}?access_token=${accessToken}`
     );
     const data: InstagramInsightsResponse = await response.json();
     

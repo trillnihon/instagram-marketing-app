@@ -391,9 +391,27 @@ router.post('/posting-time-analysis', async (req, res) => {
     
   } catch (error) {
     console.error('❌ 投稿時間分析エラー:', error.message);
-    res.status(500).json({
+    console.error('❌ エラースタック:', error.stack);
+    
+    // エラーの種類に応じて適切なレスポンスを返す
+    let statusCode = 500;
+    let errorMessage = '投稿時間分析中にエラーが発生しました';
+    
+    if (error.message.includes('access_token')) {
+      statusCode = 401;
+      errorMessage = 'アクセストークンが無効です';
+    } else if (error.message.includes('rate limit')) {
+      statusCode = 429;
+      errorMessage = 'API制限に達しました。しばらく時間をおいてから再試行してください';
+    } else if (error.message.includes('permission')) {
+      statusCode = 403;
+      errorMessage = 'この操作を実行する権限がありません';
+    }
+    
+    res.status(statusCode).json({
       success: false,
-      error: error.message,
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
       timestamp: new Date().toISOString()
     });
   }
@@ -471,9 +489,27 @@ router.post('/ai/generate-post', async (req, res) => {
     
   } catch (error) {
     console.error('❌ AI投稿生成エラー:', error.message);
-    res.status(500).json({
+    console.error('❌ エラースタック:', error.stack);
+    
+    // エラーの種類に応じて適切なレスポンスを返す
+    let statusCode = 500;
+    let errorMessage = 'AI投稿生成中にエラーが発生しました';
+    
+    if (error.message.includes('access_token')) {
+      statusCode = 401;
+      errorMessage = 'アクセストークンが無効です';
+    } else if (error.message.includes('rate limit')) {
+      statusCode = 429;
+      errorMessage = 'API制限に達しました。しばらく時間をおいてから再試行してください';
+    } else if (error.message.includes('permission')) {
+      statusCode = 403;
+      errorMessage = 'この操作を実行する権限がありません';
+    }
+    
+    res.status(statusCode).json({
       success: false,
-      error: error.message,
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
       timestamp: new Date().toISOString()
     });
   }
@@ -526,9 +562,27 @@ router.get('/performance-analysis/:accountId', async (req, res) => {
     
   } catch (error) {
     console.error('❌ パフォーマンス分析エラー:', error.message);
-    res.status(500).json({
+    console.error('❌ エラースタック:', error.stack);
+    
+    // エラーの種類に応じて適切なレスポンスを返す
+    let statusCode = 500;
+    let errorMessage = 'パフォーマンス分析中にエラーが発生しました';
+    
+    if (error.message.includes('access_token')) {
+      statusCode = 401;
+      errorMessage = 'アクセストークンが無効です';
+    } else if (error.message.includes('rate limit')) {
+      statusCode = 429;
+      errorMessage = 'API制限に達しました。しばらく時間をおいてから再試行してください';
+    } else if (error.message.includes('permission')) {
+      statusCode = 403;
+      errorMessage = 'この操作を実行する権限がありません';
+    }
+    
+    res.status(statusCode).json({
       success: false,
-      error: error.message,
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
       timestamp: new Date().toISOString()
     });
   }

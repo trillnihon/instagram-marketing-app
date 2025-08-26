@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// APIのベースURL（完全に直接設定）
-const API_BASE_URL = 'https://instagram-marketing-backend-v2.onrender.com';
+// APIのベースURL（環境変数から取得、/apiを含む）
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
 
 // axiosインスタンスの作成
 const apiClient = axios.create({
@@ -29,11 +29,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // 認証エラーの場合、トークンを削除してログインページにリダイレクト
-      localStorage.removeItem('auth_token');
-      window.location.href = '/';
-    }
+    console.error('Auth API Error:', error);
     return Promise.reject(error);
   }
 );
@@ -55,7 +51,7 @@ export const facebookLoginCallback = async (authData: {
       redirectUri: authData.redirect_uri
     });
 
-    const response = await apiClient.post('/api/auth/facebook/callback', authData);
+    const response = await apiClient.post('/auth/facebook/callback', authData);
     
     console.log('✅ [AUTH STEP 2] Facebook認証成功:', {
       status: response.status,
@@ -90,7 +86,7 @@ export const getInstagramMedia = async (igUserId: string, accessToken: string) =
       hasAccessToken: !!accessToken
     });
 
-    const response = await apiClient.get(`/api/instagram/media/${igUserId}`, {
+    const response = await apiClient.get(`/instagram/media/${igUserId}`, {
       params: { access_token: accessToken }
     });
 
@@ -126,7 +122,7 @@ export const register = async (userData: {
       username: userData.username
     });
 
-    const response = await apiClient.post('/api/auth/register', userData);
+    const response = await apiClient.post('/auth/register', userData);
     
     console.log('✅ [AUTH STEP 2] ユーザー登録成功:', {
       status: response.status,
@@ -160,11 +156,11 @@ export const login = async (credentials: {
   try {
     console.log('🔐 [AUTH STEP 1] ログイン処理開始:', {
       API_BASE_URL,
-      requestURL: `${API_BASE_URL}/api/auth/login`,
+      requestURL: `${API_BASE_URL}/auth/login`,
       credentials: { email: credentials.email }
     });
     
-    const response = await apiClient.post('/api/auth/login', credentials);
+    const response = await apiClient.post('/auth/login', credentials);
     
     console.log('✅ [AUTH STEP 2] ログイン成功:', {
       status: response.status,
@@ -203,7 +199,7 @@ export const logout = () => {
 export const getCurrentUser = async () => {
   try {
     console.log('👤 [AUTH STEP 1] ユーザー情報取得開始');
-    const response = await apiClient.get('/api/auth/me');
+    const response = await apiClient.get('/auth/me');
     console.log('✅ [AUTH STEP 2] ユーザー情報取得成功:', {
       status: response.status,
       hasUser: !!response.data.user
@@ -232,7 +228,7 @@ export const updateUser = async (userData: {
 }) => {
   try {
     console.log('📝 [AUTH STEP 1] ユーザー情報更新開始:', userData);
-    const response = await apiClient.put('/api/auth/me', userData);
+    const response = await apiClient.put('/auth/me', userData);
     console.log('✅ [AUTH STEP 2] ユーザー情報更新成功:', {
       status: response.status
     });
@@ -258,7 +254,7 @@ export const changePassword = async (passwordData: {
 }) => {
   try {
     console.log('🔒 [AUTH STEP 1] パスワード変更開始');
-    const response = await apiClient.put('/api/auth/change-password', passwordData);
+    const response = await apiClient.put('/auth/change-password', passwordData);
     console.log('✅ [AUTH STEP 2] パスワード変更成功:', {
       status: response.status
     });
@@ -281,7 +277,7 @@ export const changePassword = async (passwordData: {
 export const deleteAccount = async () => {
   try {
     console.log('🗑️ [AUTH STEP 1] アカウント削除開始');
-    const response = await apiClient.delete('/api/auth/me');
+    const response = await apiClient.delete('/auth/me');
     localStorage.removeItem('auth_token');
     localStorage.removeItem('facebook_access_token');
     console.log('✅ [AUTH STEP 2] アカウント削除成功:', {

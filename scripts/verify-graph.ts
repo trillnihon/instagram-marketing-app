@@ -21,9 +21,6 @@ import { config } from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 
-// 環境変数の読み込み
-config({ path: './env.development' });
-
 // 定数定義
 const GRAPH_API_VERSION = 'v19.0';
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
@@ -34,10 +31,6 @@ const args = process.argv.slice(2);
 const isVerbose = args.includes('--verbose');
 const isReport = args.includes('--report');
 const isDryRun = args.includes('--dry-run');
-
-// 環境変数の取得
-const FB_USER_OR_LL_TOKEN = process.env.FB_USER_OR_LL_TOKEN;
-const FB_PAGE_ID = process.env.FB_PAGE_ID;
 
 // カラーコード（Windows PowerShell対応）
 const colors = {
@@ -221,6 +214,13 @@ function saveReport(result: VerificationResult): void {
 
 // メイン検証関数
 async function verifyGraphAPI(): Promise<VerificationResult> {
+  // 環境変数の読み込み
+  config({ path: './env.development' });
+  
+  // 環境変数の取得
+  const FB_USER_OR_LL_TOKEN = process.env.FB_USER_OR_LL_TOKEN;
+  const FB_PAGE_ID = process.env.FB_PAGE_ID;
+  
   const startTime = Date.now();
   const result: VerificationResult = {
     timestamp: new Date().toISOString(),

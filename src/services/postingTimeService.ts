@@ -45,7 +45,7 @@ export const generateMockPostingTimeData = (): PostingTimeData[] => {
 
 // APIから投稿時間データを取得
 export const fetchPostingTimeData = async (
-  userId: string,
+  accountId: string,
   accessToken: string,
   period: 'week' | 'month' | 'quarter' = 'month'
 ): Promise<PostingTimeData[]> => {
@@ -58,7 +58,7 @@ export const fetchPostingTimeData = async (
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          accountId: userId,
+          accountId: accountId,
           days: period === 'week' ? 7 : period === 'month' ? 30 : 90,
           accessToken: accessToken
         })

@@ -15,6 +15,15 @@ import {
 
 const router = express.Router();
 
+// ヘルスチェック（認証不要）
+router.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: '分析履歴APIサービスは正常に動作しています',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // すべてのエンドポイントで認証が必要
 router.use(authenticateToken);
 
