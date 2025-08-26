@@ -272,6 +272,18 @@ app.get('/health', (req, res) => {
   });
 });
 
+// API用ヘルスチェックエンドポイント
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    mongodb: mongoConnected ? 'connected' : 'demo_mode',
+    api_version: '1.0.0'
+  });
+});
+
 // 管理者用トークン情報エンドポイント
 app.get('/admin/token/current', authenticateToken, (req, res) => {
   // 管理者権限チェック
@@ -2396,6 +2408,90 @@ app.post('/api/ai/generate-image', async (req, res) => {
 });
 
 // 投稿スケジューラーAPI（デモモード対応）
+// GET: スケジュール済み投稿の取得
+app.get('/api/scheduler/posts', async (req, res) => {
+  const { userId, month, year } = req.query;
+  
+  console.log(`📅 [DEBUG] スケジュール済み投稿取得リクエスト (ユーザーID: ${userId}, 期間: ${year}/${month})`);
+  
+  // デモユーザーの場合はデモデータを返す
+  if (userId === 'demo_user' || userId === '17841474953463077') {
+    console.log(`🎭 [DEBUG] デモユーザーのためデモスケジュールデータを返します`);
+    
+    const demoPosts = [
+      {
+        id: 'demo_scheduled_1',
+        caption: '朝のコーヒータイム ☕️ 今日も一日頑張ろう！ #朝活 #コーヒー #ライフスタイル',
+        imageUrl: 'https://via.placeholder.com/300x300/6366F1/FFFFFF?text=Morning+Coffee',
+        scheduledTime: '2025-07-22T08:00:00Z',
+        status: 'scheduled',
+        hashtags: ['#朝活', '#コーヒー', '#ライフスタイル'],
+        createdAt: '2025-07-21T10:00:00Z'
+      },
+      {
+        id: 'demo_scheduled_2',
+        caption: '週末の散歩 🌸 春の訪れを感じる #春 #散歩 #自然',
+        imageUrl: 'https://via.placeholder.com/300x300/10B981/FFFFFF?text=Spring+Walk',
+        scheduledTime: '2025-07-23T19:00:00Z',
+        status: 'scheduled',
+        hashtags: ['#春', '#散歩', '#自然'],
+        createdAt: '2025-07-21T11:00:00Z'
+      },
+      {
+        id: 'demo_scheduled_3',
+        caption: '新しい本を読み始めました 📚 知識は力なり #読書 #自己啓発',
+        scheduledTime: '2025-07-24T20:00:00Z',
+        status: 'scheduled',
+        hashtags: ['#読書', '#自己啓発'],
+        createdAt: '2025-07-21T12:00:00Z'
+      },
+      {
+        id: 'demo_published_1',
+        caption: '今日のランチ 🍜 美味しいものを食べると幸せになります #ランチ #グルメ',
+        imageUrl: 'https://via.placeholder.com/300x300/F59E0B/FFFFFF?text=Lunch',
+        scheduledTime: '2025-07-20T12:00:00Z',
+        status: 'published',
+        hashtags: ['#ランチ', '#グルメ'],
+        createdAt: '2025-07-19T15:00:00Z'
+      },
+      {
+        id: 'demo_failed_1',
+        caption: '夜の読書タイム 📖 静かな時間が一番贅沢 #読書 #夜活',
+        scheduledTime: '2025-07-19T21:00:00Z',
+        status: 'failed',
+        hashtags: ['#読書', '#夜活'],
+        createdAt: '2025-07-18T18:00:00Z'
+      }
+    ];
+    
+    return res.json({
+      success: true,
+      posts: demoPosts,
+      message: 'デモモード: スケジュール済み投稿を取得しました'
+    });
+  }
+  
+  // 実際のユーザーの場合はデータベースから取得
+  try {
+    // ここで実際のデータベースクエリを実装
+    // 現在はデモデータのみ対応
+    res.json({
+      success: true,
+      posts: [],
+      message: 'スケジュール済み投稿を取得しました'
+    });
+    
+  } catch (error) {
+    console.error('[ERROR] スケジュール済み投稿取得失敗:', error);
+    res.status(500).json({
+      success: false,
+      error: 'スケジュール済み投稿の取得に失敗しました',
+      message: error.message
+    });
+  }
+});
+
+// POST: スケジュール済み投稿の作成・更新
 app.post('/api/scheduler/posts', async (req, res) => {
   const { userId, month, year } = req.body;
   

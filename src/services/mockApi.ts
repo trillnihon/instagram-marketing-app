@@ -256,14 +256,20 @@ export const apiWithFallback = {
   getScheduledPosts: async (userId: string = 'demo_user', month?: number, year?: number) => {
     try {
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
-      const apiUrl = `${apiBaseUrl}/scheduler/posts`;
+      
+      // クエリパラメータを構築
+      const params = new URLSearchParams();
+      if (userId) params.append('userId', userId);
+      if (month) params.append('month', month.toString());
+      if (year) params.append('year', year.toString());
+      
+      const apiUrl = `${apiBaseUrl}/scheduler/posts?${params.toString()}`;
       console.log(`🔍 [DEBUG] 本番スケジュールAPI呼び出し: ${apiUrl}`);
       console.log(`🔍 [DEBUG] ユーザーID: ${userId}, 月: ${month}, 年: ${year}`);
       
       const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, month, year })
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
       console.log(`🔍 [DEBUG] 本番スケジュールAPIレスポンス: ${response.status} ${response.statusText}`);
       
