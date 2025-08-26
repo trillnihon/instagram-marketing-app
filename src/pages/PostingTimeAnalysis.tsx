@@ -21,6 +21,7 @@ import {
 import { useAppStore } from '../store/useAppStore';
 
 const PostingTimeAnalysisPage: React.FC = () => {
+  const { currentUser } = useAppStore();
   const [postingTimeData, setPostingTimeData] = useState<PostingTimeData[]>([]);
   const [analysis, setAnalysis] = useState<PostingTimeAnalysis | null>(null);
   const [recommendations, setRecommendations] = useState<PostingRecommendation[]>([]);
@@ -77,7 +78,7 @@ const PostingTimeAnalysisPage: React.FC = () => {
     };
 
     loadData();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, currentUser]);
 
   // 期間選択ハンドラー
   const handlePeriodChange = (period: 'week' | 'month' | 'quarter') => {
