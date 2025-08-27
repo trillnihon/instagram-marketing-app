@@ -271,6 +271,57 @@ class AutoVerification {
     console.log(`バックエンド: ${this.calculateScore(backendResults)}%`);
     console.log(`パフォーマンス: ${this.calculateScore(performanceResults)}%`);
     console.log(`セキュリティ: ${this.calculateScore(securityResults)}%`);
+    
+    // GitHub Actions 用のレポート生成
+    const finalReport = this.generateFinalReport(
+      frontendResults, 
+      backendResults, 
+      performanceResults, 
+      securityResults
+    );
+    
+    // GitHub Actions 用の出力
+    if (process.env.GITHUB_ACTIONS) {
+      const fs = await import('fs');
+      fs.writeFileSync(process.env.GITHUB_OUTPUT, `report<<EOF\n${finalReport}\nEOF\n`);
+    }
+  }
+  
+  // 最終レポート生成
+  generateFinalReport(frontendResults, backendResults, performanceResults, securityResults) {
+    return `# 🧪 動作確認最終レポート
+
+## 📊 動作確認結果サマリー
+
+### フロントエンド
+- **/history**: ${frontendResults.history.success ? '✅ 正常' : '❌ 失敗'} - ${frontendResults.history.details}
+- **/scheduler**: ${frontendResults.scheduler.success ? '✅ 正常' : '❌ 失敗'} - ${frontendResults.scheduler.details}
+- **/posting-time-analysis**: ${frontendResults.postingAnalysis.success ? '✅ 正常' : '❌ 失敗'} - ${frontendResults.postingAnalysis.details}
+
+### バックエンド
+- **/api/health**: ${backendResults.health.success ? '✅ 正常' : '❌ 失敗'} - ${backendResults.health.status} - ${backendResults.health.details}
+- **/api/scheduler/posts**: ${backendResults.scheduler.success ? '✅ 正常' : '❌ 失敗'} - ${backendResults.scheduler.status} - ${backendResults.scheduler.details}
+
+### パフォーマンス
+- **フロントエンド読み込み**: ${performanceResults.frontendLoad.success ? '✅ 良好' : '⚠️ 要改善'} - ${performanceResults.frontendLoad.loadTime}ms
+- **API応答時間**: ${performanceResults.apiResponse.success ? '✅ 良好' : '⚠️ 要改善'} - ${performanceResults.apiResponse.responseTime}ms
+
+### セキュリティ
+- **認証システム**: ${securityResults.authentication.success ? '✅ 正常' : '❌ 失敗'}
+- **認可システム**: ${securityResults.authorization.success ? '✅ 正常' : '❌ 失敗'}
+- **データ検証**: ${securityResults.dataValidation.success ? '✅ 正常' : '❌ 失敗'}
+
+### 総合評価
+- **フロントエンド**: ${this.calculateScore(frontendResults)}%
+- **バックエンド**: ${this.calculateScore(backendResults)}%
+- **パフォーマンス**: ${this.calculateScore(performanceResults)}%
+- **セキュリティ**: ${this.calculateScore(securityResults)}%
+
+---
+
+**動作確認日時**: ${new Date().toISOString()}
+**確認者**: Auto Verification System
+**ステータス**: 完了`;
   }
 }
 

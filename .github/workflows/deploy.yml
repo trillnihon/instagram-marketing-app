@@ -135,9 +135,15 @@ jobs:
       run: npm ci
     
     - name: Run verification script
-      run: node scripts/auto-verification.js
+      id: auto_verification
+      run: |
+        node scripts/auto-verification.js > verification.log
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Save Final Deploy Report
+      run: |
+        echo "${{ steps.auto_verification.outputs.report }}" | npm run save:final-report
 
   complete-workflow:
     needs: auto-verification

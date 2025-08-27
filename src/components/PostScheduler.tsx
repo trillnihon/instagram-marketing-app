@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { apiWithFallback } from '../services/mockApi';
+import DemoTokenAlert from './DemoTokenAlert';
 
 interface ScheduledPost {
   id: string;
@@ -23,7 +24,7 @@ const PostScheduler: React.FC<PostSchedulerProps> = ({ onPostSelect }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   
-  const { currentUser } = useAppStore();
+  const { currentUser, isDemoToken } = useAppStore();
 
   // スケジュール済み投稿を取得
   const fetchScheduledPosts = async () => {
@@ -198,6 +199,12 @@ const PostScheduler: React.FC<PostSchedulerProps> = ({ onPostSelect }) => {
     <div className="space-y-6">
       {/* ヘッダー */}
       <div className="bg-white rounded-lg shadow-md p-6">
+        {/* デモトークン警告 */}
+        <DemoTokenAlert 
+          isVisible={isDemoToken()} 
+          className="mb-4"
+        />
+        
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-800">📅 投稿スケジューラー</h3>
           <div className="flex space-x-2">

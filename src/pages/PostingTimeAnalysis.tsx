@@ -19,9 +19,10 @@ import {
   generatePostingRecommendations 
 } from '../services/postingTimeService';
 import { useAppStore } from '../store/useAppStore';
+import DemoTokenAlert from '../components/DemoTokenAlert';
 
 const PostingTimeAnalysisPage: React.FC = () => {
-  const { currentUser } = useAppStore();
+  const { currentUser, isDemoToken } = useAppStore();
   const [postingTimeData, setPostingTimeData] = useState<PostingTimeData[]>([]);
   const [analysis, setAnalysis] = useState<PostingTimeAnalysis | null>(null);
   const [recommendations, setRecommendations] = useState<PostingRecommendation[]>([]);
@@ -147,6 +148,12 @@ const PostingTimeAnalysisPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* ヘッダー */}
         <div className="mb-8">
+          {/* デモトークン警告 */}
+          <DemoTokenAlert 
+            isVisible={isDemoToken()} 
+            className="mb-4"
+          />
+          
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center">

@@ -66,6 +66,7 @@ interface AuthState {
   setAuthenticated: (authenticated: boolean) => void;
   setCurrentUser: (user: User | null) => void;
   setDemoAuth: (user: User) => void;
+  isDemoToken: (token?: string) => boolean;
   suggestions?: any[];
   setAccountAnalytics?: (analytics: any) => void;
   setPosts?: (posts: any[]) => void;
@@ -115,6 +116,16 @@ export const useAppStore = create<AuthState>()(
         if (error) {
           console.error('[ERROR] App Error:', error);
         }
+      },
+
+      // デモトークンかどうかを判定
+      isDemoToken: (token?: string): boolean => {
+        const currentToken = token || get().token;
+        return !!(currentToken && (
+          currentToken.startsWith('demo-token') ||
+          currentToken === 'demo_token' ||
+          currentToken.includes('demo')
+        ));
       },
 
       // ログイン

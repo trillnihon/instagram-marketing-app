@@ -28,7 +28,8 @@
     "handover": "node scripts/auto-handover.js",
     "deploy": "node scripts/auto-deploy.js",
     "verify:deploy": "node scripts/auto-verification.js",
-    "workflow": "node scripts/complete-workflow.js"
+    "workflow": "node scripts/complete-workflow.js",
+    "save:final-report": "node scripts/save-final-report.js"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.0",

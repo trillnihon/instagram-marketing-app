@@ -32,6 +32,8 @@ services:
         sync: false
       - key: INSTAGRAM_APP_SECRET
         sync: false
+      - key: FB_USER_OR_LL_TOKEN
+        sync: false
       - key: INSTAGRAM_GRAPH_API_VERSION
         value: v19.0
       - key: FB_REDIRECT_URI
