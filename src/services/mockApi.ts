@@ -255,6 +255,13 @@ export const apiWithFallback = {
   // スケジュール済み投稿取得（フォールバック付き）
   getScheduledPosts: async (userId: string = 'demo_user', month?: number, year?: number) => {
     try {
+      // userId の検証を追加
+      if (!userId || userId === 'undefined') {
+        console.log('⚠️ [WARNING] 無効なユーザーID:', userId);
+        console.log('🔄 [FALLBACK] 無効なユーザーIDのため、Mock APIにフォールバック');
+        return await mockApi.getScheduledPosts();
+      }
+      
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
       
       // クエリパラメータを構築

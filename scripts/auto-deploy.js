@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import axios from 'axios';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -147,16 +148,78 @@ class AutoDeploy {
     try {
       // バックエンドヘルスチェック
       console.log('🔍 バックエンド /api/health をチェック...');
-      // 実際の実装ではaxiosでHTTPリクエストを送信
-      results.backend.health = true;
+      try {
+        const healthResponse = await axios.get('https://instagram-marketing-backend-v2.onrender.com/api/health', {
+          timeout: 10000
+        });
+        results.backend.health = healthResponse.status === 200;
+        console.log(`✅ /api/health: ${healthResponse.status} ${healthResponse.statusText}`);
+      } catch (error) {
+        console.error(`❌ /api/health チェック失敗: ${error.message}`);
+        results.backend.health = false;
+      }
       
       console.log('🔍 バックエンド /api/scheduler/posts をチェック...');
-      // 実際の実装ではaxiosでHTTPリクエストを送信
-      results.backend.scheduler = true;
+      try {
+        const schedulerResponse = await axios.get('https://instagram-marketing-backend-v2.onrender.com/api/scheduler/posts?userId=demo_user', {
+          timeout: 10000
+        });
+        results.backend.scheduler = schedulerResponse.status === 200;
+        console.log(`✅ /api/scheduler/posts: ${schedulerResponse.status} ${schedulerResponse.statusText}`);
+      } catch (error) {
+        console.error(`❌ /api/scheduler/posts チェック失敗: ${error.message}`);
+        results.backend.scheduler = false;
+      }
       
       console.log('✅ バックエンドヘルスチェック完了');
     } catch (error) {
       console.error('❌ バックエンドヘルスチェックに失敗:', error.message);
+    }
+
+    try {
+      // フロントエンドヘルスチェック
+      console.log('🔍 フロントエンド /history をチェック...');
+      try {
+        const historyResponse = await axios.get('https://instagram-marketing-app.vercel.app/history', {
+          timeout: 10000,
+          validateStatus: (status) => status < 500 // 404は正常（ルーティングが動作している）
+        });
+        results.frontend.history = historyResponse.status < 500;
+        console.log(`✅ /history: ${historyResponse.status} ${historyResponse.statusText}`);
+      } catch (error) {
+        console.error(`❌ /history チェック失敗: ${error.message}`);
+        results.frontend.history = false;
+      }
+
+      console.log('🔍 フロントエンド /scheduler をチェック...');
+      try {
+        const schedulerResponse = await axios.get('https://instagram-marketing-app.vercel.app/scheduler', {
+          timeout: 10000,
+          validateStatus: (status) => status < 500
+        });
+        results.frontend.scheduler = schedulerResponse.status < 500;
+        console.log(`✅ /scheduler: ${schedulerResponse.status} ${schedulerResponse.statusText}`);
+      } catch (error) {
+        console.error(`❌ /scheduler チェック失敗: ${error.message}`);
+        results.frontend.scheduler = false;
+      }
+
+      console.log('🔍 フロントエンド /posting-time-analysis をチェック...');
+      try {
+        const analysisResponse = await axios.get('https://instagram-marketing-app.vercel.app/posting-time-analysis', {
+          timeout: 10000,
+          validateStatus: (status) => status < 500
+        });
+        results.frontend.postingAnalysis = analysisResponse.status < 500;
+        console.log(`✅ /posting-time-analysis: ${analysisResponse.status} ${analysisResponse.statusText}`);
+      } catch (error) {
+        console.error(`❌ /posting-time-analysis チェック失敗: ${error.message}`);
+        results.frontend.postingAnalysis = false;
+      }
+      
+      console.log('✅ フロントエンドヘルスチェック完了');
+    } catch (error) {
+      console.error('❌ フロントエンドヘルスチェックに失敗:', error.message);
     }
 
     return results;

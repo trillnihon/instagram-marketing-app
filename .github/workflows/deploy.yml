@@ -28,8 +28,30 @@ jobs:
     - name: Build frontend
       run: npm run build
 
-  deploy-frontend:
+  auto-handover:
     needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Generate handover document
+      run: node scripts/auto-handover.js
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-frontend:
+    needs: [test, auto-handover]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     
@@ -57,7 +79,7 @@ jobs:
         vercel-args: '--prod'
 
   deploy-backend:
-    needs: test
+    needs: [test, auto-handover]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     
@@ -71,4 +93,70 @@ jobs:
       run: |
         curl -X POST "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
           -H "Authorization: Bearer $RENDER_TOKEN" \
-          -H "Content-Type: application/json" 
+          -H "Content-Type: application/json"
+
+  auto-deploy:
+    needs: [deploy-frontend, deploy-backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run auto-deploy script
+      run: node scripts/auto-deploy.js
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  auto-verification:
+    needs: auto-deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run verification script
+      run: node scripts/auto-verification.js
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  complete-workflow:
+    needs: auto-verification
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run complete workflow script
+      run: node scripts/complete-workflow.js
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

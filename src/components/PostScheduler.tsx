@@ -31,8 +31,14 @@ const PostScheduler: React.FC<PostSchedulerProps> = ({ onPostSelect }) => {
     setError(null);
 
     try {
-      // 現在のユーザーIDを取得
-      const userId = currentUser?.id || 'demo_user';
+      // 現在のユーザーIDを取得（instagramBusinessAccountId を優先、フォールバックで id を使用）
+      const userId = currentUser?.instagramBusinessAccountId || currentUser?.id || 'demo_user';
+      
+      console.log(`🔍 [DEBUG] PostScheduler - ユーザーID取得:`, {
+        instagramBusinessAccountId: currentUser?.instagramBusinessAccountId,
+        id: currentUser?.id,
+        selectedUserId: userId
+      });
       
       // モックAPIを使用（フォールバック付き）
       const data = await apiWithFallback.getScheduledPosts(userId);
@@ -78,7 +84,7 @@ const PostScheduler: React.FC<PostSchedulerProps> = ({ onPostSelect }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: currentUser?.id || 'demo_user'
+          userId: currentUser?.instagramBusinessAccountId || currentUser?.id || 'demo_user'
         }),
       });
 
@@ -104,7 +110,7 @@ const PostScheduler: React.FC<PostSchedulerProps> = ({ onPostSelect }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: currentUser?.id || 'demo_user',
+          userId: currentUser?.instagramBusinessAccountId || currentUser?.id || 'demo_user',
           updates
         }),
       });

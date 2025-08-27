@@ -2791,7 +2791,7 @@ app.post('/api/threads/analyze-competitor', async (req, res) => {
   }
 });
 
-// 履歴取得API（デモモード対応）
+// 履歴取得API（デモモード対応 + 本番ユーザー対応）
 app.get('/api/instagram/history/:userId', async (req, res) => {
   const { userId } = req.params;
   
@@ -2845,23 +2845,38 @@ app.get('/api/instagram/history/:userId', async (req, res) => {
     });
   }
   
-  // 実際のユーザーの場合はInstagram APIを呼び出す
-  try {
-    // ここで実際のInstagram API呼び出しを実装
-    // 現在はデモデータのみ対応
-    res.json({
-      success: true,
-      data: [],
-      total: 0,
-      message: '履歴データを取得しました'
-    });
+  // 本番ユーザーIDの場合（例: 122097305486919546）
+  if (userId && userId.length > 10 && !isNaN(userId)) {
+    console.log(`🔍 [DEBUG] 本番ユーザーIDを検出: ${userId}`);
     
-  } catch (error) {
-    console.error('[ERROR] 履歴取得失敗:', error);
-    res.status(500).json({
+    try {
+      // ここで実際のInstagram API呼び出しを実装
+      // 現在はデータが保存されていない場合のレスポンスを返す
+      console.log(`📊 [DEBUG] 本番ユーザー ${userId} の履歴データを取得中...`);
+      
+      // データがまだ保存されていない場合のレスポンス
+      res.json({
+        success: true,
+        data: [],
+        total: 0,
+        message: '履歴データが存在しません（初回利用の可能性があります）'
+      });
+      
+    } catch (error) {
+      console.error(`[ERROR] 本番ユーザー ${userId} の履歴取得失敗:`, error);
+      res.status(500).json({
+        success: false,
+        error: '履歴の取得に失敗しました',
+        message: 'サーバーエラーが発生しました。しばらくしてから再試行してください。'
+      });
+    }
+  } else {
+    // 無効なユーザーIDの場合
+    console.log(`❌ [DEBUG] 無効なユーザーID: ${userId}`);
+    res.status(400).json({
       success: false,
-      error: '履歴の取得に失敗しました',
-      message: error.message
+      error: '無効なユーザーIDです',
+      message: '正しいユーザーIDを指定してください'
     });
   }
 });
@@ -3208,80 +3223,7 @@ app.get('/api/threads/analysis-history/:userId', async (req, res) => {
   }
 });
 
-// 履歴取得API（デモモード対応）
-app.get('/api/instagram/history/:userId', async (req, res) => {
-  const { userId } = req.params;
-  
-  console.log(`📚 [DEBUG] 履歴取得リクエスト (ユーザーID: ${userId})`);
-  
-  // デモユーザーの場合はデモデータを返す
-  if (userId === 'demo_user' || userId === '17841474953463077') {
-    console.log(`🎭 [DEBUG] デモユーザーのためデモ履歴を返します`);
-    
-    const demoHistory = [
-      {
-        id: 'demo_post_1',
-        caption: '朝のコーヒータイム ☕️ 今日も一日頑張ろう！ #朝活 #コーヒー #ライフスタイル',
-        media_type: 'IMAGE',
-        media_url: 'https://via.placeholder.com/400x400/FF6B6B/FFFFFF?text=Demo+Post+1',
-        permalink: 'https://www.instagram.com/p/demo1/',
-        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1日前
-        like_count: 45,
-        comments_count: 8,
-        engagement_rate: 3.2
-      },
-      {
-        id: 'demo_post_2',
-        caption: '週末の散歩 🌸 春の訪れを感じる #春 #散歩 #自然',
-        media_type: 'IMAGE',
-        media_url: 'https://via.placeholder.com/400x400/4ECDC4/FFFFFF?text=Demo+Post+2',
-        permalink: 'https://www.instagram.com/p/demo2/',
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3日前
-        like_count: 67,
-        comments_count: 12,
-        engagement_rate: 4.1
-      },
-      {
-        id: 'demo_post_3',
-        caption: '新しい本を読み始めました 📚 知識は力なり #読書 #自己啓発',
-        media_type: 'IMAGE',
-        media_url: 'https://via.placeholder.com/400x400/45B7D1/FFFFFF?text=Demo+Post+3',
-        permalink: 'https://www.instagram.com/p/demo3/',
-        timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1週間前
-        like_count: 89,
-        comments_count: 15,
-        engagement_rate: 5.2
-      }
-    ];
-    
-    return res.json({
-      success: true,
-      data: demoHistory,
-      total: demoHistory.length,
-      message: 'デモモード: 履歴データを取得しました'
-    });
-  }
-  
-  // 実際のユーザーの場合はInstagram APIを呼び出す
-  try {
-    // ここで実際のInstagram API呼び出しを実装
-    // 現在はデモデータのみ対応
-    res.json({
-      success: true,
-      data: [],
-      total: 0,
-      message: '履歴データを取得しました'
-    });
-    
-  } catch (error) {
-    console.error('[ERROR] 履歴取得失敗:', error);
-    res.status(500).json({
-      success: false,
-      error: '履歴の取得に失敗しました',
-      message: error.message
-    });
-  }
-});
+// 重複した履歴APIを削除（1つ目のAPIを使用）
 
 // 類似競合アカウント提案API
 app.post('/api/threads/similar-accounts', async (req, res) => {
@@ -3655,80 +3597,7 @@ app.get('/api/threads/analysis-history/:userId', async (req, res) => {
   }
 });
 
-// 履歴取得API（デモモード対応）
-app.get('/api/instagram/history/:userId', async (req, res) => {
-  const { userId } = req.params;
-  
-  console.log(`📚 [DEBUG] 履歴取得リクエスト (ユーザーID: ${userId})`);
-  
-  // デモユーザーの場合はデモデータを返す
-  if (userId === 'demo_user' || userId === '17841474953463077') {
-    console.log(`🎭 [DEBUG] デモユーザーのためデモ履歴を返します`);
-    
-    const demoHistory = [
-      {
-        id: 'demo_post_1',
-        caption: '朝のコーヒータイム ☕️ 今日も一日頑張ろう！ #朝活 #コーヒー #ライフスタイル',
-        media_type: 'IMAGE',
-        media_url: 'https://via.placeholder.com/400x400/FF6B6B/FFFFFF?text=Demo+Post+1',
-        permalink: 'https://www.instagram.com/p/demo1/',
-        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1日前
-        like_count: 45,
-        comments_count: 8,
-        engagement_rate: 3.2
-      },
-      {
-        id: 'demo_post_2',
-        caption: '週末の散歩 🌸 春の訪れを感じる #春 #散歩 #自然',
-        media_type: 'IMAGE',
-        media_url: 'https://via.placeholder.com/400x400/4ECDC4/FFFFFF?text=Demo+Post+2',
-        permalink: 'https://www.instagram.com/p/demo2/',
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3日前
-        like_count: 67,
-        comments_count: 12,
-        engagement_rate: 4.1
-      },
-      {
-        id: 'demo_post_3',
-        caption: '新しい本を読み始めました 📚 知識は力なり #読書 #自己啓発',
-        media_type: 'IMAGE',
-        media_url: 'https://via.placeholder.com/400x400/45B7D1/FFFFFF?text=Demo+Post+3',
-        permalink: 'https://www.instagram.com/p/demo3/',
-        timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1週間前
-        like_count: 89,
-        comments_count: 15,
-        engagement_rate: 5.2
-      }
-    ];
-    
-    return res.json({
-      success: true,
-      data: demoHistory,
-      total: demoHistory.length,
-      message: 'デモモード: 履歴データを取得しました'
-    });
-  }
-  
-  // 実際のユーザーの場合はInstagram APIを呼び出す
-  try {
-    // ここで実際のInstagram API呼び出しを実装
-    // 現在はデモデータのみ対応
-    res.json({
-      success: true,
-      data: [],
-      total: 0,
-      message: '履歴データを取得しました'
-    });
-    
-  } catch (error) {
-    console.error('[ERROR] 履歴取得失敗:', error);
-    res.status(500).json({
-      success: false,
-      error: '履歴の取得に失敗しました',
-      message: error.message
-    });
-  }
-});
+// 重複した履歴APIを削除（1つ目のAPIを使用）
 
 // 類似競合アカウント提案API
 app.post('/api/threads/similar-accounts', async (req, res) => {

@@ -51,7 +51,12 @@ const PostingTimeAnalysisPage: React.FC = () => {
         }
         
         if (!instagramBusinessAccountId || !accessToken) {
-          throw new Error('Instagram認証情報が不足しています。Instagram連携を再度実行してください。');
+          // より詳細なエラーメッセージを提供
+          const missingInfo = [];
+          if (!instagramBusinessAccountId) missingInfo.push('Instagram Business Account ID');
+          if (!accessToken) missingInfo.push('アクセストークン');
+          
+          throw new Error(`Instagram認証情報が不足しています: ${missingInfo.join(', ')}。Instagram連携を再度実行してください。`);
         }
         
         try {
