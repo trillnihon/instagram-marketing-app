@@ -2813,7 +2813,7 @@ app.post('/api/threads/analyze-competitor', async (req, res) => {
   }
 });
 
-// 履歴取得API（デモモード対応 + 本番ユーザー対応）
+// 履歴取得API（デモモード対応 + 本番ユーザー対応 + Graph API自動取得）
 app.get('/api/instagram/history/:userId', async (req, res) => {
   const { userId } = req.params;
   
@@ -2872,17 +2872,69 @@ app.get('/api/instagram/history/:userId', async (req, res) => {
     console.log(`🔍 [DEBUG] 本番ユーザーIDを検出: ${userId}`);
     
     try {
-      // ここで実際のInstagram API呼び出しを実装
-      // 現在はデータが保存されていない場合のレスポンスを返す
-      console.log(`📊 [DEBUG] 本番ユーザー ${userId} の履歴データを取得中...`);
+      // MongoDBから履歴データを検索
+      const { InstagramHistory } = await import('./models/InstagramHistory.js');
+      let history = await InstagramHistory.findByUserId(userId);
       
-      // データがまだ保存されていない場合のレスポンス
-      res.json({
-        success: true,
-        data: [],
-        total: 0,
-        message: '履歴データが存在しません（初回利用の可能性があります）'
-      });
+      if (history && history.posts && history.posts.length > 0) {
+        console.log(`✅ [MONGODB] ユーザー ${userId} の履歴データをDBから取得: ${history.posts.length}件`);
+        
+        return res.json({
+          success: true,
+          data: history.posts,
+          total: history.posts.length,
+          message: '履歴データを取得しました',
+          source: 'MongoDB',
+          lastFetched: history.fetchedAt
+        });
+      }
+      
+      // DBに履歴が無い場合、Graph APIから自動取得
+      console.log(`📊 [DEBUG] 本番ユーザー ${userId} の履歴データがDBに存在しないため、Graph APIから取得開始...`);
+      
+      try {
+        const { instagramGraphService } = await import('./services/instagramGraphService.js');
+        
+        // Graph APIから履歴を取得
+        const graphApiResult = await instagramGraphService.fetchUserInstagramHistory(userId);
+        
+        if (graphApiResult.success && graphApiResult.posts && graphApiResult.posts.length > 0) {
+          // 取得した履歴をMongoDBに保存
+          const savedHistory = await InstagramHistory.createOrUpdate(userId, graphApiResult.posts);
+          
+          console.log(`✅ [MONGODB] ユーザー ${userId} の履歴データを保存完了: ${savedHistory.posts.length}件`);
+          
+          return res.json({
+            success: true,
+            data: graphApiResult.posts,
+            total: graphApiResult.posts.length,
+            message: 'Graph APIから履歴データを取得し、保存しました',
+            source: 'Instagram Graph API + MongoDB',
+            fetchedAt: graphApiResult.fetchedAt
+          });
+        } else {
+          // Graph APIからデータが取得できなかった場合
+          console.log(`⚠️ [GRAPH API] ユーザー ${userId} の履歴データが取得できませんでした`);
+          
+          return res.json({
+            success: true,
+            data: [],
+            total: 0,
+            message: 'Graph APIから履歴データを取得できませんでした',
+            source: 'Instagram Graph API (empty)'
+          });
+        }
+        
+      } catch (graphApiError) {
+        console.error(`❌ [GRAPH API] ユーザー ${userId} のGraph API呼び出し失敗:`, graphApiError);
+        
+        return res.json({
+          success: false,
+          message: 'Graph APIから履歴取得に失敗しました',
+          error: graphApiError.message,
+          source: 'Error'
+        });
+      }
       
     } catch (error) {
       console.error(`[ERROR] 本番ユーザー ${userId} の履歴取得失敗:`, error);
@@ -2899,6 +2951,80 @@ app.get('/api/instagram/history/:userId', async (req, res) => {
       success: false,
       error: '無効なユーザーIDです',
       message: '正しいユーザーIDを指定してください'
+    });
+  }
+});
+
+// 強制同期エンドポイント（テスト用）
+app.get('/api/instagram/sync/:userId', async (req, res) => {
+  const { userId } = req.params;
+  
+  console.log(`🔄 [SYNC] ユーザー ${userId} の強制同期開始`);
+  
+  try {
+    // Graph APIから履歴を取得
+    const { instagramGraphService } = await import('./services/instagramGraphService.js');
+    const { InstagramHistory } = await import('./models/InstagramHistory.js');
+    
+    const graphApiResult = await instagramGraphService.fetchUserInstagramHistory(userId);
+    
+    if (graphApiResult.success && graphApiResult.posts && graphApiResult.posts.length > 0) {
+      // 取得した履歴をMongoDBに保存
+      const savedHistory = await InstagramHistory.createOrUpdate(userId, graphApiResult.posts);
+      
+      console.log(`✅ [SYNC] ユーザー ${userId} の強制同期完了: ${savedHistory.posts.length}件`);
+      
+      return res.json({
+        success: true,
+        message: '強制同期が完了しました',
+        data: {
+          userId,
+          totalPosts: savedHistory.posts.length,
+          fetchedAt: savedHistory.fetchedAt,
+          source: 'Instagram Graph API + MongoDB'
+        }
+      });
+    } else {
+      return res.json({
+        success: false,
+        message: 'Graph APIから履歴データを取得できませんでした',
+        userId
+      });
+    }
+    
+  } catch (error) {
+    console.error(`❌ [SYNC] ユーザー ${userId} の強制同期失敗:`, error);
+    
+    return res.status(500).json({
+      success: false,
+      message: '強制同期に失敗しました',
+      error: error.message,
+      userId
+    });
+  }
+});
+
+// Graph APIサービス状態確認エンドポイント
+app.get('/api/instagram/graph-status', async (req, res) => {
+  try {
+    const { instagramGraphService } = await import('./services/instagramGraphService.js');
+    
+    const status = instagramGraphService.getServiceStatus();
+    
+    res.json({
+      success: true,
+      message: 'Graph APIサービス状態を取得しました',
+      data: status,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ [GRAPH STATUS] サービス状態確認失敗:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Graph APIサービス状態の確認に失敗しました',
+      error: error.message
     });
   }
 });
