@@ -595,36 +595,53 @@ router.get('/performance-analysis/:accountId', async (req, res) => {
  */
 router.get("/exchange-token", async (req, res) => {
   try {
-    const shortToken = process.env.FB_USER_OR_LL_TOKEN;
-    
-    if (!shortToken) {
+    const shortLivedToken = process.env.FB_USER_OR_LL_TOKEN;
+    const appId = process.env.FACEBOOK_APP_ID;
+    const appSecret = process.env.FACEBOOK_APP_SECRET;
+
+    if (!shortLivedToken || !appId || !appSecret) {
       return res.status(400).json({
         success: false,
-        error: 'FB_USER_OR_LL_TOKEN環境変数が設定されていません'
+        error: '必要な環境変数が設定されていません。FB_USER_OR_LL_TOKEN, FACEBOOK_APP_ID, FACEBOOK_APP_SECRETを確認してください。'
       });
     }
 
     console.log(`🔄 [TOKEN EXCHANGE] 短期トークンから長期トークンへの変換開始`);
-    console.log(`🔑 [TOKEN EXCHANGE] 短期トークン: ${shortToken.substring(0, 20)}...`);
+    console.log(`🔑 [TOKEN EXCHANGE] 短期トークン: ${shortLivedToken.substring(0, 20)}...`);
+    console.log(`📱 [TOKEN EXCHANGE] アプリID: ${appId}`);
+
+    const response = await fetch(
+      `https://graph.facebook.com/v19.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortLivedToken}`
+    );
+
+    const data = await response.json();
     
-    const data = await exchangeLongLivedToken(shortToken);
-    
-    console.log(`✅ [TOKEN EXCHANGE] トークン変換成功: ${data.access_token ? '成功' : '失敗'}`);
-    
-    res.json({ 
-      success: true, 
-      data,
-      message: '短期アクセストークンを長期アクセストークンに変換しました',
-      timestamp: new Date().toISOString()
-    });
+    if (data.access_token) {
+      console.log(`✅ [TOKEN EXCHANGE] トークン変換成功`);
+      return res.json({
+        success: true,
+        longLivedToken: data.access_token,
+        expires_in: data.expires_in,
+        message: '短期アクセストークンを長期アクセストークンに変換しました',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      console.log(`❌ [TOKEN EXCHANGE] トークン変換失敗:`, data);
+      return res.status(400).json({ 
+        success: false, 
+        error: data,
+        message: 'トークン変換に失敗しました',
+        timestamp: new Date().toISOString()
+      });
+    }
     
   } catch (error) {
-    console.error(`❌ [TOKEN EXCHANGE] トークン変換失敗:`, error);
+    console.error(`❌ [TOKEN EXCHANGE] トークン変換エラー:`, error);
     
     res.status(500).json({
       success: false,
-      error: error.response?.data || error.message,
-      message: 'トークン変換に失敗しました',
+      error: error.message,
+      message: 'トークン変換中にエラーが発生しました',
       timestamp: new Date().toISOString()
     });
   }

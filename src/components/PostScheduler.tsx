@@ -35,13 +35,21 @@ const PostScheduler: React.FC<PostSchedulerProps> = ({ onPostSelect }) => {
       // 現在のユーザーIDを取得（instagramBusinessAccountId を優先、フォールバックで id を使用）
       const userId = currentUser?.instagramBusinessAccountId || currentUser?.id || 'demo_user';
       
+      // userId の事前バリデーション
+      if (!userId || userId === 'undefined' || userId === 'null') {
+        console.warn('⚠️ [WARNING] PostScheduler - 無効なユーザーID:', userId);
+        setError('ユーザーIDが無効です。ログインし直してください。');
+        setLoading(false);
+        return;
+      }
+      
       console.log(`🔍 [DEBUG] PostScheduler - ユーザーID取得:`, {
         instagramBusinessAccountId: currentUser?.instagramBusinessAccountId,
         id: currentUser?.id,
         selectedUserId: userId
       });
       
-      // モックAPIを使用（フォールバック付き）
+      // 本番APIを使用
       const data = await apiWithFallback.getScheduledPosts(userId);
 
       if (data.success && data.data && Array.isArray(data.data)) {

@@ -30,7 +30,15 @@ const PostHistory: React.FC<PostHistoryProps> = ({
       // 現在のユーザーIDを取得
       const userId = currentUser?.id || 'demo_user';
       
-      // モックAPIを使用（フォールバック付き）
+      // userId の事前バリデーション
+      if (!userId || userId === 'undefined' || userId === 'null') {
+        console.warn('⚠️ [WARNING] PostHistory - 無効なユーザーID:', userId);
+        setLocalError('ユーザーIDが無効です。ログインし直してください。');
+        setLocalLoading(false);
+        return;
+      }
+      
+      // 本番APIを使用
       const result = await apiWithFallback.getInstagramHistory(userId);
 
       if (!result.success) {

@@ -24,10 +24,12 @@ router.get('/:userId', (req, res) => {
     return res.status(400).json({ error: 'userId is required' });
   }
   const userHistory = history.filter(h => h.userId === userId);
-  if (userHistory.length === 0) {
-    return res.status(404).json({ error: '履歴データが存在しません（初回利用の可能性があります）' });
-  }
-  res.json({ success: true, history: userHistory });
+  // データが空でも200 OKを返す（404エラーを解消）
+  res.json({ 
+    success: true, 
+    data: userHistory,
+    message: userHistory.length === 0 ? '履歴データが存在しません（初回利用の可能性があります）' : '履歴データを取得しました'
+  });
 });
 
 // 履歴追加

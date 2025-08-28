@@ -11,7 +11,12 @@ router.get('/posts', (req, res) => {
     return res.status(400).json({ error: 'userId is required' });
   }
   const posts = scheduledPosts.filter(p => p.userId === userId);
-  res.json({ success: true, posts });
+  // データ構造を統一（フロントエンドの期待する形式に合わせる）
+  res.json({ 
+    success: true, 
+    posts,
+    message: posts.length === 0 ? 'スケジュール済み投稿が存在しません' : 'スケジュール済み投稿を取得しました'
+  });
 });
 
 // 投稿追加
