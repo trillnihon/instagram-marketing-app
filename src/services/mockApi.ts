@@ -232,8 +232,14 @@ export const mockApi = {
 export const apiWithFallback = {
   // 投稿履歴取得（本番APIのみ）
   getInstagramHistory: async (userId: string = 'demo_user') => {
+    // userId の事前バリデーション
+    if (!userId || userId === 'undefined' || userId === 'null') {
+      console.warn('⚠️ [WARNING] getInstagramHistory - 無効なユーザーID:', userId);
+      throw new Error('無効なユーザーIDです');
+    }
+    
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
-    const apiUrl = `${apiBaseUrl}/instagram/history/${userId}`;
+    const apiUrl = `${apiBaseUrl}/api/instagram/history/${userId}`;
     console.log(`🔍 [PRODUCTION API] Instagram履歴取得: ${apiUrl}`);
     console.log(`🔍 [PRODUCTION API] ユーザーID: ${userId}`);
     
@@ -273,7 +279,7 @@ export const apiWithFallback = {
     if (month) params.append('month', month.toString());
     if (year) params.append('year', year.toString());
     
-    const apiUrl = `${apiBaseUrl}/scheduler/posts?${params.toString()}`;
+    const apiUrl = `${apiBaseUrl}/api/scheduler/posts?${params.toString()}`;
     console.log(`🔍 [PRODUCTION API] スケジュール投稿取得: ${apiUrl}`);
     console.log(`🔍 [PRODUCTION API] ユーザーID: ${userId}, 月: ${month}, 年: ${year}`);
     
@@ -300,7 +306,7 @@ export const apiWithFallback = {
   // アナリティクスデータ取得（本番APIのみ）
   getAnalyticsData: async () => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
-    const apiUrl = `${apiBaseUrl}/analytics/dashboard`;
+    const apiUrl = `${apiBaseUrl}/api/analytics/dashboard`;
     console.log(`🔍 [PRODUCTION API] アナリティクスデータ取得: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
@@ -323,7 +329,7 @@ export const apiWithFallback = {
   // ハッシュタグ分析データ取得（本番APIのみ）
   getHashtagData: async () => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
-    const apiUrl = `${apiBaseUrl}/hashtags/analysis`;
+    const apiUrl = `${apiBaseUrl}/api/hashtags/analysis`;
     console.log(`🔍 [PRODUCTION API] ハッシュタグ分析データ取得: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
@@ -346,7 +352,7 @@ export const apiWithFallback = {
   // ヘルスチェック（本番APIのみ）
   healthCheck: async () => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
-    const apiUrl = `${apiBaseUrl}/health`;
+    const apiUrl = `${apiBaseUrl}/api/health`;
     console.log(`🔍 [PRODUCTION API] ヘルスチェック: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
@@ -373,9 +379,9 @@ export const apiWithFallback = {
   checkProductionApiStatus: async () => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
     const endpoints = [
-      '/health',
-      '/instagram/history/demo_user',
-      '/scheduler/posts?userId=demo_user'
+      '/api/health',
+      '/api/instagram/history/demo_user',
+      '/api/scheduler/posts?userId=demo_user'
     ];
     
     interface EndpointResult {
