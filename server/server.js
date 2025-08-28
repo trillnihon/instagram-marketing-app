@@ -3004,30 +3004,7 @@ app.get('/api/instagram/sync/:userId', async (req, res) => {
   }
 });
 
-// Graph APIサービス状態確認エンドポイント
-app.get('/api/instagram/graph-status', async (req, res) => {
-  try {
-    const { instagramGraphService } = await import('./services/instagramGraphService.js');
-    
-    const status = instagramGraphService.getServiceStatus();
-    
-    res.json({
-      success: true,
-      message: 'Graph APIサービス状態を取得しました',
-      data: status,
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('❌ [GRAPH STATUS] サービス状態確認失敗:', error);
-    
-    res.status(500).json({
-      success: false,
-      message: 'Graph APIサービス状態の確認に失敗しました',
-      error: error.message
-    });
-  }
-});
+
 
 // 管理者権限チェックミドルウェア
 const requireAdmin = (req, res, next) => {

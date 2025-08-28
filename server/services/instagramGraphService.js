@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import axios from 'axios';
 
 /**
  * Instagram Graph API サービス
@@ -222,3 +223,30 @@ export class InstagramGraphService {
 
 // シングルトンインスタンス
 export const instagramGraphService = new InstagramGraphService();
+
+/**
+ * 短期アクセストークンを長期アクセストークンに変換
+ */
+export async function exchangeLongLivedToken(shortLivedToken) {
+  try {
+    const appId = process.env.FACEBOOK_APP_ID;
+    const appSecret = process.env.FACEBOOK_APP_SECRET;
+
+    const url = `https://graph.facebook.com/v19.0/oauth/access_token`;
+    const params = {
+      grant_type: "fb_exchange_token",
+      client_id: appId,
+      client_secret: appSecret,
+      fb_exchange_token: shortLivedToken,
+    };
+
+    const response = await axios.get(url, { params });
+
+    console.log("[GRAPH] Long-lived token response:", response.data);
+
+    return response.data; // { access_token, token_type, expires_in }
+  } catch (error) {
+    console.error("[GRAPH] Failed to exchange token:", error.response?.data || error.message);
+    throw error;
+  }
+}

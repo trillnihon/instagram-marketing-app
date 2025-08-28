@@ -1,6 +1,7 @@
 import express from 'express';
 import InstagramAPI from '../services/instagram-api.js';
 import TokenService from '../services/tokenService.js';
+import { exchangeLongLivedToken } from '../services/instagramGraphService.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -583,6 +584,76 @@ router.get('/performance-analysis/:accountId', async (req, res) => {
       success: false,
       error: errorMessage,
       details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * 短期アクセストークンを長期アクセストークンに変換
+ * GET /api/instagram/exchange-token
+ */
+router.get("/exchange-token", async (req, res) => {
+  try {
+    const shortToken = process.env.FB_USER_OR_LL_TOKEN;
+    
+    if (!shortToken) {
+      return res.status(400).json({
+        success: false,
+        error: 'FB_USER_OR_LL_TOKEN環境変数が設定されていません'
+      });
+    }
+
+    console.log(`🔄 [TOKEN EXCHANGE] 短期トークンから長期トークンへの変換開始`);
+    console.log(`🔑 [TOKEN EXCHANGE] 短期トークン: ${shortToken.substring(0, 20)}...`);
+    
+    const data = await exchangeLongLivedToken(shortToken);
+    
+    console.log(`✅ [TOKEN EXCHANGE] トークン変換成功: ${data.access_token ? '成功' : '失敗'}`);
+    
+    res.json({ 
+      success: true, 
+      data,
+      message: '短期アクセストークンを長期アクセストークンに変換しました',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error(`❌ [TOKEN EXCHANGE] トークン変換失敗:`, error);
+    
+    res.status(500).json({
+      success: false,
+      error: error.response?.data || error.message,
+      message: 'トークン変換に失敗しました',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * Instagram Graph APIサービス状態確認
+ * GET /api/instagram/status
+ */
+router.get("/status", async (req, res) => {
+  try {
+    const { instagramGraphService } = await import('../services/instagramGraphService.js');
+    
+    const status = instagramGraphService.getServiceStatus();
+    
+    res.json({
+      success: true,
+      message: 'Instagram Graph APIサービス状態を取得しました',
+      data: status,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ [INSTAGRAM STATUS] サービス状態確認失敗:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Instagram Graph APIサービス状態の確認に失敗しました',
+      error: error.message,
       timestamp: new Date().toISOString()
     });
   }
