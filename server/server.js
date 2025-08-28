@@ -106,7 +106,7 @@ if (process.env.NODE_ENV === 'production') {
   dotenv.config({ path: path.join(__dirname, 'env.development') });
   // 開発環境でMONGODB_URIが設定されていない場合はデモモード
   if (!process.env.MONGODB_URI) {
-    process.env.DEMO_MODE = 'true';
+    process.env.USE_DEMO_MODE = 'true';
   }
 }
 
@@ -116,9 +116,16 @@ if (DEV_NO_EXIT) {
   console.log('[DEV-GUARD] DEV_NO_EXIT=true: サーバー終了を無効化');
 }
 
+// 環境変数の直接ログ出力（デバッグ用）
+console.log('[CONFIG] USE_DEMO_MODE =', process.env.USE_DEMO_MODE);
+console.log('[CONFIG] MongoDB URI =', process.env.MONGODB_URI ? 
+  `${process.env.MONGODB_URI.substring(0, 20)}...${process.env.MONGODB_URI.substring(process.env.MONGODB_URI.length - 10)}` : 
+  '未設定');
+console.log('[CONFIG] trust proxy = enabled');
+
 logger.info('環境:', process.env.NODE_ENV || 'development');
 logger.info('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '読み込み成功' : '未設定');
-logger.info('デモモード:', process.env.DEMO_MODE === 'true' ? '有効' : '無効');
+logger.info('USE_DEMO_MODE:', process.env.USE_DEMO_MODE === 'true' ? '有効' : '無効');
 logger.info('FACEBOOK_APP_ID:', process.env.FACEBOOK_APP_ID || process.env.FACEBOOK_CLIENT_ID || '未設定（デフォルト値使用）');
 logger.info('FACEBOOK_APP_SECRET:', (process.env.FACEBOOK_APP_SECRET || process.env.FACEBOOK_CLIENT_SECRET) ? '読み込み成功' : '未設定（デフォルト値使用）');
 logger.info('NEXTAUTH_URL:', process.env.NEXTAUTH_URL || '未設定');
@@ -126,6 +133,9 @@ logger.info('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? '読み込み成�
 
 const app = express();
 const DEFAULT_PORT = parseInt(process.env.PORT, 10) || 4000;
+
+// trust proxy を有効化（Render環境でのexpress-rate-limit正動作のため）
+app.set("trust proxy", 1);
 
 // MongoDB接続（デモモード対応）
 let mongoConnected = false;
@@ -282,6 +292,12 @@ app.get('/api/health', (req, res) => {
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
     mongodb: mongoConnected ? 'connected' : 'demo_mode',
+    mongodb_details: {
+      connected: mongoConnected,
+      uri_set: !!process.env.MONGODB_URI,
+      node_env: process.env.NODE_ENV,
+      connection_status: mongoConnected ? 'success' : 'failed'
+    },
     api_version: '1.0.0'
   });
 });
@@ -4355,7 +4371,7 @@ try {
     console.log(`✅ サーバー起動成功: http://localhost:${port}`);
     console.log('MongoDB接続状態:', mongoConnected ? '接続済み' : 'デモモード');
     console.log('🔧 環境:', process.env.NODE_ENV || 'development');
-    console.log('🎯 デモモード:', process.env.DEMO_MODE === 'true' ? '有効' : '無効');
+    console.log('🎯 USE_DEMO_MODE:', process.env.USE_DEMO_MODE === 'true' ? '有効' : '無効');
     
     // httpServer.close をモンキーパッチ
     patchHttpServer(httpServer);
