@@ -11,6 +11,7 @@ import AdvancedPostAnalysis from '../components/AdvancedPostAnalysis';
 import AIProviderSettings from '../components/AIProviderSettings';
 import UserTutorial from '../components/UserTutorial';
 import QuickStartGuide from '../components/QuickStartGuide';
+import ApiStatusMonitor from '../components/ApiStatusMonitor';
 // import { RSSFeedPanel, FeedItem } from '../components/RSSFeedPanel';
 // import { fetchLatestFeeds } from '../../lib/rssFetcher';
 // import RSSFeedSearchBar from '../components/RSSFeedSearchBar';
@@ -119,6 +120,8 @@ const Dashboard: React.FC = () => {
         return <AdvancedPostAnalysis />;
       case 'ai-settings':
         return <AIProviderSettings />;
+      case 'api-status':
+        return <ApiStatusMonitor />;
       default:
         return <AdvancedPostAnalysis />;
     }
@@ -225,6 +228,16 @@ const Dashboard: React.FC = () => {
               }`}
             >
               ⚙️ AI設定
+            </button>
+            <button
+              onClick={() => setActiveTab('api-status')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'api-status'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🔍 API状態
             </button>
           </div>
         </div>

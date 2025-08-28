@@ -15,6 +15,32 @@ import {
 
 const router = express.Router();
 
+let history = [];
+
+// 履歴取得
+router.get('/:userId', (req, res) => {
+  const { userId } = req.params;
+  if (!userId) {
+    return res.status(400).json({ error: 'userId is required' });
+  }
+  const userHistory = history.filter(h => h.userId === userId);
+  if (userHistory.length === 0) {
+    return res.status(404).json({ error: '履歴データが存在しません（初回利用の可能性があります）' });
+  }
+  res.json({ success: true, history: userHistory });
+});
+
+// 履歴追加
+router.post('/', (req, res) => {
+  const { userId, analysis } = req.body;
+  if (!userId || !analysis) {
+    return res.status(400).json({ error: 'userId and analysis are required' });
+  }
+  const newHistory = { id: Date.now().toString(), userId, analysis, createdAt: new Date() };
+  history.push(newHistory);
+  res.json({ success: true, entry: newHistory });
+});
+
 // ヘルスチェック（認証不要）
 router.get('/health', (req, res) => {
   res.json({

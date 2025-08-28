@@ -96,6 +96,8 @@ import { User } from './models/User.js';
 import { authenticateToken } from './middleware/auth.js';
 import threadsRouter from './routes/threads.js';
 import instagramApiRouter from './routes/instagram-api.js';
+import schedulerRoutes from './routes/scheduler.js';
+import analysisHistoryRoutes from './routes/analysisHistory.js';
 // 環境変数の読み込み
 if (process.env.NODE_ENV === 'production') {
   dotenv.config({ path: path.join(__dirname, '.env.production') });
@@ -1824,6 +1826,10 @@ app.use('/api/analysis-history', analysisHistoryRouter);
 app.use('/api/diagnostics', diagnosticsRouter);
 app.use('/api/instagram', instagramApiRouter);
 app.use('/threads/api', threadsRouter);
+
+// 新規追加ルート
+app.use('/api/scheduler', schedulerRoutes);
+app.use('/api/instagram/history', analysisHistoryRoutes);
 
 // 汎用APIルート（最後に設定）
 app.use('/api', urlAnalysisRouter);
