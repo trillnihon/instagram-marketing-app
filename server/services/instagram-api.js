@@ -72,7 +72,7 @@ class InstagramAPI {
   async getUserInfo() {
     try {
       const userInfo = await this.makeRequest('/me', {
-        fields: 'id,name,email'
+        fields: 'id,name'
       });
       
       console.log('✅ ユーザー情報取得成功:', userInfo.id);

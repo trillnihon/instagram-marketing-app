@@ -1,4 +1,5 @@
 import express from 'express';
+import axios from 'axios';
 import InstagramAPI from '../services/instagram-api.js';
 import TokenService from '../services/tokenService.js';
 import { exchangeLongLivedToken } from '../services/instagramGraphService.js';
@@ -62,36 +63,18 @@ router.post('/diagnostic', async (req, res) => {
 // ユーザー情報取得
 router.get('/user-info', async (req, res) => {
   try {
-    let access_token = req.query.access_token;
-    
-    // アクセストークンが指定されていない場合はDBから取得
-    if (!access_token) {
-      const tokenData = await TokenService.getValidLongLivedToken();
-      if (!tokenData) {
-        return res.status(400).json({
-          success: false,
-          error: 'access_token パラメータが必要です。DBに有効な長期トークンがありません。'
-        });
-      }
-      access_token = tokenData.token;
+    const { accessToken } = req.query;
+    if (!accessToken) {
+      return res.status(400).json({ success: false, error: "アクセストークンが必要です" });
     }
 
-    const instagramAPI = new InstagramAPI(access_token);
-    const userInfo = await instagramAPI.getUserInfo();
-    
-    res.json({
-      success: true,
-      data: userInfo,
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('❌ ユーザー情報取得エラー:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
+    const url = `https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${accessToken}`;
+    const response = await axios.get(url);
+
+    return res.json({ success: true, data: response.data });
+  } catch (err) {
+    console.error("[Instagram User Info Error]", err.response?.data || err.message);
+    return res.json({ success: false, error: err.message });
   }
 });
 

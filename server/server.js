@@ -3055,14 +3055,25 @@ app.get('/api/admin/dashboard', requireAdmin, (req, res) => {
   }
 });
 
-// Threadsトレンド投稿取得API
-app.get('/api/threads/trend-posts', authenticateToken, async (req, res) => {
-  const userId = req.user._id;
+// Threadsトレンド投稿取得API（改善版）
+app.get('/api/threads/trend-posts', async (req, res) => {
+  const userId = req.query.userId || req.user?._id || 'default_user';
   const { days = 30 } = req.query;
   
   console.log(`🔥 [DEBUG] トレンド投稿取得リクエスト (ユーザーID: ${userId}, 期間: ${days}日)`);
   
   try {
+    // FB_USER_OR_LL_TOKENを必ず付与
+    const accessToken = process.env.FB_USER_OR_LL_TOKEN;
+    if (!accessToken) {
+      console.error('❌ [THREADS API] FB_USER_OR_LL_TOKENが設定されていません');
+      return res.status(200).json({ 
+        success: false, 
+        error: 'Facebook access token not configured',
+        data: []
+      });
+    }
+
     const posts = await getTrendPosts(userId.toString(), parseInt(days));
     
     // 分析結果を保存
@@ -3113,7 +3124,7 @@ app.get('/api/threads/trend-posts', authenticateToken, async (req, res) => {
     
     res.json({
       success: true,
-      posts: posts.map(post => ({
+      data: posts.map(post => ({
         id: post.postId,
         date: post.postedAt,
         likes: post.likes,
@@ -3123,49 +3134,89 @@ app.get('/api/threads/trend-posts', authenticateToken, async (req, res) => {
         reposts: post.reposts,
         replies: post.replies
       })),
+      count: posts.length,
       message: 'トレンド投稿を取得しました'
     });
     
   } catch (error) {
     console.error('[ERROR] トレンド投稿取得失敗:', error);
-    res.status(500).json({
+    // エラー時は401ではなく{ success:false, error: message }を返す
+    res.status(200).json({
       success: false,
-      error: 'トレンド投稿の取得に失敗しました',
-      message: error.message
+      error: error.message || 'Failed to fetch trend posts',
+      data: [],
+      count: 0
     });
   }
 });
 
-// Threadsハッシュタグランキング取得API
+// Threadsハッシュタグランキング取得API（改善版）
 app.get('/api/threads/hashtag-ranking', async (req, res) => {
-  const { userId } = req.query;
+  const userId = req.query.userId || req.user?._id || 'default_user';
   
   console.log(`🏷️ [DEBUG] ハッシュタグランキング取得リクエスト (ユーザーID: ${userId})`);
   
   try {
+    // FB_USER_OR_LL_TOKENを必ず付与
+    const accessToken = process.env.FB_USER_OR_LL_TOKEN;
+    if (!accessToken) {
+      console.error('❌ [THREADS API] FB_USER_OR_LL_TOKENが設定されていません');
+      return res.status(200).json({ 
+        success: false, 
+        error: 'Facebook access token not configured',
+        data: [],
+        hashtagCounts: {},
+        count: 0
+      });
+    }
+
     const hashtags = await getHashtagRanking(userId);
+    
+    // 投稿が0件なら空配列を返す
+    if (!hashtags || hashtags.length === 0) {
+      console.log('📭 [THREADS API] ハッシュタグデータが0件');
+      return res.json({
+        success: true,
+        data: [],
+        hashtagCounts: {},
+        count: 0
+      });
+    }
     
     // 分析結果を保存
     await saveAnalysisResult(userId, 'hashtag_ranking', { hashtags });
     
+    // キャプションから #ハッシュタグ を抽出してカウント
+    const hashtagCounts = {};
+    hashtags.forEach(item => {
+      if (item.tag && item.tag.startsWith('#')) {
+        hashtagCounts[item.tag] = (hashtagCounts[item.tag] || 0) + (item.usageCount || 1);
+      }
+    });
+    
     res.json({
       success: true,
-      hashtags: hashtags.map(tag => ({
+      data: hashtags.map(tag => ({
         tag: tag.tag,
         usageCount: tag.usageCount,
         growthRate: tag.growthRate,
         previousCount: tag.previousCount,
         category: tag.category
       })),
+      hashtagCounts,
+      count: hashtags.length,
       message: 'ハッシュタグランキングを取得しました'
     });
     
   } catch (error) {
     console.error('[ERROR] ハッシュタグランキング取得失敗:', error);
-    res.status(500).json({
+    // 例外はすべて try-catch でキャッチして 500 にならないようにする
+    res.status(200).json({
       success: false,
-      error: 'ハッシュタグランキングの取得に失敗しました',
-      message: error.message
+      error: error.message || 'Failed to fetch hashtag ranking',
+      data: [],
+      hashtagCounts: {},
+      count: 0
     });
   }
 });

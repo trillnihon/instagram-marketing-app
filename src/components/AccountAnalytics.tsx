@@ -77,12 +77,12 @@ const AccountAnalytics: React.FC = () => {
       setError(null);
 
       try {
-        // Instagram Graph APIを使用してアカウント情報を取得
-        // 利用可能なフィールド: id, username, media_count, followers_count, follows_count
-        const apiUrl = `https://graph.facebook.com/v19.0/${safeInstagramBusinessAccountId}?fields=id,username,media_count,followers_count,follows_count&access_token=${safeAccessToken}`;
+        // バックエンド経由でアカウント情報を取得
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+        const apiUrl = `${apiBaseUrl}/instagram/user-info?accessToken=${safeAccessToken}`;
         console.log('[DEBUG] AccountAnalytics - API URL:', apiUrl.replace(safeAccessToken, '***'));
         
-        const response = await apiClient.get(apiUrl);
+        const response = await fetch(apiUrl);
         
         if (!response.ok) {
           const errorData = await response.json();
@@ -90,11 +90,18 @@ const AccountAnalytics: React.FC = () => {
           throw new Error(errorData.error?.message || `HTTP ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log('[DEBUG] AccountAnalytics - 取得したデータ:', data);
+        const responseData = await response.json();
+        console.log('[DEBUG] AccountAnalytics - 取得したデータ:', responseData);
+        
+        // バックエンドレスポンスの形式に合わせて処理
+        if (!responseData.success) {
+          throw new Error(responseData.error || 'アカウント情報の取得に失敗しました');
+        }
+        
+        const data = responseData.data;
         
         // データの検証
-        if (!data.id) {
+        if (!data || !data.id) {
           throw new Error('アカウントIDが取得できませんでした');
         }
         

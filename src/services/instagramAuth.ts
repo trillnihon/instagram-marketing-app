@@ -131,8 +131,9 @@ export class InstagramAuthService {
   // アクセストークンの有効性を確認
   static async validateToken(accessToken: string): Promise<boolean> {
     try {
-      // Facebook Graph APIでトークンの有効性を確認
-      const url = `${this.FACEBOOK_GRAPH_URL}/me?fields=id,name&access_token=${accessToken}`;
+      // バックエンド経由でトークンの有効性を確認
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const url = `${apiBaseUrl}/instagram/user-info?accessToken=${accessToken}`;
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -140,7 +141,7 @@ export class InstagramAuthService {
       }
 
       const data = await response.json();
-      return !!data.id;
+      return data.success && !!data.data?.id;
     } catch (error) {
       console.error('Token validation error:', error);
       return false;
@@ -265,10 +266,10 @@ export class InstagramAuthService {
     try {
       console.log('[DEBUG] Instagramアカウント情報取得開始');
       
-      // 方法1: 直接ユーザー情報からInstagramビジネスアカウントを取得（最優先）
-      console.log('[DEBUG] 方法1: 直接ユーザー情報からInstagramビジネスアカウントを取得');
-      // より安全なアプローチ: まず基本的なユーザー情報を取得
-      const userUrl = `${this.FACEBOOK_GRAPH_URL}/me?fields=id,name&access_token=${accessToken}`;
+      // 方法1: バックエンド経由でユーザー情報を取得（最優先）
+      console.log('[DEBUG] 方法1: バックエンド経由でユーザー情報を取得');
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const userUrl = `${apiBaseUrl}/instagram/user-info?accessToken=${accessToken}`;
       console.log('[DEBUG] 方法1 URL:', userUrl);
       
       const userResponse = await fetch(userUrl);
@@ -374,10 +375,10 @@ export class InstagramAuthService {
     try {
       console.log('[DEBUG] Instagram投稿一覧取得開始');
       
-      // 方法1: 直接ユーザー情報からInstagramビジネスアカウントIDを取得
-      console.log('[DEBUG] 方法1: 直接ユーザー情報からInstagramビジネスアカウントIDを取得');
-      // より安全なアプローチ: まず基本的なユーザー情報を取得
-      const userUrl = `${this.FACEBOOK_GRAPH_URL}/me?fields=id,name&access_token=${accessToken}`;
+      // 方法1: バックエンド経由でユーザー情報を取得
+      console.log('[DEBUG] 方法1: バックエンド経由でユーザー情報を取得');
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const userUrl = `${apiBaseUrl}/instagram/user-info?accessToken=${accessToken}`;
       console.log('[DEBUG] 方法1 URL:', userUrl);
       
       const userResponse = await fetch(userUrl);

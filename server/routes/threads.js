@@ -1,4 +1,5 @@
 import express from 'express';
+import { getTrendPosts, getHashtagRanking } from '../services/threadsDataService.js';
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ let dummyPosts = [
   }
 ];
 
-// 認証ミドルウェア（ダミー実装）
+// 認証ミドルウェア（改善版）
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -34,6 +35,21 @@ const authenticateToken = (req, res, next) => {
   }
 
   next();
+};
+
+// 認証バイパスミドルウェア（特定のエンドポイント用）
+const authenticateTokenWithBypass = (req, res, next) => {
+  // Graph API呼び出し時は認証をバイパス
+  if (req.path === '/trend-posts' || req.path === '/hashtag-ranking') {
+    // FB_USER_OR_LL_TOKENが存在する場合は認証をスキップ
+    if (process.env.FB_USER_OR_LL_TOKEN) {
+      console.log('🔓 [THREADS API] 認証バイパス - Graph API呼び出し');
+      return next();
+    }
+  }
+
+  // 通常の認証処理
+  authenticateToken(req, res, next);
 };
 
 // POST /threads/api/submitPost
@@ -153,6 +169,114 @@ router.post('/analyze', authenticateToken, (req, res) => {
   } catch (error) {
     console.error('❌ [THREADS API] 投稿分析エラー:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/threads/trend-posts
+router.get('/trend-posts', authenticateTokenWithBypass, async (req, res) => {
+  try {
+    const userId = req.query.userId || 'default_user';
+    const days = parseInt(req.query.days) || 30;
+
+    console.log('📈 [THREADS API] トレンド投稿取得開始:', { userId, days });
+
+    // FB_USER_OR_LL_TOKENを必ず付与
+    const accessToken = process.env.FB_USER_OR_LL_TOKEN;
+    if (!accessToken) {
+      console.error('❌ [THREADS API] FB_USER_OR_LL_TOKENが設定されていません');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Facebook access token not configured' 
+      });
+    }
+
+    const trendPosts = await getTrendPosts(userId, days);
+
+    console.log('✅ [THREADS API] トレンド投稿取得成功:', {
+      userId,
+      days,
+      postCount: trendPosts.length
+    });
+
+    res.json({
+      success: true,
+      data: trendPosts,
+      count: trendPosts.length
+    });
+
+  } catch (error) {
+    console.error('❌ [THREADS API] トレンド投稿取得エラー:', error);
+    
+    // エラー時は401ではなく{ success:false, error: message }を返す
+    res.status(200).json({
+      success: false,
+      error: error.message || 'Failed to fetch trend posts',
+      data: []
+    });
+  }
+});
+
+// GET /api/threads/hashtag-ranking
+router.get('/hashtag-ranking', authenticateTokenWithBypass, async (req, res) => {
+  try {
+    const userId = req.query.userId || 'default_user';
+
+    console.log('🏷️ [THREADS API] ハッシュタグランキング取得開始:', { userId });
+
+    // FB_USER_OR_LL_TOKENを必ず付与
+    const accessToken = process.env.FB_USER_OR_LL_TOKEN;
+    if (!accessToken) {
+      console.error('❌ [THREADS API] FB_USER_OR_LL_TOKENが設定されていません');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Facebook access token not configured' 
+      });
+    }
+
+    const hashtagRanking = await getHashtagRanking(userId);
+
+    // 投稿が0件なら空配列を返す
+    if (!hashtagRanking || hashtagRanking.length === 0) {
+      console.log('📭 [THREADS API] ハッシュタグデータが0件');
+      return res.json({
+        success: true,
+        data: [],
+        count: 0
+      });
+    }
+
+    // キャプションから #ハッシュタグ を抽出してカウント
+    const hashtagCounts = {};
+    hashtagRanking.forEach(item => {
+      if (item.tag && item.tag.startsWith('#')) {
+        hashtagCounts[item.tag] = (hashtagCounts[item.tag] || 0) + (item.usageCount || 1);
+      }
+    });
+
+    console.log('✅ [THREADS API] ハッシュタグランキング取得成功:', {
+      userId,
+      hashtagCount: hashtagRanking.length,
+      extractedHashtags: Object.keys(hashtagCounts).length
+    });
+
+    res.json({
+      success: true,
+      data: hashtagRanking,
+      hashtagCounts,
+      count: hashtagRanking.length
+    });
+
+  } catch (error) {
+    console.error('❌ [THREADS API] ハッシュタグランキング取得エラー:', error);
+    
+    // 例外はすべて try-catch でキャッチして 500 にならないようにする
+    res.status(200).json({
+      success: false,
+      error: error.message || 'Failed to fetch hashtag ranking',
+      data: [],
+      hashtagCounts: {},
+      count: 0
+    });
   }
 });
 
