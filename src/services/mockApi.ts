@@ -228,7 +228,7 @@ export const mockApi = {
   }
 };
 
-// 本番APIのみを使用（Mock APIは停止済み）
+// 本番APIのみを使用（Mock APIは完全停止）
 export const apiWithFallback = {
   // 投稿履歴取得（本番APIのみ）
   getInstagramHistory: async (userId: string = 'demo_user') => {
@@ -257,6 +257,9 @@ export const apiWithFallback = {
       const data = await response.json();
       console.log(`✅ [SUCCESS] 本番API成功: データ件数 ${data.data?.length || 0}`);
       return data;
+    } else if (response.status === 404) {
+      console.log(`❌ [ERROR] 本番API 404エラー: ${response.status} ${response.statusText}`);
+      throw new Error(`APIエンドポイントが見つかりません: ${response.status} ${response.statusText}`);
     } else {
       console.log(`❌ [ERROR] 本番API失敗: ${response.status} ${response.statusText}`);
       throw new Error(`API呼び出し失敗: ${response.status} ${response.statusText}`);
@@ -297,6 +300,9 @@ export const apiWithFallback = {
       const data = await response.json();
       console.log(`✅ [SUCCESS] 本番スケジュールAPI成功: データ件数 ${data.posts?.length || 0}`);
       return data;
+    } else if (response.status === 404) {
+      console.log(`❌ [ERROR] 本番スケジュールAPI 404エラー: ${response.status} ${response.statusText}`);
+      throw new Error(`スケジュールAPIエンドポイントが見つかりません: ${response.status} ${response.statusText}`);
     } else {
       console.log(`❌ [ERROR] 本番スケジュールAPI失敗: ${response.status} ${response.statusText}`);
       throw new Error(`スケジュールAPI呼び出し失敗: ${response.status} ${response.statusText}`);
@@ -320,6 +326,9 @@ export const apiWithFallback = {
       const data = await response.json();
       console.log('✅ [SUCCESS] 本番アナリティクスAPI成功');
       return data;
+    } else if (response.status === 404) {
+      console.log(`❌ [ERROR] 本番アナリティクスAPI 404エラー: ${response.status} ${response.statusText}`);
+      throw new Error(`アナリティクスAPIエンドポイントが見つかりません: ${response.status} ${response.statusText}`);
     } else {
       console.log(`❌ [ERROR] 本番アナリティクスAPI失敗: ${response.status} ${response.statusText}`);
       throw new Error(`アナリティクスAPI呼び出し失敗: ${response.status} ${response.statusText}`);
@@ -343,6 +352,9 @@ export const apiWithFallback = {
       const data = await response.json();
       console.log('✅ [SUCCESS] 本番ハッシュタグAPI成功');
       return data;
+    } else if (response.status === 404) {
+      console.log(`❌ [ERROR] 本番ハッシュタグAPI 404エラー: ${response.status} ${response.statusText}`);
+      throw new Error(`ハッシュタグAPIエンドポイントが見つかりません: ${response.status} ${response.statusText}`);
     } else {
       console.log(`❌ [ERROR] 本番ハッシュタグAPI失敗: ${response.status} ${response.statusText}`);
       throw new Error(`ハッシュタグAPI呼び出し失敗: ${response.status} ${response.statusText}`);
@@ -369,6 +381,9 @@ export const apiWithFallback = {
       const data = await response.json();
       console.log('✅ [SUCCESS] 本番ヘルスチェックAPI成功');
       return data;
+    } else if (response.status === 404) {
+      console.log(`❌ [ERROR] 本番ヘルスチェックAPI 404エラー: ${response.status} ${response.statusText}`);
+      throw new Error(`ヘルスチェックAPIエンドポイントが見つかりません: ${response.status} ${response.statusText}`);
     } else {
       console.log(`❌ [ERROR] 本番ヘルスチェックAPI失敗: ${response.status} ${response.statusText}`);
       throw new Error(`ヘルスチェックAPI呼び出し失敗: ${response.status} ${response.statusText}`);

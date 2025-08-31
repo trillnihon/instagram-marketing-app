@@ -263,18 +263,22 @@ app.get('/debug', (req, res) => {
   });
 });
 
-// ルートエンドポイント
+// ルートエンドポイント（Render Health Check用）
 app.get('/', (req, res) => {
+  console.log('[SELF-TEST] ルートパスアクセス - Render Health Check');
   res.json({
     message: 'Instagram Marketing App Backend API',
     status: 'running',
     version: '1.0.0',
-    time: new Date().toISOString()
+    time: new Date().toISOString(),
+    healthCheck: '/api/health',
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
 // ヘルスチェックエンドポイント
 app.get('/health', (req, res) => {
+  console.log('[SELF-TEST] /health エンドポイントアクセス');
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -286,6 +290,7 @@ app.get('/health', (req, res) => {
 
 // API用ヘルスチェックエンドポイント
 app.get('/api/health', (req, res) => {
+  console.log('[SELF-TEST] /api/health エンドポイントアクセス');
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
