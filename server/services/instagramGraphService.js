@@ -18,19 +18,30 @@ export class InstagramGraphService {
    */
   async validateAccessToken() {
     if (!this.accessToken) {
+      console.error('❌ [GRAPH API] FB_USER_OR_LL_TOKENが設定されていません');
       throw new Error('FB_USER_OR_LL_TOKENが設定されていません');
     }
 
+    console.log(`🔍 [GRAPH API] アクセストークン検証開始`);
+    console.log(`🔍 [GRAPH API] トークンプレビュー: ${this.accessToken.substring(0, 10)}...${this.accessToken.substring(this.accessToken.length - 4)}`);
+
     try {
       const url = `${this.baseUrl}/${this.apiVersion}/me?access_token=${this.accessToken}`;
+      console.log(`🔍 [GRAPH API] 検証URL: ${url.replace(this.accessToken, '***TOKEN***')}`);
+      
       const response = await fetch(url);
       
+      console.log(`🔍 [GRAPH API] レスポンスステータス: ${response.status} ${response.statusText}`);
+      
       if (!response.ok) {
-        throw new Error(`アクセストークンの検証に失敗: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`❌ [GRAPH API] アクセストークン検証失敗: ${response.status} ${response.statusText}`);
+        console.error(`❌ [GRAPH API] エラー詳細: ${errorText}`);
+        throw new Error(`アクセストークンの検証に失敗: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json();
-      console.log(`✅ [GRAPH API] アクセストークン検証成功: ${data.name || 'Unknown'}`);
+      console.log(`✅ [GRAPH API] アクセストークン検証成功: ${data.name || 'Unknown'} (ID: ${data.id})`);
       return data;
     } catch (error) {
       console.error(`❌ [GRAPH API] アクセストークン検証失敗:`, error);
@@ -43,21 +54,36 @@ export class InstagramGraphService {
    */
   async getInstagramBusinessAccountId() {
     if (!this.pageId) {
+      console.error('❌ [GRAPH API] FB_PAGE_IDが設定されていません');
       throw new Error('FB_PAGE_IDが設定されていません');
     }
 
+    console.log(`🔍 [GRAPH API] InstagramビジネスアカウントID取得開始`);
+    console.log(`🔍 [GRAPH API] ページID: ${this.pageId}`);
+
     try {
       const url = `${this.baseUrl}/${this.apiVersion}/${this.pageId}?fields=instagram_business_account&access_token=${this.accessToken}`;
+      console.log(`🔍 [GRAPH API] ページ情報取得URL: ${url.replace(this.accessToken, '***TOKEN***')}`);
+      
       const response = await fetch(url);
       
+      console.log(`🔍 [GRAPH API] ページ情報レスポンス: ${response.status} ${response.statusText}`);
+      
       if (!response.ok) {
-        throw new Error(`ページ情報の取得に失敗: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`❌ [GRAPH API] ページ情報取得失敗: ${response.status} ${response.statusText}`);
+        console.error(`❌ [GRAPH API] エラー詳細: ${errorText}`);
+        throw new Error(`ページ情報の取得に失敗: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log(`🔍 [GRAPH API] ページ情報レスポンス:`, data);
+      
       const instagramAccountId = data.instagram_business_account?.id;
       
       if (!instagramAccountId) {
+        console.error('❌ [GRAPH API] Instagramビジネスアカウントが見つかりません');
+        console.error('❌ [GRAPH API] ページ情報:', data);
         throw new Error('Instagramビジネスアカウントが見つかりません');
       }
 
@@ -88,14 +114,21 @@ export class InstagramGraphService {
 
       const url = `${this.baseUrl}/${this.apiVersion}/${instagramAccountId}/media?fields=${fields}&limit=${limit}&access_token=${this.accessToken}`;
       console.log(`🔍 [GRAPH API] Instagram投稿取得開始: ${instagramAccountId}`);
+      console.log(`🔍 [GRAPH API] 投稿取得URL: ${url.replace(this.accessToken, '***TOKEN***')}`);
       
       const response = await fetch(url);
       
+      console.log(`🔍 [GRAPH API] 投稿取得レスポンス: ${response.status} ${response.statusText}`);
+      
       if (!response.ok) {
-        throw new Error(`Instagram投稿の取得に失敗: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`❌ [GRAPH API] Instagram投稿取得失敗: ${response.status} ${response.statusText}`);
+        console.error(`❌ [GRAPH API] エラー詳細: ${errorText}`);
+        throw new Error(`Instagram投稿の取得に失敗: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log(`🔍 [GRAPH API] 投稿取得レスポンス:`, data);
       console.log(`✅ [GRAPH API] Instagram投稿取得成功: ${data.data?.length || 0}件`);
 
       // 投稿データを整形
