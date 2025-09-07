@@ -74,27 +74,18 @@ router.get('/instagram', (req, res) => {
 });
 
 /**
- * Instagram OAuth認証コールバック
- * GET /auth/instagram/callback
+ * Instagram OAuth認証コード交換
+ * POST /auth/exchange
  */
-router.get('/instagram/callback', async (req, res) => {
+router.post('/exchange', async (req, res) => {
   try {
-    const { code, error, error_description } = req.query;
-
-    // エラーチェック
-    if (error) {
-      console.error(`❌ [AUTH] Facebook認証エラー: ${error} - ${error_description}`);
-      return res.status(400).json({
-        success: false,
-        error: `Facebook認証エラー: ${error_description || error}`
-      });
-    }
+    const { code } = req.body;
 
     if (!code) {
-      console.error('❌ [AUTH] 認証コードが取得できませんでした');
+      console.error('❌ [AUTH] 認証コードが提供されていません');
       return res.status(400).json({
         success: false,
-        error: '認証コードが取得できませんでした'
+        error: '認証コードが提供されていません'
       });
     }
 
@@ -213,7 +204,7 @@ router.get('/instagram/callback', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ [AUTH] Instagram認証コールバックエラー:', error);
+    console.error('❌ [AUTH] Instagram認証コード交換エラー:', error);
     res.status(500).json({
       success: false,
       error: '認証処理中にエラーが発生しました'
