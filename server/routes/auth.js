@@ -1,276 +1,261 @@
 import express from 'express';
-import { User } from '../models/User.js';
-import { generateToken, authenticateToken } from '../middleware/auth.js';
+import fetch from 'node-fetch';
+import { MongoClient } from 'mongodb';
 
 const router = express.Router();
 
-// 新規登録
-router.post('/signup', async (req, res) => {
+// MongoDB接続設定
+const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/instagram-marketing';
+let mongoClient = null;
+
+/**
+ * MongoDB接続を取得
+ */
+async function getMongoClient() {
+  if (!mongoClient) {
+    try {
+      mongoClient = new MongoClient(MONGODB_URI);
+      await mongoClient.connect();
+      console.log('✅ [AUTH] MongoDB接続成功');
+    } catch (error) {
+      console.error('❌ [AUTH] MongoDB接続失敗:', error);
+      throw error;
+    }
+  }
+  return mongoClient;
+}
+
+/**
+ * Instagram OAuth認証開始
+ * GET /auth/instagram
+ */
+router.get('/instagram', (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const appId = process.env.FB_APP_ID;
+    const redirectUri = process.env.FB_REDIRECT_URI;
     
-    // バリデーション
-    if (!username || !email || !password) {
-      return res.status(400).json({
+    if (!appId || !redirectUri) {
+      console.error('❌ [AUTH] 必要な環境変数が設定されていません');
+      return res.status(500).json({
         success: false,
-        message: 'すべてのフィールドが必要です'
+        error: 'Facebook App IDまたはRedirect URIが設定されていません'
       });
     }
-    
-    if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'パスワードは6文字以上である必要があります'
-      });
-    }
-    
-    // 既存ユーザーチェック
-    const existingUser = await User.findOne({
-      $or: [{ email }, { username }]
-    });
-    
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'email は既に使用されています'
-      });
-    }
-    
-    // 新しいユーザーを作成
-    const user = new User({
-      username,
-      email,
-      password
-    });
-    
-    await user.save();
-    
-    // JWTトークンを生成
-    const token = generateToken(user._id);
-    
-    res.status(201).json({
-      success: true,
-      message: 'ユーザー登録が完了しました',
-      token,
-      user: user.getPublicProfile()
-    });
-    
+
+    // 必要なスコープ
+    const scopes = [
+      'instagram_basic',
+      'instagram_content_publish',
+      'instagram_manage_insights',
+      'pages_show_list',
+      'pages_read_engagement',
+      'public_profile',
+      'email'
+    ].join(',');
+
+    // Facebook認証URLを構築
+    const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
+      `client_id=${appId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `scope=${scopes}&` +
+      `response_type=code&` +
+      `state=instagram_auth`;
+
+    console.log(`🔍 [AUTH] Instagram認証開始: ${authUrl.replace(appId, '***APP_ID***')}`);
+
+    res.redirect(authUrl);
   } catch (error) {
-    console.error('新規登録エラー:', error);
+    console.error('❌ [AUTH] Instagram認証開始エラー:', error);
     res.status(500).json({
       success: false,
-      message: 'ユーザー登録中にエラーが発生しました'
+      error: '認証開始に失敗しました'
     });
   }
 });
 
-// ログイン
-router.post('/login', async (req, res) => {
+/**
+ * Instagram OAuth認証コールバック
+ * GET /auth/instagram/callback
+ */
+router.get('/instagram/callback', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    
-    // バリデーション
-    if (!email || !password) {
+    const { code, error, error_description } = req.query;
+
+    // エラーチェック
+    if (error) {
+      console.error(`❌ [AUTH] Facebook認証エラー: ${error} - ${error_description}`);
       return res.status(400).json({
         success: false,
-        message: 'メールアドレスとパスワードが必要です'
+        error: `Facebook認証エラー: ${error_description || error}`
       });
     }
-    
-    // ユーザーを検索
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({
+
+    if (!code) {
+      console.error('❌ [AUTH] 認証コードが取得できませんでした');
+      return res.status(400).json({
         success: false,
-        message: 'メールアドレスまたはパスワードが正しくありません'
+        error: '認証コードが取得できませんでした'
       });
     }
-    
-    // パスワード検証
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      return res.status(401).json({
+
+    console.log(`🔍 [AUTH] 認証コード受信: ${code.substring(0, 10)}...`);
+
+    const appId = process.env.FB_APP_ID;
+    const appSecret = process.env.FB_APP_SECRET;
+    const redirectUri = process.env.FB_REDIRECT_URI;
+
+    if (!appId || !appSecret || !redirectUri) {
+      console.error('❌ [AUTH] 必要な環境変数が設定されていません');
+      return res.status(500).json({
         success: false,
-        message: 'メールアドレスまたはパスワードが正しくありません'
+        error: 'Facebook App設定が不完全です'
       });
     }
-    
-    // ユーザーがアクティブかチェック
-    if (!user.isActive) {
-      return res.status(403).json({
+
+    // 1. 短期アクセストークンを取得
+    console.log('🔍 [AUTH] 短期アクセストークン取得開始');
+    const shortTokenResponse = await fetch(
+      `https://graph.facebook.com/v19.0/oauth/access_token?` +
+      `client_id=${appId}&` +
+      `client_secret=${appSecret}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `code=${code}`
+    );
+
+    if (!shortTokenResponse.ok) {
+      const errorText = await shortTokenResponse.text();
+      console.error(`❌ [AUTH] 短期トークン取得失敗: ${shortTokenResponse.status} ${errorText}`);
+      return res.status(400).json({
         success: false,
-        message: 'アカウントが無効になっています'
+        error: `短期トークン取得失敗: ${errorText}`
       });
     }
-    
-    // ログイン情報を更新
-    user.lastLogin = new Date();
-    user.loginCount += 1;
-    await user.save();
-    
-    // JWTトークンを生成
-    const token = generateToken(user._id);
-    
+
+    const shortTokenData = await shortTokenResponse.json();
+    console.log(`✅ [AUTH] 短期トークン取得成功: ${shortTokenData.access_token.substring(0, 10)}...`);
+
+    // 2. 長期アクセストークンに変換
+    console.log('🔍 [AUTH] 長期アクセストークン変換開始');
+    const longTokenResponse = await fetch(
+      `https://graph.facebook.com/v19.0/oauth/access_token?` +
+      `grant_type=fb_exchange_token&` +
+      `client_id=${appId}&` +
+      `client_secret=${appSecret}&` +
+      `fb_exchange_token=${shortTokenData.access_token}`
+    );
+
+    if (!longTokenResponse.ok) {
+      const errorText = await longTokenResponse.text();
+      console.error(`❌ [AUTH] 長期トークン変換失敗: ${longTokenResponse.status} ${errorText}`);
+      return res.status(400).json({
+        success: false,
+        error: `長期トークン変換失敗: ${errorText}`
+      });
+    }
+
+    const longTokenData = await longTokenResponse.json();
+    console.log(`✅ [AUTH] 長期トークン変換成功: ${longTokenData.access_token.substring(0, 10)}...`);
+
+    // 3. ユーザー情報を取得
+    console.log('🔍 [AUTH] ユーザー情報取得開始');
+    const userResponse = await fetch(
+      `https://graph.facebook.com/v19.0/me?access_token=${longTokenData.access_token}`
+    );
+
+    if (!userResponse.ok) {
+      const errorText = await userResponse.text();
+      console.error(`❌ [AUTH] ユーザー情報取得失敗: ${userResponse.status} ${errorText}`);
+      return res.status(400).json({
+        success: false,
+        error: `ユーザー情報取得失敗: ${errorText}`
+      });
+    }
+
+    const userData = await userResponse.json();
+    console.log(`✅ [AUTH] ユーザー情報取得成功: ${userData.name} (ID: ${userData.id})`);
+
+    // 4. MongoDBに保存
+    console.log('🔍 [AUTH] MongoDB保存開始');
+    const client = await getMongoClient();
+    const db = client.db('instagram-marketing');
+    const tokensCollection = db.collection('tokens');
+
+    const tokenDocument = {
+      userId: userData.id,
+      accessToken: longTokenData.access_token,
+      expiresIn: longTokenData.expires_in || 5184000, // デフォルト60日
+      obtainedAt: new Date().toISOString(),
+      provider: 'instagram',
+      userName: userData.name,
+      userEmail: userData.email || null
+    };
+
+    // upsert操作（既存レコードがあれば更新、なければ新規作成）
+    const result = await tokensCollection.updateOne(
+      { userId: userData.id },
+      { $set: tokenDocument },
+      { upsert: true }
+    );
+
+    console.log(`✅ [AUTH] MongoDB保存成功: ${result.upsertedCount > 0 ? '新規作成' : '更新'}`);
+
+    // 5. 成功レスポンス
     res.json({
       success: true,
-      message: 'ログインに成功しました',
-      token,
-      user: user.getPublicProfile()
+      message: '長期トークンをMongoDBに保存しました',
+      data: {
+        userId: userData.id,
+        userName: userData.name,
+        expiresIn: tokenDocument.expiresIn,
+        obtainedAt: tokenDocument.obtainedAt,
+        operation: result.upsertedCount > 0 ? 'created' : 'updated'
+      }
     });
-    
+
   } catch (error) {
-    console.error('ログインエラー:', error);
+    console.error('❌ [AUTH] Instagram認証コールバックエラー:', error);
     res.status(500).json({
       success: false,
-      message: 'ログイン中にエラーが発生しました'
+      error: '認証処理中にエラーが発生しました'
     });
   }
 });
 
-// ログアウト（クライアント側でトークンを削除）
-router.post('/logout', authenticateToken, async (req, res) => {
+/**
+ * 保存されたトークン一覧取得
+ * GET /auth/tokens
+ */
+router.get('/tokens', async (req, res) => {
   try {
-    // 実際のログアウト処理（必要に応じてトークンブラックリストなど）
+    const client = await getMongoClient();
+    const db = client.db('instagram-marketing');
+    const tokensCollection = db.collection('tokens');
+
+    const tokens = await tokensCollection.find({}).toArray();
+    
+    // アクセストークンをマスク
+    const maskedTokens = tokens.map(token => ({
+      userId: token.userId,
+      userName: token.userName,
+      expiresIn: token.expiresIn,
+      obtainedAt: token.obtainedAt,
+      provider: token.provider,
+      accessToken: token.accessToken ? `${token.accessToken.substring(0, 10)}...${token.accessToken.substring(token.accessToken.length - 4)}` : null
+    }));
+
     res.json({
       success: true,
-      message: 'ログアウトしました'
+      data: maskedTokens,
+      count: tokens.length
     });
+
   } catch (error) {
-    console.error('ログアウトエラー:', error);
+    console.error('❌ [AUTH] トークン一覧取得エラー:', error);
     res.status(500).json({
       success: false,
-      message: 'ログアウト中にエラーが発生しました'
+      error: 'トークン一覧の取得に失敗しました'
     });
   }
 });
 
-// プロフィール取得
-router.get('/profile', authenticateToken, async (req, res) => {
-  try {
-    res.json({
-      success: true,
-      user: req.user.getPublicProfile()
-    });
-  } catch (error) {
-    console.error('プロフィール取得エラー:', error);
-    res.status(500).json({
-      success: false,
-      message: 'プロフィール取得中にエラーが発生しました'
-    });
-  }
-});
-
-// プロフィール更新
-router.put('/profile', authenticateToken, async (req, res) => {
-  try {
-    const { profile } = req.body;
-    
-    // profileオブジェクトから値を取得
-    const displayName = profile?.displayName;
-    const bio = profile?.bio;
-    const avatar = profile?.avatar;
-    
-    // displayNameのバリデーション
-    if (displayName !== undefined && typeof displayName === 'string' && displayName.length > 50) {
-      return res.status(400).json({
-        success: false,
-        message: 'displayNameは50文字以内で入力してください'
-      });
-    }
-    
-    // 更新処理
-    if (displayName !== undefined) {
-      req.user.profile.displayName = displayName;
-    }
-    if (bio !== undefined) {
-      req.user.profile.bio = bio;
-    }
-    if (avatar !== undefined) {
-      req.user.profile.avatar = avatar;
-    }
-    
-    await req.user.save();
-    
-    // getPublicProfile()の返却値が正しいか確認
-    const publicUser = req.user.getPublicProfile ? req.user.getPublicProfile() : req.user;
-    
-    res.json({
-      success: true,
-      message: 'プロフィールが更新されました',
-      user: publicUser
-    });
-  } catch (error) {
-    console.error('プロフィール更新エラー:', error);
-    res.status(500).json({
-      success: false,
-      message: 'プロフィール更新中にエラーが発生しました'
-    });
-  }
-});
-
-// パスワード変更
-router.put('/change-password', authenticateToken, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: '現在のパスワードと新しいパスワードが必要です'
-      });
-    }
-    
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: '新しいパスワードは6文字以上である必要があります'
-      });
-    }
-    
-    // 現在のパスワードを検証
-    const isCurrentPasswordValid = await req.user.comparePassword(currentPassword);
-    if (!isCurrentPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: '現在のパスワードが正しくありません'
-      });
-    }
-    
-    // 新しいパスワードを設定
-    req.user.password = newPassword;
-    await req.user.save();
-    
-    res.json({
-      success: true,
-      message: 'パスワードを変更しました'
-    });
-    
-  } catch (error) {
-    console.error('パスワード変更エラー:', error);
-    res.status(500).json({
-      success: false,
-      message: 'パスワード変更中にエラーが発生しました'
-    });
-  }
-});
-
-// アカウント削除
-router.delete('/account', authenticateToken, async (req, res) => {
-  try {
-    await User.findByIdAndDelete(req.user._id);
-    
-    res.json({
-      success: true,
-      message: 'アカウントを削除しました'
-    });
-    
-  } catch (error) {
-    console.error('アカウント削除エラー:', error);
-    res.status(500).json({
-      success: false,
-      message: 'アカウント削除中にエラーが発生しました'
-    });
-  }
-});
-
-export default router; 
+export default router;
