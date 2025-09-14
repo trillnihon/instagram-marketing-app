@@ -100,11 +100,27 @@ router.post('/exchange', async (req, res) => {
     const appSecret = process.env.FB_APP_SECRET;
     const redirectUri = process.env.FB_REDIRECT_URI;
 
+    // 詳細ログを追加
+    console.log("🔍 [AUTH] 受信した code:", code);
+    console.log("🔍 [AUTH] 使用する redirect_uri:", process.env.FB_REDIRECT_URI);
+    console.log("🔍 [AUTH] 使用する client_id:", process.env.FB_APP_ID);
+    console.log("🔍 [AUTH] 使用する client_secret (一部):", process.env.FB_APP_SECRET ? process.env.FB_APP_SECRET.substring(0,6) + "..." : "undefined");
+
     if (!appId || !appSecret || !redirectUri) {
       console.error('❌ [AUTH] 必要な環境変数が設定されていません');
+      console.error('❌ [AUTH] 環境変数チェック:', {
+        FB_APP_ID: appId ? '設定済み' : '未設定',
+        FB_APP_SECRET: appSecret ? '設定済み' : '未設定',
+        FB_REDIRECT_URI: redirectUri ? '設定済み' : '未設定'
+      });
       return res.status(500).json({
         success: false,
-        error: 'Facebook App設定が不完全です'
+        error: 'Facebook App設定が不完全です',
+        details: {
+          FB_APP_ID: appId ? '設定済み' : '未設定',
+          FB_APP_SECRET: appSecret ? '設定済み' : '未設定',
+          FB_REDIRECT_URI: redirectUri ? '設定済み' : '未設定'
+        }
       });
     }
 
@@ -121,9 +137,18 @@ router.post('/exchange', async (req, res) => {
     if (!shortTokenResponse.ok) {
       const errorText = await shortTokenResponse.text();
       console.error(`❌ [AUTH] 短期トークン取得失敗: ${shortTokenResponse.status} ${errorText}`);
-      return res.status(400).json({
-        success: false,
-        error: `短期トークン取得失敗: ${errorText}`
+      console.error("❌ [AUTH] Meta API エラー詳細:", errorText);
+      console.error("❌ [AUTH] リクエストURL:", `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${appId}&client_secret=${appSecret ? appSecret.substring(0,6) + '...' : 'undefined'}&redirect_uri=${encodeURIComponent(redirectUri)}&code=${code.substring(0,10)}...`);
+      return res.status(500).json({ 
+        success: false, 
+        error: errorText,
+        metaApiError: true,
+        statusCode: shortTokenResponse.status,
+        requestDetails: {
+          client_id: appId,
+          redirect_uri: redirectUri,
+          code_length: code.length
+        }
       });
     }
 
@@ -143,9 +168,13 @@ router.post('/exchange', async (req, res) => {
     if (!longTokenResponse.ok) {
       const errorText = await longTokenResponse.text();
       console.error(`❌ [AUTH] 長期トークン変換失敗: ${longTokenResponse.status} ${errorText}`);
-      return res.status(400).json({
-        success: false,
-        error: `長期トークン変換失敗: ${errorText}`
+      console.error("❌ [AUTH] Meta API エラー詳細 (長期トークン):", errorText);
+      return res.status(500).json({ 
+        success: false, 
+        error: errorText,
+        metaApiError: true,
+        statusCode: longTokenResponse.status,
+        step: 'long_token_exchange'
       });
     }
 
@@ -161,9 +190,13 @@ router.post('/exchange', async (req, res) => {
     if (!userResponse.ok) {
       const errorText = await userResponse.text();
       console.error(`❌ [AUTH] ユーザー情報取得失敗: ${userResponse.status} ${errorText}`);
-      return res.status(400).json({
-        success: false,
-        error: `ユーザー情報取得失敗: ${errorText}`
+      console.error("❌ [AUTH] Meta API エラー詳細 (ユーザー情報):", errorText);
+      return res.status(500).json({ 
+        success: false, 
+        error: errorText,
+        metaApiError: true,
+        statusCode: userResponse.status,
+        step: 'user_info_fetch'
       });
     }
 
