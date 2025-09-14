@@ -4,6 +4,43 @@ import { MongoClient } from 'mongodb';
 
 const router = express.Router();
 
+// 環境変数の確認
+const FB_APP_ID = process.env.FB_APP_ID;
+const FB_APP_SECRET = process.env.FB_APP_SECRET;
+const FB_REDIRECT_URI = process.env.FB_REDIRECT_URI;
+
+console.log('🔍 [AUTH] 環境変数チェック:', {
+  FB_APP_ID: FB_APP_ID ? '設定済み' : '未設定',
+  FB_APP_SECRET: FB_APP_SECRET ? '設定済み' : '未設定',
+  FB_REDIRECT_URI: FB_REDIRECT_URI ? '設定済み' : '未設定'
+});
+
+if (!FB_APP_ID || !FB_APP_SECRET) {
+  console.error("[AUTH] FB_APP_IDまたはFB_APP_SECRETが未設定");
+}
+
+/**
+ * 環境変数設定状況確認エンドポイント
+ * GET /auth/env-check
+ */
+router.get('/env-check', (req, res) => {
+  const envStatus = {
+    FB_APP_ID: FB_APP_ID ? '設定済み' : '未設定',
+    FB_APP_SECRET: FB_APP_SECRET ? '設定済み' : '未設定',
+    FB_REDIRECT_URI: FB_REDIRECT_URI ? '設定済み' : '未設定',
+    MONGO_URI: process.env.MONGO_URI ? '設定済み' : '未設定'
+  };
+  
+  const allSet = FB_APP_ID && FB_APP_SECRET && FB_REDIRECT_URI;
+  
+  res.json({
+    success: allSet,
+    message: allSet ? 'すべての環境変数が設定されています' : '一部の環境変数が未設定です',
+    environment: envStatus,
+    redirect_uri: FB_REDIRECT_URI
+  });
+});
+
 // MongoDB接続設定
 const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/instagram-marketing';
 let mongoClient = null;
