@@ -51,7 +51,7 @@ export const facebookLoginCallback = async (authData: {
       redirectUri: authData.redirect_uri
     });
 
-    const response = await apiClient.post('/auth/facebook/callback', authData);
+    const response = await apiClient.post('/auth/exchange', authData);
     
     console.log('✅ [AUTH STEP 2] Facebook認証成功:', {
       status: response.status,

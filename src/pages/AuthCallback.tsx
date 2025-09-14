@@ -42,8 +42,9 @@ const AuthCallback: React.FC = () => {
         }
 
         // バックエンドにcodeを送信
+        console.log("送信するcode:", code);
         console.log('🔍 [AUTH] バックエンドに認証コードを送信中...');
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com';
         
         const response = await fetch(`${apiBaseUrl}/auth/exchange`, {
           method: 'POST',
@@ -179,91 +180,6 @@ const AuthCallback: React.FC = () => {
           </h3>
           <p className="mt-2 text-sm text-gray-500">
             認証コードを処理中です。しばらくお待ちください。
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default AuthCallback;
-
-  // エラー表示
-  if (status === 'error') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
-          <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
-              Instagram認証エラー
-            </h3>
-            <p className="mt-2 text-sm text-gray-500">
-              {errorDetails}
-            </p>
-            <div className="mt-6 flex space-x-3">
-              <button
-                onClick={() => window.location.href = '/login'}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
-              >
-                ログイン画面へ
-              </button>
-              <button
-                onClick={() => window.location.reload()}
-                className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
-              >
-                再試行
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 成功表示
-  if (status === 'success') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
-          <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-              <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
-              認証成功！
-            </h3>
-            <p className="mt-2 text-sm text-gray-500">
-              ダッシュボードにリダイレクトしています...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ローディング表示
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
-        <div className="text-center">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
-            <svg className="animate-spin h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </div>
-          <h3 className="mt-4 text-lg font-medium text-gray-900">
-            Instagram認証中...
-          </h3>
-          <p className="mt-2 text-sm text-gray-500">
-            認証処理を実行中です。しばらくお待ちください。
           </p>
         </div>
       </div>

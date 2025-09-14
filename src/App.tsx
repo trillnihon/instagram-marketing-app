@@ -162,7 +162,7 @@ const App: React.FC = () => {
     if (authCallback === 'true' && code) {
       console.log('🔄 [DEBUG] クエリパラメータからのコールバック処理を開始');
       console.log('📝 [DEBUG] 認証コード:', code.substring(0, 10) + '...');
-      window.location.href = `/auth/facebook/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state || '')}`;
+      window.location.href = `/auth/instagram/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state || '')}`;
     } else if (authCallback === 'true' && urlParams.get('no_code') === 'true') {
       console.log('⚠️ [DEBUG] 認証コードなしのコールバック処理');
       setAuthenticated?.(true);
@@ -182,10 +182,9 @@ const App: React.FC = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/analysis-history" element={<AnalysisHistory />} />
           
-          {/* Facebook OAuthコールバックルート */}
+          {/* Instagram OAuthコールバックルート */}
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/auth/facebook/callback" element={<AuthCallback />} />
-          <Route path="/auth/instagram/callback" element={<AuthCallback />} /> {/* フォールバック */}
+          <Route path="/auth/instagram/callback" element={<AuthCallback />} />
           
           <Route path="/success" element={<Success />} />
           <Route path="/cancel" element={<Cancel />} />

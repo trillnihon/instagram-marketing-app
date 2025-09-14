@@ -80,9 +80,14 @@ router.get('/instagram', (req, res) => {
 router.post('/exchange', async (req, res) => {
   try {
     const { code } = req.body;
+    console.log("受け取ったcode:", code);
+    console.log('🔍 [AUTH] リクエストボディ全体:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 [AUTH] リクエストヘッダー:', JSON.stringify(req.headers, null, 2));
 
     if (!code) {
       console.error('❌ [AUTH] 認証コードが提供されていません');
+      console.error('❌ [AUTH] req.body:', req.body);
+      console.error('❌ [AUTH] req.body.code:', req.body.code);
       return res.status(400).json({
         success: false,
         error: '認証コードが提供されていません'
@@ -181,6 +186,15 @@ router.post('/exchange', async (req, res) => {
       userEmail: userData.email || null
     };
 
+    console.log('🔍 [AUTH] 保存するトークンドキュメント:', {
+      userId: tokenDocument.userId,
+      userName: tokenDocument.userName,
+      expiresIn: tokenDocument.expiresIn,
+      obtainedAt: tokenDocument.obtainedAt,
+      provider: tokenDocument.provider,
+      accessToken: tokenDocument.accessToken ? `${tokenDocument.accessToken.substring(0, 10)}...` : null
+    });
+
     // upsert操作（既存レコードがあれば更新、なければ新規作成）
     const result = await tokensCollection.updateOne(
       { userId: userData.id },
@@ -189,6 +203,12 @@ router.post('/exchange', async (req, res) => {
     );
 
     console.log(`✅ [AUTH] MongoDB保存成功: ${result.upsertedCount > 0 ? '新規作成' : '更新'}`);
+    console.log('🔍 [AUTH] MongoDB操作結果:', {
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
+      upsertedCount: result.upsertedCount,
+      upsertedId: result.upsertedId
+    });
 
     // 5. 成功レスポンス
     res.json({
@@ -205,6 +225,30 @@ router.post('/exchange', async (req, res) => {
 
   } catch (error) {
     console.error('❌ [AUTH] Instagram認証コード交換エラー:', error);
+    console.error('❌ [AUTH] エラースタック:', error.stack);
+    console.error('❌ [AUTH] エラー詳細:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      status: error.status
+    });
+    
+    // MongoDB接続エラーの場合
+    if (error.name === 'MongoNetworkError' || error.name === 'MongoServerError') {
+      return res.status(500).json({
+        success: false,
+        error: 'データベース接続エラーが発生しました。しばらく時間をおいてから再試行してください。'
+      });
+    }
+    
+    // Facebook APIエラーの場合
+    if (error.message.includes('Facebook') || error.message.includes('Graph API')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Facebook APIとの通信に失敗しました。認証情報を確認してください。'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       error: '認証処理中にエラーが発生しました'
