@@ -92,6 +92,7 @@ import {
 import { AIPostGenerator } from './services/aiPostGenerator.js';
 import authRouter from './authRouter.js';
 import authRoutes from './routes/auth.js';
+import debugRouter from './routes/debug.js';
 import analysisHistoryRouter from './routes/analysisHistory.js';
 import { User } from './models/User.js';
 import { authenticateToken } from './middleware/auth.js';
@@ -1639,6 +1640,7 @@ app.get('/api/usage', async (req, res) => {
 // 認証ルートに厳しいレート制限を適用
 app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/auth', authRoutes);
+app.use('/debug', debugRouter);
 app.use('/api/analysis-history', analysisHistoryRouter);
 app.use('/api/diagnostics', diagnosticsRouter);
 app.use('/api/instagram', instagramApiRouter);
