@@ -461,6 +461,9 @@ router.post('/save-token', async (req, res) => {
 });
 
 /**
+ * 保存されたトークン一覧取得
+ * GET /auth/tokens
+ */
 router.get('/tokens', async (req, res) => {
   try {
     const client = await getMongoClient();
