@@ -52,6 +52,7 @@
     "helmet": "^8.1.0",
     "jest": "^30.0.5",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.19.0",
     "mongoose": "^8.16.4",
     "openai": "^4.104.0",
     "stripe": "^14.25.0",
