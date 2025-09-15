@@ -327,9 +327,140 @@ router.post('/exchange', async (req, res) => {
 });
 
 /**
- * 保存されたトークン一覧取得
- * GET /auth/tokens
+ * Instagram OAuthアクセストークン保存（implicit flow用）
+ * POST /auth/save-token
  */
+router.post('/save-token', async (req, res) => {
+  try {
+    const { accessToken } = req.body;
+    console.log("受け取ったaccessToken:", accessToken ? accessToken.substring(0, 10) + '...' : 'なし');
+    console.log('🔍 [AUTH] リクエストボディ全体:', JSON.stringify(req.body, null, 2));
+
+    if (!accessToken) {
+      console.error('❌ [AUTH] アクセストークンが提供されていません');
+      return res.status(400).json({
+        success: false,
+        error: 'アクセストークンが提供されていません'
+      });
+    }
+
+    console.log(`🔍 [AUTH] アクセストークン受信: ${accessToken.substring(0, 10)}...`);
+
+    // 1. ユーザー情報を取得
+    console.log('🔍 [AUTH] ユーザー情報取得開始');
+    const userResponse = await fetch(
+      `https://graph.facebook.com/v19.0/me?access_token=${accessToken}`
+    );
+
+    if (!userResponse.ok) {
+      const errorText = await userResponse.text();
+      console.error(`❌ [AUTH] ユーザー情報取得失敗: ${userResponse.status} ${errorText}`);
+      console.error("❌ [AUTH] Meta API エラー詳細 (ユーザー情報):", errorText);
+      return res.status(500).json({ 
+        success: false, 
+        error: errorText,
+        metaApiError: true,
+        statusCode: userResponse.status,
+        step: 'user_info_fetch'
+      });
+    }
+
+    const userData = await userResponse.json();
+    console.log(`✅ [AUTH] ユーザー情報取得成功: ${userData.name} (ID: ${userData.id})`);
+
+    // 2. トークンの有効期限を確認（デフォルト60日）
+    const expiresIn = 5184000; // 60日（秒）
+
+    // 3. MongoDBに保存
+    console.log('🔍 [AUTH] MongoDB保存開始');
+    const client = await getMongoClient();
+    const db = client.db('instagram-marketing');
+    const tokensCollection = db.collection('tokens');
+
+    const tokenDocument = {
+      userId: userData.id,
+      accessToken: accessToken,
+      expiresIn: expiresIn,
+      obtainedAt: new Date().toISOString(),
+      provider: 'instagram',
+      userName: userData.name,
+      userEmail: userData.email || null,
+      tokenType: 'implicit_flow'
+    };
+
+    console.log('🔍 [AUTH] 保存するトークンドキュメント:', {
+      userId: tokenDocument.userId,
+      userName: tokenDocument.userName,
+      expiresIn: tokenDocument.expiresIn,
+      obtainedAt: tokenDocument.obtainedAt,
+      provider: tokenDocument.provider,
+      tokenType: tokenDocument.tokenType,
+      accessToken: tokenDocument.accessToken ? `${tokenDocument.accessToken.substring(0, 10)}...` : null
+    });
+
+    // upsert操作（既存レコードがあれば更新、なければ新規作成）
+    const result = await tokensCollection.updateOne(
+      { userId: userData.id },
+      { $set: tokenDocument },
+      { upsert: true }
+    );
+
+    console.log(`✅ [AUTH] MongoDB保存成功: ${result.upsertedCount > 0 ? '新規作成' : '更新'}`);
+    console.log('🔍 [AUTH] MongoDB操作結果:', {
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
+      upsertedCount: result.upsertedCount,
+      upsertedId: result.upsertedId
+    });
+
+    // 4. 成功レスポンス
+    res.json({
+      success: true,
+      message: 'アクセストークンをMongoDBに保存しました',
+      data: {
+        userId: userData.id,
+        userName: userData.name,
+        expiresIn: tokenDocument.expiresIn,
+        obtainedAt: tokenDocument.obtainedAt,
+        operation: result.upsertedCount > 0 ? 'created' : 'updated',
+        tokenType: 'implicit_flow'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [AUTH] Instagramアクセストークン保存エラー:', error);
+    console.error('❌ [AUTH] エラースタック:', error.stack);
+    console.error('❌ [AUTH] エラー詳細:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      status: error.status
+    });
+    
+    // MongoDB接続エラーの場合
+    if (error.name === 'MongoNetworkError' || error.name === 'MongoServerError') {
+      return res.status(500).json({
+        success: false,
+        error: 'データベース接続エラーが発生しました。しばらく時間をおいてから再試行してください。'
+      });
+    }
+    
+    // Facebook APIエラーの場合
+    if (error.message.includes('Facebook') || error.message.includes('Graph API')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Facebook APIとの通信に失敗しました。認証情報を確認してください。'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'トークン保存処理中にエラーが発生しました'
+    });
+  }
+});
+
+/**
 router.get('/tokens', async (req, res) => {
   try {
     const client = await getMongoClient();

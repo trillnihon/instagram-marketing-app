@@ -12,17 +12,22 @@ const AuthCallback: React.FC = () => {
       try {
         console.log('🔍 [AUTH] Instagram認証コールバック処理開始');
         
-        // URLからcodeを抽出
+        // URLからcodeまたはaccess_tokenを抽出
         const urlParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        
         const code = urlParams.get('code');
-        const error = urlParams.get('error');
-        const errorDescription = urlParams.get('error_description');
+        const accessToken = hashParams.get('access_token');
+        const error = urlParams.get('error') || hashParams.get('error');
+        const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
 
         console.log('🔍 [AUTH] URLパラメータ:', {
           code: code ? code.substring(0, 10) + '...' : 'なし',
+          accessToken: accessToken ? accessToken.substring(0, 10) + '...' : 'なし',
           error,
           errorDescription,
-          fullUrl: window.location.href
+          fullUrl: window.location.href,
+          hash: window.location.hash
         });
 
         // エラーチェック
@@ -33,51 +38,96 @@ const AuthCallback: React.FC = () => {
           return;
         }
 
-        // codeがない場合
-        if (!code) {
-          console.error('❌ [AUTH] 認証コードが取得できませんでした');
-          setErrorDetails('認証コードが取得できませんでした。認証フローを再実行してください。');
-          setStatus('error');
-          return;
-        }
-
-        // バックエンドにcodeを送信
-        console.log("送信するcode:", code);
-        console.log('🔍 [AUTH] バックエンドに認証コードを送信中...');
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com';
-        
-        const response = await fetch(`${apiBaseUrl}/auth/exchange`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ code }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ [AUTH] バックエンド認証失敗:', response.status, errorText);
-          setErrorDetails(`認証処理に失敗しました: ${errorText}`);
-          setStatus('error');
-          return;
-        }
-
-        const data = await response.json();
-        console.log('✅ [AUTH] 認証成功:', data);
-
-        if (data.success) {
-          setUserInfo(data.data);
-          setStatus('success');
+        // パターン1: codeが取得できた場合（authorization code flow）
+        if (code) {
+          console.log('✅ [AUTH] 認証コードを取得しました:', code.substring(0, 10) + '...');
           
-          // 3秒後にダッシュボードにリダイレクト
-          setTimeout(() => {
-            console.log('🚀 [AUTH] ダッシュボードにリダイレクト');
-            navigate('/dashboard');
-          }, 3000);
-        } else {
-          console.error('❌ [AUTH] 認証レスポンスが失敗:', data.error);
-          setErrorDetails(data.error || '認証処理に失敗しました');
+          // バックエンドにcodeを送信
+          console.log('🔍 [AUTH] バックエンドに認証コードを送信中...');
+          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com';
+          
+          const response = await fetch(`${apiBaseUrl}/auth/exchange`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ code }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ [AUTH] バックエンド認証失敗:', response.status, errorText);
+            setErrorDetails(`認証処理に失敗しました: ${errorText}`);
+            setStatus('error');
+            return;
+          }
+
+          const data = await response.json();
+          console.log('✅ [AUTH] 認証成功:', data);
+
+          if (data.success) {
+            setUserInfo(data.data);
+            setStatus('success');
+            
+            // 3秒後にダッシュボードにリダイレクト
+            setTimeout(() => {
+              console.log('🚀 [AUTH] ダッシュボードにリダイレクト');
+              navigate('/dashboard');
+            }, 3000);
+          } else {
+            console.error('❌ [AUTH] 認証レスポンスが失敗:', data.error);
+            setErrorDetails(data.error || '認証処理に失敗しました');
+            setStatus('error');
+          }
+        }
+        // パターン2: access_tokenが取得できた場合（implicit flow）
+        else if (accessToken) {
+          console.log('✅ [AUTH] アクセストークンを取得しました:', accessToken.substring(0, 10) + '...');
+          
+          // バックエンドにaccess_tokenを送信
+          console.log('🔍 [AUTH] バックエンドにアクセストークンを送信中...');
+          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com';
+          
+          const response = await fetch(`${apiBaseUrl}/auth/save-token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ accessToken }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ [AUTH] トークン保存失敗:', response.status, errorText);
+            setErrorDetails(`トークン保存に失敗しました: ${errorText}`);
+            setStatus('error');
+            return;
+          }
+
+          const data = await response.json();
+          console.log('✅ [AUTH] トークン保存成功:', data);
+
+          if (data.success) {
+            setUserInfo(data.data);
+            setStatus('success');
+            
+            // 3秒後にダッシュボードにリダイレクト
+            setTimeout(() => {
+              console.log('🚀 [AUTH] ダッシュボードにリダイレクト');
+              navigate('/dashboard');
+            }, 3000);
+          } else {
+            console.error('❌ [AUTH] トークン保存レスポンスが失敗:', data.error);
+            setErrorDetails(data.error || 'トークン保存に失敗しました');
+            setStatus('error');
+          }
+        }
+        // どちらも取得できない場合
+        else {
+          console.error('❌ [AUTH] 認証コードまたはアクセストークンが取得できませんでした');
+          setErrorDetails('認証コードまたはアクセストークンが取得できませんでした。認証フローを再実行してください。');
           setStatus('error');
+          return;
         }
 
       } catch (error) {
