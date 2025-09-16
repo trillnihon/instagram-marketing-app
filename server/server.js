@@ -98,6 +98,7 @@ import { User } from './models/User.js';
 import { authenticateToken } from './middleware/auth.js';
 import threadsRouter from './routes/threads.js';
 import instagramApiRouter from './routes/instagram-api.js';
+import uploadRouter from './routes/upload.js';
 import schedulerRoutes from './routes/scheduler.js';
 import analysisHistoryRoutes from './routes/analysisHistory.js';
 // 環境変数の読み込み
@@ -141,8 +142,11 @@ app.set("trust proxy", 1);
 
 // MongoDB接続（デモモード対応）
 let mongoConnected = false;
+let mongoConnectionStatus = 'disconnected';
+
 connectDB().then(async connected => {
   mongoConnected = connected;
+  mongoConnectionStatus = connected ? 'success' : 'failed';
   logger.info(`MongoDB接続状態: ${connected ? '接続済み' : 'デモモード'}`);
   
   // MongoDB接続イベントを監視
@@ -150,17 +154,24 @@ connectDB().then(async connected => {
     const mongoose = await import('mongoose');
     mongoose.connection.on('connected', () => {
       console.log('[MONGODB] connected イベント');
+      mongoConnected = true;
+      mongoConnectionStatus = 'success';
     });
     mongoose.connection.on('error', (err) => {
       console.error('[MONGODB] error イベント:', err);
+      mongoConnected = false;
+      mongoConnectionStatus = 'failed';
     });
     mongoose.connection.on('disconnected', () => {
       console.log('[MONGODB] disconnected イベント');
+      mongoConnected = false;
+      mongoConnectionStatus = 'disconnected';
     });
   }
 }).catch(error => {
-  logger.info('MongoDB接続状態: デモモード');
+  logger.error('MongoDB接続エラー:', error);
   mongoConnected = false;
+  mongoConnectionStatus = 'failed';
 });
 
 
@@ -293,17 +304,23 @@ app.get('/health', (req, res) => {
 // API用ヘルスチェックエンドポイント
 app.get('/api/health', (req, res) => {
   console.log('[SELF-TEST] /api/health エンドポイントアクセス');
+  
+  // 本番環境では実際の接続状態を返す
+  const mongodbStatus = process.env.NODE_ENV === 'production' 
+    ? (mongoConnected ? 'connected' : 'disconnected')
+    : (mongoConnected ? 'connected' : 'demo_mode');
+  
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
-    mongodb: mongoConnected ? 'connected' : 'demo_mode',
+    mongodb: mongodbStatus,
     mongodb_details: {
       connected: mongoConnected,
       uri_set: !!process.env.MONGODB_URI,
       node_env: process.env.NODE_ENV,
-      connection_status: mongoConnected ? 'success' : 'failed'
+      connection_status: mongoConnectionStatus
     },
     api_version: '1.0.0'
   });
@@ -1640,6 +1657,8 @@ app.get('/api/usage', async (req, res) => {
 // 認証ルートに厳しいレート制限を適用
 app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/auth', authRoutes);
+// /api/auth/save-token でも routes/auth.js のエンドポイントを使用
+app.use('/api/auth', authRoutes);
 app.use('/debug', debugRouter);
 app.use('/api/analysis-history', analysisHistoryRouter);
 app.use('/api/diagnostics', diagnosticsRouter);
@@ -1649,6 +1668,7 @@ app.use('/threads/api', threadsRouter);
 // 新規追加ルート
 app.use('/api/scheduler', schedulerRoutes);
 app.use('/api/instagram/history', analysisHistoryRoutes);
+app.use('/upload', uploadRouter);
 
 // 汎用APIルート（最後に設定）
 app.use('/api', urlAnalysisRouter);
