@@ -144,35 +144,45 @@ app.set("trust proxy", 1);
 let mongoConnected = false;
 let mongoConnectionStatus = 'disconnected';
 
-connectDB().then(async connected => {
-  mongoConnected = connected;
-  mongoConnectionStatus = connected ? 'success' : 'failed';
-  logger.info(`MongoDB接続状態: ${connected ? '接続済み' : 'デモモード'}`);
-  
-  // MongoDB接続イベントを監視
-  if (connected) {
-    const mongoose = await import('mongoose');
-    mongoose.connection.on('connected', () => {
-      console.log('[MONGODB] connected イベント');
-      mongoConnected = true;
-      mongoConnectionStatus = 'success';
-    });
-    mongoose.connection.on('error', (err) => {
-      console.error('[MONGODB] error イベント:', err);
-      mongoConnected = false;
-      mongoConnectionStatus = 'failed';
-    });
-    mongoose.connection.on('disconnected', () => {
-      console.log('[MONGODB] disconnected イベント');
-      mongoConnected = false;
-      mongoConnectionStatus = 'disconnected';
-    });
+// MongoDB接続処理を非同期で実行
+(async () => {
+  try {
+    const connected = await connectDB();
+    mongoConnected = connected;
+    mongoConnectionStatus = connected ? 'success' : 'failed';
+    logger.info(`MongoDB接続状態: ${connected ? '接続済み' : 'デモモード'}`);
+    
+    // MongoDB接続イベントを監視
+    if (connected) {
+      const mongoose = await import('mongoose');
+      mongoose.connection.on('connected', () => {
+        console.log('[MONGODB] connected イベント');
+        mongoConnected = true;
+        mongoConnectionStatus = 'success';
+      });
+      mongoose.connection.on('error', (err) => {
+        console.error('[MONGODB] error イベント:', err);
+        mongoConnected = false;
+        mongoConnectionStatus = 'failed';
+      });
+      mongoose.connection.on('disconnected', () => {
+        console.log('[MONGODB] disconnected イベント');
+        mongoConnected = false;
+        mongoConnectionStatus = 'disconnected';
+      });
+    }
+  } catch (error) {
+    logger.error('MongoDB接続エラー:', error);
+    mongoConnected = false;
+    mongoConnectionStatus = 'failed';
+    
+    // 本番環境でMongoDB接続に失敗した場合はサーバーを停止
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('本番環境でMongoDB接続に失敗しました。サーバーを停止します。');
+      process.exit(1);
+    }
   }
-}).catch(error => {
-  logger.error('MongoDB接続エラー:', error);
-  mongoConnected = false;
-  mongoConnectionStatus = 'failed';
-});
+})();
 
 
 
@@ -305,23 +315,12 @@ app.get('/health', (req, res) => {
 app.get('/api/health', (req, res) => {
   console.log('[SELF-TEST] /api/health エンドポイントアクセス');
   
-  // 本番環境では実際の接続状態を返す
-  const mongodbStatus = process.env.NODE_ENV === 'production' 
-    ? (mongoConnected ? 'connected' : 'disconnected')
-    : (mongoConnected ? 'connected' : 'demo_mode');
-  
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
-    mongodb: mongodbStatus,
-    mongodb_details: {
-      connected: mongoConnected,
-      uri_set: !!process.env.MONGODB_URI,
-      node_env: process.env.NODE_ENV,
-      connection_status: mongoConnectionStatus
-    },
+    mongodb: mongoConnected ? 'connected' : 'disconnected',
+    connection_status: mongoConnected ? 'success' : 'failed',
     api_version: '1.0.0'
   });
 });
