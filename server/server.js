@@ -312,15 +312,34 @@ app.get('/health', (req, res) => {
 });
 
 // API用ヘルスチェックエンドポイント
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
   console.log('[SELF-TEST] /api/health エンドポイントアクセス');
   
+  let mongoStatus = 'disconnected';
+  let connStatus = 'failed';
+  try {
+    const mongooseMod = await import('mongoose');
+    const mongoose = mongooseMod.default || mongooseMod;
+    const state = mongoose?.connection?.readyState;
+    if (typeof state === 'number') {
+      // 1 = connected, 2 = connecting, 3 = disconnecting, others as disconnected
+      mongoStatus = state === 1 ? 'connected' : (state === 2 ? 'connecting' : 'disconnected');
+      connStatus = state === 1 ? 'success' : (state === 2 ? 'in_progress' : 'failed');
+    } else {
+      mongoStatus = mongoConnected ? 'connected' : 'disconnected';
+      connStatus = mongoConnected ? 'success' : 'failed';
+    }
+  } catch (e) {
+    mongoStatus = mongoConnected ? 'connected' : 'disconnected';
+    connStatus = mongoConnected ? 'success' : 'failed';
+  }
+
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    mongodb: mongoConnected ? 'connected' : 'disconnected',
-    connection_status: mongoConnected ? 'success' : 'failed',
+    mongodb: mongoStatus,
+    connection_status: connStatus,
     api_version: '1.0.0'
   });
 });
