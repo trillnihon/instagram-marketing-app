@@ -7,7 +7,6 @@ import 'express-async-errors';
 import express from 'express';
 import session from 'express-session';
 import axios from 'axios';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import OpenAI from 'openai';
 import https from 'https';
@@ -47,16 +46,9 @@ process.on('unhandledRejection', (reason, promise) => {
 console.log('[BOOT] step2: グローバルエラーハンドラ設定完了');
 
 // 環境変数ファイルの存在確認と読み込み
-const envPath = path.resolve(__dirname, 'env.development');
-const envExists = fs.existsSync(envPath);
-console.log('[BOOT] step3: env.development存在確認:', envExists ? '存在' : '不存在');
-
-if (envExists) {
-  dotenv.config({ path: envPath });
-  console.log('[BOOT] step4: env.development読み込み完了');
-} else {
-  console.log('[BOOT] step4: env.development読み込みスキップ（ファイル不存在）');
-}
+// Renderはダッシュボードの環境変数を自動注入
+// .envファイル読込はしない（process.env直参照で統一）
+console.log('[BOOT] Render環境変数を使用（dotenv読み込みスキップ）');
 
 // MongoDB非推奨警告を抑制
 process.env.MONGODB_SUPPRESS_DEPRECATION_WARNINGS = 'true';
@@ -81,7 +73,7 @@ import logger, { requestLogger } from './utils/logger.js';
 
 import diagnosticsRouter from './routes/diagnostics.js';
 import urlAnalysisRouter from './routes/urlAnalysis.js';
-import { connectMongo } from './config/database.js';
+const connectDB = require('./config/database.js');
 import { 
   getTrendPosts, 
   getHashtagRanking, 
@@ -136,7 +128,7 @@ let mongoConnected = false;
 let mongoConnectionStatus = 'disconnected';
 
 // 起動時にDB接続を呼ぶ（失敗してもサーバは上げる）
-connectMongo();
+connectDB();
 
 
 
@@ -266,23 +258,12 @@ app.get('/health', (req, res) => {
 });
 
 // API用ヘルスチェックエンドポイント
-app.get('/api/health', async (_req, res) => {
-  const mongoose = await import('mongoose');
-  const state = mongoose.default.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
-  const connected = state === 1;
-
+app.get('/api/health', (_req, res) => {
+  const mongoose = require('mongoose');
+  const state = mongoose.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
   res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    mongodb: connected ? 'connected' : 'disconnected',
-    mongodb_details: {
-      connected,
-      uri_set: !!process.env.MONGODB_URI,
-      node_env: process.env.NODE_ENV,
-      connection_status: connected ? 'success' : 'failed',
-    },
-    api_version: '1.0.0',
+    mongodb: state === 1 ? 'connected' : 'disconnected',
+    connection_status: state === 1 ? 'success' : 'failed',
   });
 });
 

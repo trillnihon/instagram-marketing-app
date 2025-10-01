@@ -370,7 +370,7 @@ router.post('/save-token', async (req, res) => {
     console.log(`✅ [AUTH] ユーザー情報取得成功: ${userData.name} (ID: ${userData.id})`);
 
     // 2. トークンの有効期限を確認（デフォルト60日）
-    const expiresIn = 5184000; // 60日（秒）
+    const tokenExpiresIn = 5184000; // 60日（秒）
 
     // 3. MongoDBに保存
     console.log('🔍 [AUTH] MongoDB保存開始');
@@ -381,7 +381,7 @@ router.post('/save-token', async (req, res) => {
     const tokenDocument = {
       userId: userData.id,
       accessToken: accessToken,
-      expiresIn: expiresIn,
+      expiresIn: tokenExpiresIn,
       obtainedAt: new Date().toISOString(),
       provider: 'instagram',
       userName: userData.name,

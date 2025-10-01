@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import fetch from 'node-fetch';
-import { getMongoClient } from './config/database.js';
+// MongoDB接続は直接実装（database.jsはconnectDBのみエクスポート）
+import { MongoClient } from 'mongodb';
 
 const router = express.Router();
 
