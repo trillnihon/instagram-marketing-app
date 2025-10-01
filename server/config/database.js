@@ -29,10 +29,8 @@ const connectDB = async () => {
       console.log('🔍 [MongoDB] 修正後URI:', mongoUri.replace(/\/\/.*@/, '//***:***@'));
     }
     
-    // MongoDB接続オプション（非推奨警告を抑制）
+    // MongoDB接続オプション（mongoose v8対応）
     const options = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 10000, // 10秒でタイムアウト（Atlas接続用に延長）
       socketTimeoutMS: 45000,
       connectTimeoutMS: 10000,
