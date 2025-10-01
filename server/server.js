@@ -101,17 +101,8 @@ import instagramApiRouter from './routes/instagram-api.js';
 import uploadRouter from './routes/upload.js';
 import schedulerRoutes from './routes/scheduler.js';
 import analysisHistoryRoutes from './routes/analysisHistory.js';
-// 環境変数の読み込み
-if (process.env.NODE_ENV === 'production') {
-  dotenv.config({ path: path.join(__dirname, 'env.production') });
-} else {
-  // 開発環境では明示的にenv.developmentを読み込み
-  dotenv.config({ path: path.join(__dirname, 'env.development') });
-  // 開発環境でMONGODB_URIが設定されていない場合はデモモード
-  if (!process.env.MONGODB_URI) {
-    process.env.USE_DEMO_MODE = 'true';
-  }
-}
+// Renderはダッシュボードの環境変数を自動注入
+// .envファイル読込はしない（process.env直参照で統一）
 
 // DEV_NO_EXIT ガード設定
 const DEV_NO_EXIT = process.env.DEV_NO_EXIT === 'true';
@@ -312,35 +303,13 @@ app.get('/health', (req, res) => {
 });
 
 // API用ヘルスチェックエンドポイント
-app.get('/api/health', async (req, res) => {
-  console.log('[SELF-TEST] /api/health エンドポイントアクセス');
+app.get('/api/health', async (_req, res) => {
+  const mongoose = await import('mongoose');
+  const state = mongoose.default.connection.readyState; // 1=connected
   
-  let mongoStatus = 'disconnected';
-  let connStatus = 'failed';
-  try {
-    const mongooseMod = await import('mongoose');
-    const mongoose = mongooseMod.default || mongooseMod;
-    const state = mongoose?.connection?.readyState;
-    if (typeof state === 'number') {
-      // 1 = connected, 2 = connecting, 3 = disconnecting, others as disconnected
-      mongoStatus = state === 1 ? 'connected' : (state === 2 ? 'connecting' : 'disconnected');
-      connStatus = state === 1 ? 'success' : (state === 2 ? 'in_progress' : 'failed');
-    } else {
-      mongoStatus = mongoConnected ? 'connected' : 'disconnected';
-      connStatus = mongoConnected ? 'success' : 'failed';
-    }
-  } catch (e) {
-    mongoStatus = mongoConnected ? 'connected' : 'disconnected';
-    connStatus = mongoConnected ? 'success' : 'failed';
-  }
-
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    mongodb: mongoStatus,
-    connection_status: connStatus,
-    api_version: '1.0.0'
+  return res.json({
+    mongodb: state === 1 ? 'connected' : 'disconnected',
+    connection_status: state === 1 ? 'success' : 'fail',
   });
 });
 
@@ -4362,11 +4331,10 @@ try {
   console.log('📡 サーバーリスニング開始...');
   
   httpServer = app.listen(port, () => {
-    console.log(`[LISTEN] port=${port}`);
+    console.log(`server started on ${port}`);
     console.log(`✅ サーバー起動成功: http://localhost:${port}`);
     console.log('MongoDB接続状態:', mongoConnected ? '接続済み' : 'デモモード');
     console.log('🔧 環境:', process.env.NODE_ENV || 'development');
-    console.log('🎯 USE_DEMO_MODE:', process.env.USE_DEMO_MODE === 'true' ? '有効' : '無効');
     
     // httpServer.close をモンキーパッチ
     patchHttpServer(httpServer);

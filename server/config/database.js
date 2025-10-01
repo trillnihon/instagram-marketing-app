@@ -29,18 +29,10 @@ const connectDB = async () => {
       console.log('🔍 [MongoDB] 修正後URI:', mongoUri.replace(/\/\/.*@/, '//***:***@'));
     }
     
-    // MongoDB接続オプション（mongoose v8対応）
-    const options = {
-      serverSelectionTimeoutMS: 10000, // 10秒でタイムアウト（Atlas接続用に延長）
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 10000,
-      maxPoolSize: 10,
-    };
-
-    console.log('🔍 [MongoDB] 接続オプション:', options);
     console.log('🔍 [MongoDB] 接続試行中...');
 
-    const conn = await mongoose.connect(mongoUri, options);
+    // mongoose v8では余計なオプション指定は不要
+    const conn = await mongoose.connect(mongoUri);
 
     console.log(`✅ [MongoDB] 接続成功: ${conn.connection.host}`);
     console.log(`✅ [MongoDB] データベース: ${conn.connection.name}`);
