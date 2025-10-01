@@ -81,7 +81,7 @@ import logger, { requestLogger } from './utils/logger.js';
 
 import diagnosticsRouter from './routes/diagnostics.js';
 import urlAnalysisRouter from './routes/urlAnalysis.js';
-import connectDB from './config/database.js';
+import { connectMongo } from './config/database.js';
 import { 
   getTrendPosts, 
   getHashtagRanking, 
@@ -135,45 +135,8 @@ app.set("trust proxy", 1);
 let mongoConnected = false;
 let mongoConnectionStatus = 'disconnected';
 
-// MongoDB接続処理を非同期で実行
-(async () => {
-  try {
-    const connected = await connectDB();
-    mongoConnected = connected;
-    mongoConnectionStatus = connected ? 'success' : 'failed';
-    logger.info(`MongoDB接続状態: ${connected ? '接続済み' : 'デモモード'}`);
-    
-    // MongoDB接続イベントを監視
-    if (connected) {
-      const mongoose = await import('mongoose');
-      mongoose.connection.on('connected', () => {
-        console.log('[MONGODB] connected イベント');
-        mongoConnected = true;
-        mongoConnectionStatus = 'success';
-      });
-      mongoose.connection.on('error', (err) => {
-        console.error('[MONGODB] error イベント:', err);
-        mongoConnected = false;
-        mongoConnectionStatus = 'failed';
-      });
-      mongoose.connection.on('disconnected', () => {
-        console.log('[MONGODB] disconnected イベント');
-        mongoConnected = false;
-        mongoConnectionStatus = 'disconnected';
-      });
-    }
-  } catch (error) {
-    logger.error('MongoDB接続エラー:', error);
-    mongoConnected = false;
-    mongoConnectionStatus = 'failed';
-    
-    // 本番環境でMongoDB接続に失敗した場合はサーバーを停止
-    if (process.env.NODE_ENV === 'production') {
-      logger.error('本番環境でMongoDB接続に失敗しました。サーバーを停止します。');
-      process.exit(1);
-    }
-  }
-})();
+// 起動時にDB接続を呼ぶ（失敗してもサーバは上げる）
+connectMongo();
 
 
 
@@ -305,11 +268,21 @@ app.get('/health', (req, res) => {
 // API用ヘルスチェックエンドポイント
 app.get('/api/health', async (_req, res) => {
   const mongoose = await import('mongoose');
-  const state = mongoose.default.connection.readyState; // 1=connected
-  
-  return res.json({
-    mongodb: state === 1 ? 'connected' : 'disconnected',
-    connection_status: state === 1 ? 'success' : 'fail',
+  const state = mongoose.default.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
+  const connected = state === 1;
+
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    mongodb: connected ? 'connected' : 'disconnected',
+    mongodb_details: {
+      connected,
+      uri_set: !!process.env.MONGODB_URI,
+      node_env: process.env.NODE_ENV,
+      connection_status: connected ? 'success' : 'failed',
+    },
+    api_version: '1.0.0',
   });
 });
 
