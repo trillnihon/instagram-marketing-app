@@ -103,7 +103,7 @@ import schedulerRoutes from './routes/scheduler.js';
 import analysisHistoryRoutes from './routes/analysisHistory.js';
 // 環境変数の読み込み
 if (process.env.NODE_ENV === 'production') {
-  dotenv.config({ path: path.join(__dirname, '.env.production') });
+  dotenv.config({ path: path.join(__dirname, 'env.production') });
 } else {
   // 開発環境では明示的にenv.developmentを読み込み
   dotenv.config({ path: path.join(__dirname, 'env.development') });

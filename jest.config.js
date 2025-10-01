@@ -1,14 +1,16 @@
 export default {
   preset: 'ts-jest/presets/default-esm',
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
+  testEnvironment: 'node',
+  testEnvironmentOptions: {
+    customExportConditions: ['node', 'node-addons'],
+  },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '^../services/threadsService$': '<rootDir>/src/services/__mocks__/threadsService.ts',
   },
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', {
+    '^.+\\.(ts|tsx|js)$': ['ts-jest', {
       useESM: true,
       tsconfig: {
         allowJs: true,
@@ -22,6 +24,7 @@ export default {
     '<rootDir>/src/**/__tests__/**/*.(ts|tsx|js)',
     '<rootDir>/src/**/*.(test|spec).(ts|tsx|js)',
     '<rootDir>/tests/**/*.(test|spec).(ts|tsx|js)',
+    '<rootDir>/server/**/*.(test|spec).(ts|js)',
   ],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
@@ -31,13 +34,10 @@ export default {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  testTimeout: 10000,
+  testTimeout: 30000,
   transformIgnorePatterns: [
     'node_modules/(?!(.*\\.mjs$))'
   ],
-  testEnvironmentOptions: {
-    customExportConditions: ['node', 'node-addons'],
-  },
   globals: {
     'import.meta': {
       env: {

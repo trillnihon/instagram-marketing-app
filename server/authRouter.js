@@ -2,6 +2,8 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import fetch from 'node-fetch';
+import { getMongoClient } from './config/database.js';
 
 const router = express.Router();
 

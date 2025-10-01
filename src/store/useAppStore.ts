@@ -67,6 +67,7 @@ interface AuthState {
   setCurrentUser: (user: User | null) => void;
   setDemoAuth: (user: User) => void;
   isDemoToken: (token?: string) => boolean;
+  hydrateFromStorage: () => void;
   suggestions?: any[];
   setAccountAnalytics?: (analytics: any) => void;
   setPosts?: (posts: any[]) => void;
@@ -126,6 +127,31 @@ export const useAppStore = create<AuthState>()(
           currentToken === 'demo_token' ||
           currentToken.includes('demo')
         ));
+      },
+
+      // localStorageから状態を復元
+      hydrateFromStorage: () => {
+        console.log('[DEBUG] hydrateFromStorage開始');
+        
+        const token = localStorage.getItem('IG_JWT');
+        const userRaw = localStorage.getItem('IG_USER');
+        
+        if (token && userRaw) {
+          try {
+            const user = JSON.parse(userRaw) as User;
+            console.log('[DEBUG] localStorageから復元:', { user, hasToken: !!token });
+            set({ currentUser: user, isAuthenticated: true, token });
+          } catch (error) {
+            console.error('[ERROR] localStorageデータの解析に失敗:', error);
+            // 破損データはクリア
+            localStorage.removeItem('IG_JWT');
+            localStorage.removeItem('IG_USER');
+            set({ currentUser: null, isAuthenticated: false, token: null });
+          }
+        } else {
+          console.log('[DEBUG] localStorageに認証データなし');
+          set({ currentUser: null, isAuthenticated: false, token: null });
+        }
       },
 
       // ログイン

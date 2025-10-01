@@ -1,6 +1,7 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import { MongoClient } from 'mongodb';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
@@ -413,18 +414,43 @@ router.post('/save-token', async (req, res) => {
       upsertedId: result.upsertedId
     });
 
-    // 4. 成功レスポンス
+    // 4. JWT発行
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('❌ [AUTH] JWT_SECRETが設定されていません');
+      return res.status(500).json({
+        success: false,
+        error: 'JWT_SECRET not set'
+      });
+    }
+
+    // JWT有効期限を環境ごとに設定
+    const expiresIn = process.env.JWT_EXPIRES_IN 
+        || (process.env.NODE_ENV === "production" ? "7d" : "60s");
+
+    console.log(`🔍 [AUTH] JWT有効期限設定:`, {
+      NODE_ENV: process.env.NODE_ENV,
+      JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
+      finalExpiresIn: expiresIn
+    });
+
+    const jwtPayload = { 
+      id: userData.id, 
+      name: userData.name, 
+      provider: 'instagram' 
+    };
+    const token = jwt.sign(jwtPayload, secret, { expiresIn });
+
+    console.log(`✅ [AUTH] JWT発行成功: ${token.substring(0, 20)}...`);
+
+    // 5. 統一レスポンス形式
     res.json({
       success: true,
-      message: 'アクセストークンをMongoDBに保存しました',
-      data: {
-        userId: userData.id,
-        userName: userData.name,
-        expiresIn: tokenDocument.expiresIn,
-        obtainedAt: tokenDocument.obtainedAt,
-        operation: result.upsertedCount > 0 ? 'created' : 'updated',
-        tokenType: 'implicit_flow'
-      }
+      user: { 
+        id: userData.id, 
+        name: userData.name 
+      },
+      token
     });
 
   } catch (error) {

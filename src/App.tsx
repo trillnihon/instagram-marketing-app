@@ -24,6 +24,10 @@ import AnalyticsDashboardPage from './pages/AnalyticsDashboardPage';
 import ThreadsAnalysis from './pages/ThreadsAnalysis';
 import ThreadsManagement from './pages/ThreadsManagement';
 import PostingTimeAnalysis from './pages/PostingTimeAnalysis';
+import InstagramDashboard from './pages/InstagramDashboard';
+import SearchPage from './pages/SearchPage';
+import NotificationsPage from './pages/NotificationsPage';
+import CreatePostPage from './pages/CreatePostPage';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import NotFound from './pages/NotFound';
@@ -61,8 +65,13 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 const App: React.FC = () => {
+  const hydrateFromStorage = useAppStore((s) => s.hydrateFromStorage);
+
   // アプリ起動時の認証状態チェックとフォールバック処理
   React.useEffect(() => {
+    // 起動時にlocalStorageから状態を復元
+    hydrateFromStorage();
+
     const { isAuthenticated, currentUser, setAuthenticated, setCurrentUser } = useAppStore.getState();
     console.log('🚀 [DEBUG] アプリ起動 - 初期認証状態:', {
       isAuthenticated,
@@ -301,10 +310,34 @@ const App: React.FC = () => {
             } 
           />
           <Route 
+            path="/instagram-dashboard" 
+            element={
+              <ProtectedRoute>
+                <InstagramDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/search" 
+            element={
+              <ProtectedRoute>
+                <SearchPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/notifications" 
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/create-post" 
             element={
               <ProtectedRoute>
-                <CreatePost />
+                <CreatePostPage />
               </ProtectedRoute>
             } 
           />

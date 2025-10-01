@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useAppStore } from '../store/useAppStore';
 
 // APIのベースURL（環境変数から取得、/apiを含む）
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
@@ -324,5 +325,55 @@ export const checkAuthStatus = async () => {
     return await getCurrentUser();
   } catch (error) {
     return null;
+  }
+};
+
+// Instagram OAuth認証後にトークンを保存
+export const saveInstagramTokenToBackend = async (accessToken: string) => {
+  try {
+    console.log('📱 [AUTH] Instagramトークン保存開始:', {
+      hasAccessToken: !!accessToken,
+      API_BASE_URL
+    });
+
+    const response = await fetch(`${API_BASE_URL}/auth/save-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken })
+    });
+
+    // 404/500の丁寧な扱い
+    if (response.status === 404) {
+      throw new Error('サーバーが見つかりません（404）。時間をおいて再度お試しください。');
+    }
+    if (response.status >= 500) {
+      throw new Error('サーバーエラー（500）。しばらくしてから再試行してください。');
+    }
+
+    const data = await response.json();
+    
+    if (!data.success || !data.token || !data.user) {
+      throw new Error(data.message || '認証応答が不正です。');
+    }
+
+    console.log('✅ [AUTH] Instagramトークン保存成功:', {
+      userId: data.user.id,
+      userName: data.user.name,
+      hasToken: !!data.token
+    });
+
+    // 1) localStorageへ保存
+    localStorage.setItem('IG_JWT', data.token);
+    localStorage.setItem('IG_USER', JSON.stringify(data.user));
+
+    // 2) グローバルストアへ同期
+    const { setCurrentUser, setAuthenticated } = useAppStore.getState();
+    setCurrentUser(data.user);
+    setAuthenticated(true);
+
+    return data.user;
+  } catch (error: any) {
+    console.error('❌ [AUTH] Instagramトークン保存エラー:', error);
+    throw new Error(error.message || 'Instagramトークンの保存に失敗しました');
   }
 }; 

@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { saveInstagramTokenToBackend } from '../services/authService';
+import { useAppStore } from '../store/useAppStore';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
+  const { setCurrentUser, setAuthenticated } = useAppStore();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorDetails, setErrorDetails] = useState<string>('');
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -84,41 +87,24 @@ const AuthCallback: React.FC = () => {
         else if (accessToken) {
           console.log('✅ [AUTH] アクセストークンを取得しました:', accessToken.substring(0, 10) + '...');
           
-          // バックエンドにaccess_tokenを送信
-          console.log('🔍 [AUTH] バックエンドにアクセストークンを送信中...');
-          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com';
+          // 申し送り書の仕様に従って、authServiceのsaveInstagramTokenToBackendを使用
+          console.log('🔍 [AUTH] authServiceを使用してトークンを保存中...');
           
-          const response = await fetch(`${apiBaseUrl}/auth/save-token`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ accessToken }),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ [AUTH] トークン保存失敗:', response.status, errorText);
-            setErrorDetails(`トークン保存に失敗しました: ${errorText}`);
-            setStatus('error');
-            return;
-          }
-
-          const data = await response.json();
-          console.log('✅ [AUTH] トークン保存成功:', data);
-
-          if (data.success) {
-            setUserInfo(data.data);
+          try {
+            const user = await saveInstagramTokenToBackend(accessToken);
+            console.log('✅ [AUTH] トークン保存成功:', user);
+            
+            setUserInfo(user);
             setStatus('success');
             
-            // 3秒後にダッシュボードにリダイレクト
+            // 申し送り書の仕様に従って、instagram-dashboardにリダイレクト
             setTimeout(() => {
-              console.log('🚀 [AUTH] ダッシュボードにリダイレクト');
-              navigate('/dashboard');
+              console.log('🚀 [AUTH] Instagramダッシュボードにリダイレクト');
+              navigate('/instagram-dashboard');
             }, 3000);
-          } else {
-            console.error('❌ [AUTH] トークン保存レスポンスが失敗:', data.error);
-            setErrorDetails(data.error || 'トークン保存に失敗しました');
+          } catch (error: any) {
+            console.error('❌ [AUTH] トークン保存失敗:', error);
+            setErrorDetails(error.message || 'トークン保存に失敗しました');
             setStatus('error');
           }
         }
@@ -206,7 +192,7 @@ const AuthCallback: React.FC = () => {
               </div>
             )}
             <p className="mt-4 text-sm text-gray-500">
-              ダッシュボードにリダイレクトしています...
+              Instagramダッシュボードにリダイレクトしています...
             </p>
           </div>
         </div>
