@@ -26,7 +26,7 @@ const CreatePostPage: React.FC = () => {
       const pages = await InstagramService.getPages();
       const instagramPage = pages.find(page => page.instagram_business_account);
       
-      if (!instagramPage) {
+      if (!instagramPage?.instagram_business_account) {
         throw new Error('Instagram Business Accountが見つかりません');
       }
 

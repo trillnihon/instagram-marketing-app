@@ -63,7 +63,7 @@ const InstagramDashboard: React.FC<InstagramDashboardProps> = () => {
 
         // Instagram Business Accountがある場合、最初のアカウントを選択
         const instagramPage = pagesData.find(page => page.instagram_business_account);
-        if (instagramPage) {
+        if (instagramPage?.instagram_business_account) {
           const account = await InstagramService.getInstagramAccount(
             instagramPage.instagram_business_account.id
           );

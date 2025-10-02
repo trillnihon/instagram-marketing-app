@@ -73,7 +73,7 @@ import logger, { requestLogger } from './utils/logger.js';
 
 import diagnosticsRouter from './routes/diagnostics.js';
 import urlAnalysisRouter from './routes/urlAnalysis.js';
-const connectDB = require('./config/database.js');
+import connectDB from './config/database.js';
 import { 
   getTrendPosts, 
   getHashtagRanking, 
@@ -249,11 +249,12 @@ app.get('/', (req, res) => {
 
 // API用ヘルスチェックエンドポイント
 app.get('/api/health', (_req, res) => {
-  const mongoose = require('mongoose');
-  const state = mongoose.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
-  res.json({
-    mongodb: state === 1 ? 'connected' : 'disconnected',
-    connection_status: state === 1 ? 'success' : 'failed',
+  import('mongoose').then(mongoose => {
+    const state = mongoose.default.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
+    res.json({
+      mongodb: state === 1 ? 'connected' : 'disconnected',
+      connection_status: state === 1 ? 'success' : 'failed',
+    });
   });
 });
 

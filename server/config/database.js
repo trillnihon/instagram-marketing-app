@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const uri = process.env.MONGODB_URI;
 const dbName = process.env.MONGODB_DB || 'instagram-marketing';
@@ -26,4 +26,4 @@ async function connectDB() {
   });
 }
 
-module.exports = connectDB;
+export default connectDB;
