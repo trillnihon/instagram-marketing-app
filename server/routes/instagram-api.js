@@ -15,10 +15,12 @@ const router = express.Router();
 
 // ヘルスチェック
 router.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'Instagram API サービスは正常に動作しています',
-    timestamp: new Date().toISOString()
+  import('mongoose').then(mongoose => {
+    const state = mongoose.default.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
+    res.json({
+      mongodb: state === 1 ? 'connected' : 'disconnected',
+      connection_status: state === 1 ? 'success' : 'failed',
+    });
   });
 });
 
