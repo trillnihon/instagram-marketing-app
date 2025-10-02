@@ -258,6 +258,11 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+// 旧エンドポイント互換: /api/instagram/health → /api/health
+app.get('/api/instagram/health', (_req, res) => {
+  res.redirect('/api/health');
+});
+
 // 管理者用トークン情報エンドポイント
 app.get('/admin/token/current', authenticateToken, (req, res) => {
   // 管理者権限チェック
