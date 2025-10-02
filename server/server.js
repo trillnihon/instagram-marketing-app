@@ -245,17 +245,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// ヘルスチェックエンドポイント
-app.get('/health', (req, res) => {
-  console.log('[SELF-TEST] /health エンドポイントアクセス');
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    mongodb: mongoConnected ? 'connected' : 'demo_mode'
-  });
-});
+// ヘルスチェックエンドポイント（削除済み - /api/healthに統一）
 
 // API用ヘルスチェックエンドポイント
 app.get('/api/health', (_req, res) => {
@@ -390,10 +380,7 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
-// /healthエンドポイント
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
-});
+// /healthエンドポイント（削除済み - /api/healthに統一）
 
 // 認証開始エンドポイント
 app.get('/auth/start', (req, res) => {
