@@ -2,13 +2,43 @@ import express from 'express';
 import fetch from 'node-fetch';
 import { MongoClient } from 'mongodb';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
+
+// インメモリユーザーストア（本番ではDBを使用）
+const users = new Map();
+
+// JWTシークレットキー（本番では環境変数から取得）
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 // 環境変数の確認
 const FB_APP_ID = process.env.FB_APP_ID;
 const FB_APP_SECRET = process.env.FB_APP_SECRET;
 const FB_REDIRECT_URI = process.env.FB_REDIRECT_URI;
+
+// JWT認証ミドルウェア
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ 
+      error: 'アクセストークンが必要です' 
+    });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ 
+        error: '無効なトークンです' 
+      });
+    }
+    req.user = user;
+    next();
+  });
+};
 
 console.log('🔍 [AUTH] 環境変数チェック:', {
   FB_APP_ID: FB_APP_ID ? '設定済み' : '未設定',
@@ -19,6 +49,198 @@ console.log('🔍 [AUTH] 環境変数チェック:', {
 if (!FB_APP_ID || !FB_APP_SECRET) {
   console.error("[AUTH] FB_APP_IDまたはFB_APP_SECRETが未設定");
 }
+
+// ========== 基本的な認証エンドポイント ==========
+
+// ユーザー登録
+router.post('/register', async (req, res) => {
+  try {
+    const { email, password, username } = req.body;
+
+    // バリデーション
+    if (!email || !password || !username) {
+      return res.status(400).json({ 
+        error: 'メールアドレス、パスワード、ユーザー名は必須です' 
+      });
+    }
+
+    // メールアドレスの形式チェック
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        error: '有効なメールアドレスを入力してください' 
+      });
+    }
+
+    // パスワードの強度チェック
+    if (password.length < 8) {
+      return res.status(400).json({ 
+        error: 'パスワードは8文字以上で入力してください' 
+      });
+    }
+
+    // ユーザー名の長さチェック
+    if (username.length < 3) {
+      return res.status(400).json({ 
+        error: 'ユーザー名は3文字以上で入力してください' 
+      });
+    }
+
+    // 既存ユーザーチェック
+    for (const [_, user] of users) {
+      if (user.email === email) {
+        return res.status(400).json({ 
+          error: 'このメールアドレスは既に使用されています' 
+        });
+      }
+      if (user.username === username) {
+        return res.status(400).json({ 
+          error: 'このユーザー名は既に使用されています' 
+        });
+      }
+    }
+
+    // パスワードのハッシュ化
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // ユーザー作成
+    const userId = uuidv4();
+    const newUser = {
+      id: userId,
+      email,
+      username,
+      password: hashedPassword,
+      createdAt: new Date().toISOString(),
+      plan: 'free',
+      captionGenerationUsed: 0,
+      imageGenerationUsed: 0
+    };
+
+    users.set(userId, newUser);
+
+    // JWTトークン生成
+    const token = jwt.sign(
+      { 
+        userId: newUser.id, 
+        email: newUser.email,
+        username: newUser.username 
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // レスポンス（パスワードは除外）
+    const { password: _, ...userWithoutPassword } = newUser;
+    
+    res.status(201).json({
+      success: true,
+      message: 'アカウントが正常に作成されました',
+      user: userWithoutPassword,
+      token
+    });
+
+  } catch (error) {
+    console.error('ユーザー登録エラー:', error);
+    res.status(500).json({ 
+      error: 'ユーザー登録に失敗しました' 
+    });
+  }
+});
+
+// ユーザーログイン
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // バリデーション
+    if (!email || !password) {
+      return res.status(400).json({ 
+        error: 'メールアドレスとパスワードは必須です' 
+      });
+    }
+
+    // ユーザー検索
+    let user = null;
+    for (const [_, u] of users) {
+      if (u.email === email) {
+        user = u;
+        break;
+      }
+    }
+
+    if (!user) {
+      return res.status(401).json({ 
+        error: 'メールアクレスまたはパスワードが正しくありません' 
+      });
+    }
+
+    // パスワード検証
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ 
+        error: 'メールアドレスまたはパスワードが正しくありません' 
+      });
+    }
+
+    // JWTトークン生成
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email,
+        username: user.username 
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // レスポンス（パスワードは除外）
+    const { password: _, ...userWithoutPassword } = user;
+    
+    res.json({
+      success: true,
+      message: 'ログインに成功しました',
+      user: userWithoutPassword,
+      token
+    });
+
+  } catch (error) {
+    console.error('ログインエラー:', error);
+    res.status(500).json({ 
+      error: 'ログインに失敗しました' 
+    });
+  }
+});
+
+// ユーザー情報取得（認証済み）
+router.get('/me', authenticateToken, (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = users.get(userId);
+
+    if (!user) {
+      return res.status(404).json({ 
+        error: 'ユーザーが見つかりません' 
+      });
+    }
+
+    // レスポンス（パスワードは除外）
+    const { password: _, ...userWithoutPassword } = user;
+    
+    res.json({
+      success: true,
+      user: userWithoutPassword
+    });
+
+  } catch (error) {
+    console.error('ユーザー情報取得エラー:', error);
+    res.status(500).json({ 
+      error: 'ユーザー情報の取得に失敗しました' 
+    });
+  }
+});
+
+// ========== Instagram専用エンドポイント ==========
 
 /**
  * 環境変数設定状況確認エンドポイント

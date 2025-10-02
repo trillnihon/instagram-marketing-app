@@ -82,7 +82,6 @@ import {
   saveAnalysisResult 
 } from './services/threadsDataService.js';
 import { AIPostGenerator } from './services/aiPostGenerator.js';
-import authRouter from './authRouter.js';
 import authRoutes from './routes/auth.js';
 import debugRouter from './routes/debug.js';
 import analysisHistoryRouter from './routes/analysisHistory.js';
@@ -249,6 +248,11 @@ app.get('/', (req, res) => {
 
 // API用ヘルスチェックエンドポイント
 app.get('/api/health', (_req, res) => {
+  // CORSヘッダーを明示的に設定
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
   import('mongoose').then(mongoose => {
     const state = mongoose.default.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
     res.json({
@@ -258,9 +262,20 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// 旧エンドポイント互換: /api/instagram/health → /api/health
+// 旧エンドポイント互換: /api/instagram/health（CORS対応）
 app.get('/api/instagram/health', (_req, res) => {
-  res.redirect('/api/health');
+  // CORSヘッダーを明示的に設定
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  import('mongoose').then(mongoose => {
+    const state = mongoose.default.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
+    res.json({
+      mongodb: state === 1 ? 'connected' : 'disconnected',
+      connection_status: state === 1 ? 'success' : 'failed',
+    });
+  });
 });
 
 // 管理者用トークン情報エンドポイント
@@ -1589,10 +1604,9 @@ app.get('/api/usage', async (req, res) => {
 
 // 認証ルーターを追加
 // 認証ルートに厳しいレート制限を適用
-app.use('/api/auth', authRateLimiter, authRouter);
+app.use('/api/auth', authRateLimiter, authRoutes);
 app.use('/auth', authRoutes);
-// /api/auth/save-token でも routes/auth.js のエンドポイントを使用
-app.use('/api/auth', authRoutes);
+// authRouter除去 - routes/auth.jsに統一
 app.use('/debug', debugRouter);
 app.use('/api/analysis-history', analysisHistoryRouter);
 app.use('/api/diagnostics', diagnosticsRouter);

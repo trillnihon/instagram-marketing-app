@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://instagram-marketing-app.onrender.com/api/instagram'
-  : 'http://localhost:3001/api/instagram';
+  ? 'https://instagram-marketing-backend-v2.onrender.com/api'
+  : 'http://localhost:3001/api';
 
 export interface InstagramUser {
   id: string;
@@ -84,7 +84,7 @@ class InstagramService {
    */
   async getUserInfo(): Promise<InstagramUser> {
     try {
-      const response = await axios.get(`${this.baseURL}/user-info`);
+      const response = await axios.get(`${this.baseURL}/instagram/user-info`);
       
       if (response.data.success) {
         return response.data.data;
@@ -102,7 +102,7 @@ class InstagramService {
    */
   async getPages(): Promise<InstagramPage[]> {
     try {
-      const response = await axios.get(`${this.baseURL}/pages`);
+      const response = await axios.get(`${this.baseURL}/instagram/pages`);
       
       if (response.data.success) {
         return response.data.data;
@@ -120,7 +120,7 @@ class InstagramService {
    */
   async getInstagramAccount(accountId: string): Promise<InstagramAccount> {
     try {
-      const response = await axios.get(`${this.baseURL}/instagram-account/${accountId}`);
+      const response = await axios.get(`${this.baseURL}/instagram/instagram-account/${accountId}`);
       
       if (response.data.success) {
         return response.data.data;
@@ -138,7 +138,7 @@ class InstagramService {
    */
   async getMedia(accountId: string, limit: number = 25): Promise<InstagramMedia[]> {
     try {
-      const response = await axios.get(`${this.baseURL}/media/${accountId}`, {
+      const response = await axios.get(`${this.baseURL}/instagram/media/${accountId}`, {
         params: { limit }
       });
       
@@ -158,7 +158,7 @@ class InstagramService {
    */
   async getInsights(mediaId: string): Promise<InstagramInsights> {
     try {
-      const response = await axios.get(`${this.baseURL}/media/${mediaId}/insights`);
+      const response = await axios.get(`${this.baseURL}/instagram/media/${mediaId}/insights`);
       
       if (response.data.success) {
         return response.data.data;
@@ -176,7 +176,7 @@ class InstagramService {
    */
   async getAccountInsights(accountId: string): Promise<any> {
     try {
-      const response = await axios.get(`${this.baseURL}/account/${accountId}/insights`);
+      const response = await axios.get(`${this.baseURL}/instagram/account/${accountId}/insights`);
       
       if (response.data.success) {
         return response.data.data;
@@ -194,7 +194,7 @@ class InstagramService {
    */
   async getPostingTimeAnalysis(accountId: string, days: number = 30): Promise<any> {
     try {
-      const response = await axios.post(`${this.baseURL}/posting-time-analysis`, {
+      const response = await axios.post(`${this.baseURL}/instagram/posting-time-analysis`, {
         accountId,
         days
       });
@@ -224,7 +224,7 @@ class InstagramService {
     language?: string;
   }): Promise<any> {
     try {
-      const response = await axios.post(`${this.baseURL}/ai/generate-post`, params);
+      const response = await axios.post(`${this.baseURL}/instagram/ai/generate-post`, params);
       
       if (response.data.success) {
         return response.data.data;
@@ -242,7 +242,7 @@ class InstagramService {
    */
   async getPerformanceAnalysis(accountId: string, period: string = '30d', metric: string = 'engagement'): Promise<any> {
     try {
-      const response = await axios.get(`${this.baseURL}/performance-analysis/${accountId}`, {
+      const response = await axios.get(`${this.baseURL}/instagram/performance-analysis/${accountId}`, {
         params: { period, metric }
       });
       
@@ -262,10 +262,18 @@ class InstagramService {
    */
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await axios.get(`${this.baseURL}/health`);
+      const url = `${this.baseURL}/health`;
+      console.log('Health check URL:', url);
+      const response = await axios.get(url);
+      console.log('Health check response:', response.data);
       return response.data.connection_status === 'success';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Instagram service health check failed:', error);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
+        console.error('Response data:', error.response.data);
+      }
       return false;
     }
   }
@@ -275,7 +283,7 @@ class InstagramService {
    */
   async searchHashtags(query: string): Promise<InstagramHashtag[]> {
     try {
-      const response = await axios.get(`${this.baseURL}/hashtag-search`, {
+      const response = await axios.get(`${this.baseURL}/instagram/hashtag-search`, {
         params: { q: query }
       });
       
@@ -295,7 +303,7 @@ class InstagramService {
    */
   async getHashtagTopMedia(hashtagId: string): Promise<InstagramMedia[]> {
     try {
-      const response = await axios.get(`${this.baseURL}/hashtag/${hashtagId}/top-media`);
+      const response = await axios.get(`${this.baseURL}/instagram/hashtag/${hashtagId}/top-media`);
       
       if (response.data.success) {
         return response.data.data;
@@ -313,7 +321,7 @@ class InstagramService {
    */
   async getMediaComments(mediaId: string): Promise<InstagramComment[]> {
     try {
-      const response = await axios.get(`${this.baseURL}/media/${mediaId}/comments`);
+      const response = await axios.get(`${this.baseURL}/instagram/media/${mediaId}/comments`);
       
       if (response.data.success) {
         return response.data.data;
@@ -331,7 +339,7 @@ class InstagramService {
    */
   async getMediaLikes(mediaId: string): Promise<InstagramLike[]> {
     try {
-      const response = await axios.get(`${this.baseURL}/media/${mediaId}/likes`);
+      const response = await axios.get(`${this.baseURL}/instagram/media/${mediaId}/likes`);
       
       if (response.data.success) {
         return response.data.data;
@@ -349,7 +357,7 @@ class InstagramService {
    */
   async createMedia(imageUrl: string, caption: string, accountId: string): Promise<InstagramCreateMedia> {
     try {
-      const response = await axios.post(`${this.baseURL}/account/${accountId}/media`, {
+      const response = await axios.post(`${this.baseURL}/instagram/account/${accountId}/media`, {
         imageUrl,
         caption
       });
@@ -370,7 +378,7 @@ class InstagramService {
    */
   async publishMedia(mediaId: string, accountId: string): Promise<any> {
     try {
-      const response = await axios.post(`${this.baseURL}/account/${accountId}/media_publish`, {
+      const response = await axios.post(`${this.baseURL}/instagram/account/${accountId}/media_publish`, {
         mediaId
       });
       
