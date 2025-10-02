@@ -263,7 +263,7 @@ class InstagramService {
   async healthCheck(): Promise<boolean> {
     try {
       const response = await axios.get(`${this.baseURL}/health`);
-      return response.data.status === 'ok';
+      return response.data.connection_status === 'success';
     } catch (error) {
       console.error('Instagram service health check failed:', error);
       return false;

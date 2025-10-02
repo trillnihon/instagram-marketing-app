@@ -9,7 +9,8 @@ const getCorsOrigins = () => {
       'https://instagram-marketing-app.vercel.app',
       'https://instagram-marketing-app-v1.vercel.app',
       'https://instagram-marketing-app-v1-j28ssqoui-trillnihons-projects.vercel.app',
-      'https://instagram-marketing-app-git-main-trillnihons-projects.vercel.app'
+      'https://instagram-marketing-app-git-main-trillnihons-projects.vercel.app',
+      'https://instagram-marketing-backend-v2.onrender.com'
     ];
     
     // Vercelプレビュードメインのワイルドカード許可
