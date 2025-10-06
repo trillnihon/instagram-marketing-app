@@ -573,19 +573,18 @@ router.post('/save-token', async (req, res) => {
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
 
   try {
-    const { accessToken } = req.body;
-    console.log("受け取ったaccessToken:", accessToken ? accessToken.substring(0, 10) + '...' : 'なし');
+    const accessToken = req.body.access_token;
     console.log('🔍 [AUTH] リクエストボディ全体:', JSON.stringify(req.body, null, 2));
 
     if (!accessToken) {
-      console.error('❌ [AUTH] アクセストークンが提供されていません');
-      return res.status(400).json({
+      console.warn("⚠️ [AUTH] access_token not provided in request body");
+      return res.status(400).json({ 
         success: false,
-        error: 'アクセストークンが提供されていません'
+        error: "アクセストークンが必要です" 
       });
     }
 
-    console.log(`🔍 [AUTH] アクセストークン受信: ${accessToken.substring(0, 10)}...`);
+    console.log("📥 [AUTH] Instagram token received:", accessToken.slice(0, 10) + "...");
 
     // 1. ユーザー情報を取得
     console.log('🔍 [AUTH] ユーザー情報取得開始');

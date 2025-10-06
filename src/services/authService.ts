@@ -331,17 +331,14 @@ export const checkAuthStatus = async () => {
 // Instagram OAuth認証後にトークンを保存
 export const saveInstagramTokenToBackend = async (accessToken: string) => {
   try {
-    console.log('📱 [AUTH] Instagramトークン保存開始:', {
-      hasAccessToken: !!accessToken,
-      API_BASE_URL
-    });
+    console.log("📤 Sending Instagram access token to backend:", accessToken.slice(0, 10) + "...");
 
     const response = await fetch(`${API_BASE_URL}/auth/save-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',  // ✅ 必須
       mode: 'cors',            // ✅ 必須
-      body: JSON.stringify({ accessToken })
+      body: JSON.stringify({ access_token: accessToken })
     });
 
     // 404/500の丁寧な扱い
@@ -375,7 +372,7 @@ export const saveInstagramTokenToBackend = async (accessToken: string) => {
 
     return data.user;
   } catch (error: any) {
-    console.error('❌ [AUTH] Instagramトークン保存エラー:', error);
-    throw new Error(error.message || 'Instagramトークンの保存に失敗しました');
+    console.error("❌ [AUTH] Failed to send token:", error.message);
+    throw error;
   }
 }; 
