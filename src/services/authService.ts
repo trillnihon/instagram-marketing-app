@@ -339,7 +339,8 @@ export const saveInstagramTokenToBackend = async (accessToken: string) => {
     const response = await fetch(`${API_BASE_URL}/auth/save-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      credentials: 'include',  // ✅ 必須
+      mode: 'cors',            // ✅ 必須
       body: JSON.stringify({ accessToken })
     });
 

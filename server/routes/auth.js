@@ -550,10 +550,28 @@ router.post('/exchange', async (req, res) => {
 });
 
 /**
+ * CORS preflight リクエスト対応
+ * OPTIONS /auth/save-token
+ */
+router.options('/save-token', (req, res) => {
+  res.header("Access-Control-Allow-Origin", "https://instagram-marketing-app.vercel.app");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.status(200).end();
+});
+
+/**
  * Instagram OAuthアクセストークン保存（implicit flow用）
  * POST /auth/save-token
  */
 router.post('/save-token', async (req, res) => {
+  // 🔹 追加：明示的にCORSヘッダーを設定
+  res.header("Access-Control-Allow-Origin", "https://instagram-marketing-app.vercel.app");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+
   try {
     const { accessToken } = req.body;
     console.log("受け取ったaccessToken:", accessToken ? accessToken.substring(0, 10) + '...' : 'なし');
