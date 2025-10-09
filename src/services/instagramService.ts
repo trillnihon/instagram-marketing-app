@@ -84,7 +84,12 @@ class InstagramService {
    */
   async getUserInfo(): Promise<InstagramUser> {
     try {
-      const response = await axios.get(`${this.baseURL}/instagram/user-info`);
+      const token = localStorage.getItem("IG_JWT");
+      const response = await axios.get(`${this.baseURL}/instagram/user-info`, {
+        headers: { 
+          Authorization: `Bearer ${token}` 
+        }
+      });
       
       if (response.data.success) {
         return response.data.data;

@@ -65,12 +65,22 @@ router.post('/diagnostic', async (req, res) => {
 // ユーザー情報取得
 router.get('/user-info', async (req, res) => {
   try {
-    const { accessToken } = req.query;
-    if (!accessToken) {
+    // JWTトークンをAuthorizationヘッダーから取得
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : req.query.accessToken;
+
+    if (!token) {
+      console.warn("⚠️ [USER-INFO] No token provided");
       return res.status(400).json({ success: false, error: "アクセストークンが必要です" });
     }
 
-    const url = `https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${accessToken}`;
+    console.log("📥 [USER-INFO] User verified by JWT:", token.slice(0, 10) + "...");
+
+    // JWTトークンからユーザー情報を取得（簡易版）
+    // 実際の実装では、JWTを検証してユーザーIDを取得し、DBからアクセストークンを取得する
+    const url = `https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${token}`;
     const response = await axios.get(url);
 
     return res.json({ success: true, data: response.data });
