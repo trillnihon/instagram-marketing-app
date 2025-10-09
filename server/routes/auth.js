@@ -586,6 +586,23 @@ router.post('/save-token', async (req, res) => {
 
     console.log("📥 [AUTH] Instagram token received:", accessToken.slice(0, 10) + "...");
 
+    // ✅ 短期アクセストークンを長期トークンに変換
+    try {
+      const longTokenResponse = await fetch(
+        `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.FB_APP_SECRET}&access_token=${accessToken}`
+      );
+      
+      if (longTokenResponse.ok) {
+        const longTokenData = await longTokenResponse.json();
+        accessToken = longTokenData.access_token;
+        console.log("✅ [AUTH] Long-lived token issued:", accessToken.slice(0, 10) + "...");
+      } else {
+        console.warn("⚠️ [AUTH] Long-lived token exchange failed, using original token");
+      }
+    } catch (error) {
+      console.error("❌ [AUTH] Long-lived token exchange failed:", error.message);
+    }
+
     // 1. ユーザー情報を取得
     console.log('🔍 [AUTH] ユーザー情報取得開始');
     const userResponse = await fetch(

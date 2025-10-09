@@ -67,22 +67,43 @@ router.get('/user-info', async (req, res) => {
   try {
     // JWTトークンをAuthorizationヘッダーから取得
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.startsWith("Bearer ")
+    const jwtToken = authHeader && authHeader.startsWith("Bearer ")
       ? authHeader.split(" ")[1]
       : req.query.accessToken;
 
-    if (!token) {
-      console.warn("⚠️ [USER-INFO] No token provided");
+    if (!jwtToken) {
+      console.warn("⚠️ [USER-INFO] No JWT token provided");
       return res.status(400).json({ success: false, error: "アクセストークンが必要です" });
     }
 
-    console.log("📥 [USER-INFO] User verified by JWT:", token.slice(0, 10) + "...");
+    console.log("📥 [USER-INFO] User verified by JWT:", jwtToken.slice(0, 10) + "...");
 
-    // JWTトークンからユーザー情報を取得（簡易版）
-    // 実際の実装では、JWTを検証してユーザーIDを取得し、DBからアクセストークンを取得する
-    const url = `https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${token}`;
+    // JWTを検証してユーザーIDを取得
+    const jwt = await import('jsonwebtoken');
+    const verifiedUser = jwt.verify(jwtToken, process.env.JWT_SECRET);
+    
+    // MongoDBからInstagramアクセストークンを取得
+    const { MongoClient } = await import('mongodb');
+    const client = new MongoClient(process.env.MONGO_URI || 'mongodb://localhost:27017/instagram-marketing');
+    await client.connect();
+    const db = client.db('instagram-marketing');
+    const tokensCollection = db.collection('tokens');
+    
+    const tokenDoc = await tokensCollection.findOne({ userId: verifiedUser.id });
+    await client.close();
+    
+    if (!tokenDoc || !tokenDoc.accessToken) {
+      console.error("❌ [USER-INFO] Instagram access token not found in database");
+      return res.status(400).json({ success: false, error: "Instagramアクセストークンが見つかりません" });
+    }
+
+    console.log("📥 [USER-INFO] Using Instagram access token:", tokenDoc.accessToken.slice(0, 10) + "...");
+
+    // Instagram Graph API呼び出し（生のアクセストークンを使用）
+    const url = `https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${tokenDoc.accessToken}`;
     const response = await axios.get(url);
 
+    console.log("✅ [USER-INFO] Instagram data fetched successfully");
     return res.json({ success: true, data: response.data });
   } catch (err) {
     console.error("[Instagram User Info Error]", err.response?.data || err.message);
