@@ -1,5 +1,5 @@
 const UPLOAD_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://instagram-marketing-app.onrender.com/upload'
+  ? 'https://instagram-marketing-backend-v2.onrender.com/upload'
   : 'http://localhost:3001/upload';
 
 export interface UploadResponse {
