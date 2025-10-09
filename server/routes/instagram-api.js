@@ -80,7 +80,7 @@ router.get('/user-info', async (req, res) => {
 
     // JWTを検証してユーザーIDを取得
     const jwt = await import('jsonwebtoken');
-    const verifiedUser = jwt.verify(jwtToken, process.env.JWT_SECRET);
+    const verifiedUser = jwt.default.verify(jwtToken, process.env.JWT_SECRET);
     
     // MongoDBからInstagramアクセストークンを取得
     const { MongoClient } = await import('mongodb');
