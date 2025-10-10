@@ -594,10 +594,15 @@ router.post('/save-token', async (req, res) => {
       
       if (longTokenResponse.ok) {
         const longTokenData = await longTokenResponse.json();
-        accessToken = longTokenData.access_token;
-        console.log("✅ [AUTH] Long-lived token issued:", accessToken.slice(0, 10) + "...");
+        if (longTokenData.access_token) {
+          accessToken = longTokenData.access_token;
+          console.log("✅ [AUTH] Long-lived token issued:", accessToken.slice(0, 10) + "...");
+        } else {
+          console.warn("⚠️ [AUTH] Long-lived token response missing access_token:", longTokenData);
+        }
       } else {
-        console.warn("⚠️ [AUTH] Long-lived token exchange failed, using original token");
+        const errorText = await longTokenResponse.text();
+        console.warn("⚠️ [AUTH] Long-lived token exchange failed:", longTokenResponse.status, errorText);
       }
     } catch (error) {
       console.error("❌ [AUTH] Long-lived token exchange failed:", error.message);

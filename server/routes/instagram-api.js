@@ -82,15 +82,12 @@ router.get('/user-info', async (req, res) => {
     const jwt = await import('jsonwebtoken');
     const verifiedUser = jwt.default.verify(jwtToken, process.env.JWT_SECRET);
     
-    // MongoDBからInstagramアクセストークンを取得
-    const { MongoClient } = await import('mongodb');
-    const client = new MongoClient(process.env.MONGO_URI || 'mongodb://localhost:27017/instagram-marketing');
-    await client.connect();
-    const db = client.db('instagram-marketing');
+    // MongoDBからInstagramアクセストークンを取得（既存の接続を使用）
+    const { getDb } = await import('../config/db.js');
+    const db = getDb();
     const tokensCollection = db.collection('tokens');
     
     const tokenDoc = await tokensCollection.findOne({ userId: verifiedUser.id });
-    await client.close();
     
     if (!tokenDoc || !tokenDoc.accessToken) {
       console.error("❌ [USER-INFO] Instagram access token not found in database");
