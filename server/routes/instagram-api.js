@@ -83,7 +83,7 @@ router.get('/user-info', async (req, res) => {
     const verifiedUser = jwt.default.verify(jwtToken, process.env.JWT_SECRET);
     
     // MongoDBからInstagramアクセストークンを取得（既存の接続を使用）
-    const { getDb } = await import('../config/db.js');
+    const { getDb } = await import('../config/database.js');
     const db = getDb();
     const tokensCollection = db.collection('tokens');
     
