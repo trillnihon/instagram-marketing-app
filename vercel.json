@@ -8,6 +8,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "env": {
+    "VITE_API_BASE_URL": "https://instagram-marketing-backend-v2.onrender.com/api"
+  },
   "headers": [
     {
       "source": "/manifest.json",
