@@ -99,8 +99,8 @@ router.get('/user-info', async (req, res) => {
 
     console.log("📥 [USER-INFO] Using Instagram access token:", tokenDoc.accessToken.slice(0, 10) + "...");
 
-    // Instagram Graph API呼び出し（生のアクセストークンを使用）
-    const url = `https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${tokenDoc.accessToken}`;
+    // Instagram Basic Display API呼び出し（生のアクセストークンを使用）
+    const url = `https://graph.instagram.com/me?fields=id,username,account_type,media_count&access_token=${tokenDoc.accessToken}`;
     const response = await axios.get(url);
 
     console.log("✅ [USER-INFO] Instagram data fetched successfully");
