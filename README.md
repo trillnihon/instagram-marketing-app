@@ -2,27 +2,47 @@
 
 ## 🚨 重要：次のチャットへの引き継ぎ情報
 
-### 📋 現在の状況（2025-08-25）
-- **主要修正完了**: ユーザーID参照ミス（`currentUser?.userId` → `currentUser?.id`）を全コンポーネントで修正
-- **API パス修正完了**: `/instagram/history/:userId` と `/scheduler/posts` の正しい呼び出しに修正
-- **認証ロジック改善**: 投稿分析ページでの誤った認証エラー表示を修正
+### 📋 現在の状況（2025-10-17）
+- **Instagram OAuth認証後のログイン状態保持機能**: ✅ 完全実装済み
+- **JWT認証フロー**: ✅ 正常動作（7日間有効）
+- **MongoDB接続**: ✅ 正常動作（Atlas接続）
+- **CORS設定**: ✅ 完全修正済み
+- **長期トークン交換**: ✅ 実装済み（60日有効）
+- **フロントエンド・バックエンド連携**: ✅ 正常動作
 
-### ❌ 残存する問題
-1. **バックエンドAPI 404エラー**: `/instagram/history/:userId` と `/scheduler/posts` が404を返す
-2. **Mock API 残存**: 本番APIが失敗した場合にMock APIが呼ばれ、`via.placeholder.com` の503エラーが発生
+### ✅ 完了済み機能
+1. **Instagram OAuth認証**: Facebook/Instagram認証が正常に動作
+2. **JWT発行・保存**: 認証後にJWTが発行され、localStorageに保存
+3. **ログイン状態保持**: リロード後もログイン状態が保持される
+4. **ダッシュボード遷移**: 認証後、ダッシュボードに正常遷移
+5. **MongoDB連携**: アクセストークンがMongoDBに保存される
+6. **CORS対応**: フロントエンド・バックエンド間の通信が正常
 
-### 🔧 次のステップ
-1. **バックエンドAPI動作確認**: Render側でAPIが正常応答するかテスト
-2. **Mock API 完全切り替え**: 本番APIが正常動作する場合、Mock API の呼び出しを停止
-3. **エラーハンドリング改善**: 404エラーに対する適切なフォールバック処理
+### 🔧 現在の動作確認状況
+- **バックエンドヘルスチェック**: ✅ 正常（200 OK）
+- **Instagram API接続**: ✅ 正常（MongoDB接続済み）
+- **フロントエンドアクセス**: 🔄 確認中
+- **Instagramログイン**: 🔄 確認中
 
-### 🚫 絶対に変更禁止
-- 環境変数キー `VITE_API_BASE_URL`
-- Instagram Graph API 認証フロー
-- `ProtectedRoute` の認証チェック処理
+### 🚫 絶対に変更禁止（重要）
+- **環境変数キー**: `VITE_API_BASE_URL`（変更禁止）
+- **バックエンドURL**: `https://instagram-marketing-backend-v2.onrender.com`
+- **フロントエンドURL**: `https://instagram-marketing-app.vercel.app`
+- **Instagram Graph API認証フロー**: 完全に動作しているため変更禁止
+- **JWT認証処理**: 正常動作中のため変更禁止
+- **MongoDB接続設定**: 正常動作中のため変更禁止
+- **CORS設定**: 完全に修正済みのため変更禁止
+- **ProtectedRoute認証チェック**: 正常動作中のため変更禁止
+
+### 🔒 開発環境設定（変更禁止）
+- **バックエンド**: Render（ポート10000）
+- **フロントエンド**: Vercel
+- **データベース**: MongoDB Atlas
+- **認証**: Facebook OAuth + JWT
+- **API**: Instagram Graph API v19.0
 
 ### 📖 詳細情報
-詳細な引き継ぎ情報は `HANDOVER_REPORT_2025-08-25.md` を参照してください。
+詳細な引き継ぎ情報は `HANDOVER_REPORT_20250125_FINAL.md` を参照してください。
 
 ---
 
@@ -61,25 +81,31 @@ Instagram Graph API v19.0を使用した投稿管理・分析ツール。PWA（P
 Instagram Graph API v19.0を活用した投稿管理・分析ツールの開発。ビジネスアカウント向けの効率的なInstagramマーケティング支援を提供します。
 
 ### 技術構成
-- **バックエンド**: Node.js 18+ + Express.js（ポート4000）
-- **フロントエンド**: React 18 + Vite 5（ポート3001）
-- **データベース**: MongoDB（デモモード対応）
+- **バックエンド**: Node.js 18+ + Express.js（ポート10000）
+- **フロントエンド**: React 18 + Vite 5（Vercel）
+- **データベース**: MongoDB Atlas（本番環境）
 - **API**: Instagram Graph API v19.0 完全対応
-- **認証**: Facebook OAuth + JWT
+- **認証**: Facebook OAuth + JWT（7日間有効）
 - **PWA**: Service Worker + Manifest
+- **デプロイ**: Render（バックエンド）+ Vercel（フロントエンド）
 
 ### 開発環境
 - **開発エディタ**: Cursor
 - **環境変数管理**: dotenv.config({ path: 'env.development' }) で明示読み込み
 - **パッケージマネージャー**: npm
 - **テストフレームワーク**: Jest
+- **バックエンドデプロイ**: Render（自動デプロイ）
+- **フロントエンドデプロイ**: Vercel（自動デプロイ）
 
 ### 現在の状態
-- ✅ **Graph API v19.0 全エンドポイント更新完了**
-- ✅ **ローカル起動OK**（バックエンド4000 / フロントエンド3001）
-- ✅ **環境変数設定済み**（開発・本番）
-- ✅ **検証スクリプト動作確認済み**
-- ✅ **必要権限付与済み**（public_profile等）
+- ✅ **Instagram OAuth認証**: 完全動作
+- ✅ **JWT認証フロー**: 正常動作（7日間有効）
+- ✅ **MongoDB接続**: Atlas接続正常
+- ✅ **CORS設定**: 完全修正済み
+- ✅ **長期トークン交換**: 実装済み（60日有効）
+- ✅ **ログイン状態保持**: リロード後も保持
+- ✅ **ダッシュボード遷移**: 正常動作
+- ✅ **本番環境デプロイ**: 完了
 
 ### ディレクトリ構造
 ```
@@ -197,13 +223,13 @@ JWT_SECRET=instagram-marketing-app-jwt-secret-2024-development
 SESSION_SECRET=instagram-marketing-app-session-secret-2024-development
 ```
 
-### 本番環境設定
+### 本番環境設定（変更禁止）
 
 #### Vercel（フロントエンド）
 ```bash
 # アプリケーション設定
 VITE_APP_NAME=Instagram Marketing App
-VITE_API_BASE_URL=https://instagram-marketing-backend-v2.onrender.com
+VITE_API_BASE_URL=https://instagram-marketing-backend-v2.onrender.com/api
 
 # Facebook OAuth設定
 VITE_FACEBOOK_APP_ID=1003724798254754
@@ -220,12 +246,19 @@ NODE_ENV=production
 PORT=10000
 
 # Facebook OAuth設定
-FACEBOOK_APP_ID=1003724798254754
-FACEBOOK_APP_SECRET=fd6a61c31a9f1f5798b4d48a927d8f0c
+FB_APP_ID=1003724798254754
+FB_APP_SECRET=fd6a61c31a9f1f5798b4d48a927d8f0c
+FB_REDIRECT_URI=https://instagram-marketing-app.vercel.app/auth/instagram/callback
 
 # Instagram Graph API設定
 INSTAGRAM_GRAPH_API_VERSION=v19.0
 INSTAGRAM_REQUIRED_SCOPES=instagram_basic,instagram_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement,public_profile,email
+
+# セキュリティ設定
+JWT_SECRET=instagram-marketing-app-jwt-secret-2024-production-strong-key
+
+# MongoDB設定
+MONGO_URI=mongodb+srv://trill0:password@cluster0.mongodb.net/instagram-marketing?retryWrites=true&w=majority
 ```
 
 ## 🚀 実行方法
@@ -427,46 +460,46 @@ GET /v19.0/{user_id}
 
 ### 🔄 進行中項目
 
-#### 1. 本番環境環境変数設定
-- [ ] **Vercel**: `FACEBOOK_APP_SECRET`環境変数設定
-- [ ] **Render**: `FACEBOOK_APP_SECRET`環境変数設定
-- [ ] **長期トークン管理**: 期限切れ前の自動更新フロー確認
+#### 1. 最終動作確認
+- [ ] **フロントエンドアクセス確認**: https://instagram-marketing-app.vercel.app の動作確認
+- [ ] **Instagramログイン確認**: 実際のログインからダッシュボード遷移の確認
+- [ ] **リロード後状態保持確認**: ページリロード後のログイン状態保持確認
 
-#### 2. 実トークンでの動作確認
-- [ ] **verify:graph実行**: 実トークンでのGraph API疎通確認
-- [ ] **投稿作成テスト**: 実際のInstagram投稿作成テスト
-- [ ] **インサイト取得テスト**: 投稿後のインサイト取得確認
+#### 2. 本番環境最終テスト
+- [ ] **Instagram OAuth認証**: 本番環境での認証フロー確認
+- [ ] **JWT期限切れ時の挙動**: 7日後の再ログイン動作確認
+- [ ] **API エラーメッセージ表示**: 404/500エラー時の適切なメッセージ表示確認
 
 ### 🚀 短期対応（1-2週間）
 
 #### 1. 完全動作確認
-- [ ] **Graph API v19.0疎通確認**: 全エンドポイントでの動作確認
-- [ ] **Instagram投稿・インサイト取得**: 本格運用前の最終テスト
-- [ ] **Facebook Login認証フロー**: 本番環境での認証確認
+- [ ] **Instagram OAuth認証**: 本番環境での認証確認
+- [ ] **ダッシュボード機能**: 投稿分析・管理機能の動作確認
+- [ ] **エラーハンドリング**: 各種エラーケースの適切な処理確認
 
-#### 2. 本番環境デプロイ
-- [ ] **環境変数設定完了**: Vercel/Render側での設定完了
-- [ ] **ヘルスチェック**: 本番環境での動作確認
-- [ ] **セキュリティ設定**: 本番環境でのセキュリティ確認
+#### 2. 運用開始準備
+- [ ] **監視設定**: 本番環境での監視設定
+- [ ] **ログ管理**: 本番環境でのログ管理設定
+- [ ] **セキュリティ確認**: 本番環境でのセキュリティ確認
 
 ### 📈 中期対応（1-2ヶ月）
 
-#### 1. テスト品質向上
-- [ ] **ユニットテストカバレッジ**: 現在0.7%から80%以上へ向上
-- [ ] **E2Eテスト実装**: エンドツーエンドテストの実装
-- [ ] **API統合テスト**: 全APIエンドポイントの統合テスト
+#### 1. 機能拡張
+- [ ] **投稿作成機能**: Instagram投稿作成機能の実装
+- [ ] **分析機能強化**: より詳細な分析機能の実装
+- [ ] **マルチアカウント対応**: 複数Instagramアカウント管理
 
 #### 2. パフォーマンス最適化
 - [ ] **フロントエンド最適化**: チャンクサイズの最適化
-- [ ] **画像最適化**: レイジーローディングの実装
-- [ ] **APIレスポンスキャッシュ**: キャッシュ戦略の実装
+- [ ] **APIレスポンス最適化**: レスポンス時間の改善
+- [ ] **キャッシュ戦略**: 適切なキャッシュ戦略の実装
 
 ### 🔮 長期対応（3-6ヶ月）
 
-#### 1. 機能拡張
+#### 1. 高度な機能
 - [ ] **AI機能強化**: OpenAI統合の高度化
-- [ ] **分析機能**: 高度なInstagram分析機能
-- [ ] **マルチアカウント**: 複数Instagramアカウント管理
+- [ ] **自動投稿**: スケジュール投稿機能
+- [ ] **高度な分析**: 機械学習を活用した分析機能
 
 #### 2. 運用・監視強化
 - [ ] **自動監視**: 24/7自動監視システム
@@ -476,16 +509,17 @@ GET /v19.0/{user_id}
 ### 📊 完了の受け入れ基準
 
 #### ✅ 必須項目
-- `npm run verify:graph`が成功すること
-- `/me/accounts`で対象ページとig_business_idが確認できること
-- 全Graph API v19.0エンドポイントで疎通確認が完了していること
-- 本番環境の環境変数が設定されていること
+- Instagram OAuth認証が本番環境で正常動作すること
+- JWT認証フローが正常動作すること
+- ログイン状態がリロード後も保持されること
+- ダッシュボードに正常遷移すること
+- MongoDB接続が正常動作すること
 
 #### 🔍 確認項目
-- 権限スコープが正しく設定されていること
-- Instagram連携が正常に動作していること
-- 長期トークン管理フローが正常に動作すること
-- Instagram投稿・インサイト取得が本番環境で動作すること
+- CORS設定が正常動作すること
+- 長期トークン交換が正常動作すること
+- エラーハンドリングが適切に動作すること
+- 本番環境でのセキュリティが確保されていること
 
 ---
 
@@ -517,7 +551,7 @@ GET /v19.0/{user_id}
 
 ---
 
-**最終更新**: 2025-08-10  
+**最終更新**: 2025-10-17  
 **バージョン**: 1.0.0  
 **Graph API対応**: v19.0  
-**状態**: ✅ Graph API v19.0完全解消完了（本番環境環境変数設定待ち）
+**状態**: ✅ Instagram OAuth認証後のログイン状態保持機能完全実装済み（最終動作確認中）

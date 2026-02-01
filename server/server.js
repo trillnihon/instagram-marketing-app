@@ -255,9 +255,11 @@ app.get('/api/health', (_req, res) => {
   
   import('mongoose').then(mongoose => {
     const state = mongoose.default.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
+    const connected = state === 1;
     res.json({
-      mongodb: state === 1 ? 'connected' : 'disconnected',
-      connection_status: state === 1 ? 'success' : 'failed',
+      status: connected ? 'ok' : 'degraded',
+      mongodb: connected ? 'connected' : 'disconnected',
+      connection_status: connected ? 'success' : 'failed',
     });
   });
 });
@@ -667,23 +669,20 @@ app.get('/auth/instagram/callback', async (req, res) => {
     
     console.log('[DEBUG] Instagram認証 - 投稿データ取得レスポンス:', JSON.stringify(mediaRes.data, null, 2));
     
-    // 成功レスポンス
+    // 成功レスポンス（instagramUser を使用。instagramBusinessAccount / pages は GET コールバックでは未取得のため使用しない）
     res.json({
       success: true,
       access_token: longLivedToken,
       longLivedToken: longLivedToken,
       user: {
-        id: instagramBusinessAccount.id,
-        username: instagramBusinessAccount.username,
-        media_count: instagramBusinessAccount.media_count,
-        page_id: instagramBusinessAccount.page_id,
-        page_name: instagramBusinessAccount.page_name
+        id: instagramUser.id,
+        username: instagramUser.username,
+        account_type: instagramUser.account_type
       },
       recent_posts: mediaRes.data.data || [],
       debug: {
-        pages,
         accessToken: longLivedToken.substring(0, 10) + '...',
-        instagramBusinessAccount
+        instagramUser
       }
     });
     

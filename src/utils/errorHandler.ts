@@ -282,7 +282,7 @@ export class ErrorHandler {
       const store = localStorage.getItem('app-store');
       if (store) {
         const data = JSON.parse(store);
-        return data.state?.currentUser?.userId;
+        return data.state?.currentUser?.id;
       }
     } catch (error) {
       console.warn('ユーザーIDの取得に失敗:', error);

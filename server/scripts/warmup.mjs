@@ -7,7 +7,7 @@
 
 const TARGET_URLS = [
   {
-    url: 'https://instagram-marketing-backend-v2.onrender.com/health',
+    url: 'https://instagram-marketing-backend-v2.onrender.com/api/health',
     method: 'GET',
     body: null
   },

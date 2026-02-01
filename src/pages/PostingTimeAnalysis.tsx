@@ -16,7 +16,8 @@ import {
 import { 
   fetchPostingTimeData, 
   analyzeOptimalPostingTimes, 
-  generatePostingRecommendations 
+  generatePostingRecommendations,
+  generateMockPostingTimeData 
 } from '../services/postingTimeService';
 import { useAppStore } from '../store/useAppStore';
 import DemoTokenAlert from '../components/DemoTokenAlert';
@@ -36,6 +37,17 @@ const PostingTimeAnalysisPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
+
+        // デモユーザーの場合はAPIを呼ばずサンプルデータで表示
+        if (isDemoToken()) {
+          const mockData = generateMockPostingTimeData();
+          setPostingTimeData(mockData);
+          const analysisResult = analyzeOptimalPostingTimes(mockData);
+          setAnalysis(analysisResult);
+          setRecommendations(generatePostingRecommendations(mockData));
+          setLoading(false);
+          return;
+        }
         
         // Instagram認証情報を取得（複数のソースから）
         let instagramBusinessAccountId = currentUser?.instagramBusinessAccountId;

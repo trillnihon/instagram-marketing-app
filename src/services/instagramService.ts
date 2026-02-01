@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useAppStore } from '../store/useAppStore';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://instagram-marketing-backend-v2.onrender.com/api'
@@ -72,6 +73,29 @@ export interface InstagramCreateMedia {
   status: string;
 }
 
+// デモモード用モックデータ（本番APIを呼ばずjwt malformedを防ぐ）
+const MOCK_USER: InstagramUser = {
+  id: 'demo-user-001',
+  name: 'デモユーザー',
+  username: 'demo_user',
+  account_type: 'BUSINESS'
+};
+const MOCK_PAGES: InstagramPage[] = [
+  { id: 'demo-page-1', name: 'デモページ', access_token: 'demo', instagram_business_account: { id: 'demo-ig-001' } }
+];
+const MOCK_ACCOUNT: InstagramAccount = {
+  id: 'demo-ig-001',
+  name: 'デモアカウント',
+  username: 'demo_user',
+  account_type: 'BUSINESS',
+  followers_count: 100,
+  media_count: 5
+};
+const MOCK_MEDIA: InstagramMedia[] = [
+  { id: 'demo-media-1', caption: 'デモ投稿', media_type: 'IMAGE', like_count: 50, comments_count: 5, timestamp: new Date().toISOString() }
+];
+const MOCK_INSIGHTS: InstagramInsights = { impressions: 100, reach: 80, engagement: 20, saved: 5 };
+
 class InstagramService {
   private baseURL: string;
 
@@ -83,6 +107,10 @@ class InstagramService {
    * ユーザー情報を取得
    */
   async getUserInfo(): Promise<InstagramUser> {
+    if (useAppStore.getState().isDemoToken()) {
+      console.log('📱 [DEMO] getUserInfo: デモのためMockデータを返却');
+      return MOCK_USER;
+    }
     try {
       const token = localStorage.getItem("IG_JWT");
       const response = await axios.get(`${this.baseURL}/instagram/user-info`, {
@@ -106,6 +134,10 @@ class InstagramService {
    * Facebookページ一覧を取得
    */
   async getPages(): Promise<InstagramPage[]> {
+    if (useAppStore.getState().isDemoToken()) {
+      console.log('📱 [DEMO] getPages: デモのためMockデータを返却');
+      return MOCK_PAGES;
+    }
     try {
       const response = await axios.get(`${this.baseURL}/instagram/pages`);
       
@@ -124,6 +156,10 @@ class InstagramService {
    * Instagram Business Account情報を取得
    */
   async getInstagramAccount(accountId: string): Promise<InstagramAccount> {
+    if (useAppStore.getState().isDemoToken()) {
+      console.log('📱 [DEMO] getInstagramAccount: デモのためMockデータを返却');
+      return MOCK_ACCOUNT;
+    }
     try {
       const response = await axios.get(`${this.baseURL}/instagram/instagram-account/${accountId}`);
       
@@ -142,6 +178,10 @@ class InstagramService {
    * 投稿一覧を取得
    */
   async getMedia(accountId: string, limit: number = 25): Promise<InstagramMedia[]> {
+    if (useAppStore.getState().isDemoToken()) {
+      console.log('📱 [DEMO] getMedia: デモのためMockデータを返却');
+      return MOCK_MEDIA;
+    }
     try {
       const response = await axios.get(`${this.baseURL}/instagram/media/${accountId}`, {
         params: { limit }
@@ -162,6 +202,10 @@ class InstagramService {
    * 特定投稿のインサイトを取得
    */
   async getInsights(mediaId: string): Promise<InstagramInsights> {
+    if (useAppStore.getState().isDemoToken()) {
+      console.log('📱 [DEMO] getInsights: デモのためMockデータを返却');
+      return MOCK_INSIGHTS;
+    }
     try {
       const response = await axios.get(`${this.baseURL}/instagram/media/${mediaId}/insights`);
       
@@ -266,6 +310,10 @@ class InstagramService {
    * ヘルスチェック
    */
   async healthCheck(): Promise<boolean> {
+    if (useAppStore.getState().isDemoToken()) {
+      console.log('📱 [DEMO] healthCheck: デモのためスキップ');
+      return true;
+    }
     try {
       const url = `${this.baseURL}/health`;
       console.log('Health check URL:', url);

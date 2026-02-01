@@ -228,6 +228,10 @@ export const mockApi = {
   }
 };
 
+// デモユーザーIDかどうか（本番APIを呼ばずMockを返す）
+const isDemoUserId = (userId: string): boolean =>
+  userId === 'demo_user' || userId === 'demo-user-001';
+
 // 本番APIのみを使用（Mock APIは完全停止）
 export const apiWithFallback = {
   // 投稿履歴取得（本番APIのみ）
@@ -237,9 +241,14 @@ export const apiWithFallback = {
       console.warn('⚠️ [WARNING] getInstagramHistory - 無効なユーザーID:', userId);
       throw new Error('無効なユーザーIDです');
     }
+    // デモユーザーは本番APIを呼ばずMockデータを返す
+    if (isDemoUserId(userId)) {
+      console.log('📱 [DEMO] getInstagramHistory: デモユーザーのためMockデータを返却');
+      return mockApi.getInstagramHistory();
+    }
     
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
-    const apiUrl = `${apiBaseUrl}/api/instagram/history/${userId}`;
+    const apiUrl = `${apiBaseUrl}/instagram/history/${userId}`;
     console.log(`🔍 [PRODUCTION API] Instagram履歴取得: ${apiUrl}`);
     console.log(`🔍 [PRODUCTION API] ユーザーID: ${userId}`);
     
@@ -273,6 +282,11 @@ export const apiWithFallback = {
       console.log('⚠️ [WARNING] 無効なユーザーID:', userId);
       throw new Error('無効なユーザーIDです');
     }
+    // デモユーザーは本番APIを呼ばずMockデータを返す
+    if (isDemoUserId(userId)) {
+      console.log('📅 [DEMO] getScheduledPosts: デモユーザーのためMockデータを返却');
+      return mockApi.getScheduledPosts();
+    }
     
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
     
@@ -282,7 +296,7 @@ export const apiWithFallback = {
     if (month) params.append('month', month.toString());
     if (year) params.append('year', year.toString());
     
-    const apiUrl = `${apiBaseUrl}/api/scheduler/posts?${params.toString()}`;
+    const apiUrl = `${apiBaseUrl}/scheduler/posts?${params.toString()}`;
     console.log(`🔍 [PRODUCTION API] スケジュール投稿取得: ${apiUrl}`);
     console.log(`🔍 [PRODUCTION API] ユーザーID: ${userId}, 月: ${month}, 年: ${year}`);
     
@@ -312,7 +326,7 @@ export const apiWithFallback = {
   // アナリティクスデータ取得（本番APIのみ）
   getAnalyticsData: async () => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
-    const apiUrl = `${apiBaseUrl}/api/analytics/dashboard`;
+    const apiUrl = `${apiBaseUrl}/analytics/dashboard`;
     console.log(`🔍 [PRODUCTION API] アナリティクスデータ取得: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
@@ -338,7 +352,7 @@ export const apiWithFallback = {
   // ハッシュタグ分析データ取得（本番APIのみ）
   getHashtagData: async () => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
-    const apiUrl = `${apiBaseUrl}/api/hashtags/analysis`;
+    const apiUrl = `${apiBaseUrl}/hashtags/analysis`;
     console.log(`🔍 [PRODUCTION API] ハッシュタグ分析データ取得: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
@@ -364,7 +378,7 @@ export const apiWithFallback = {
   // ヘルスチェック（本番APIのみ）
   healthCheck: async () => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
-    const apiUrl = `${apiBaseUrl}/api/health`;
+    const apiUrl = `${apiBaseUrl}/health`;
     console.log(`🔍 [PRODUCTION API] ヘルスチェック: ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
@@ -394,9 +408,9 @@ export const apiWithFallback = {
   checkProductionApiStatus: async () => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://instagram-marketing-backend-v2.onrender.com/api';
     const endpoints = [
-      '/api/health',
-      '/api/instagram/history/demo_user',
-      '/api/scheduler/posts?userId=demo_user'
+      '/health',
+      '/instagram/history/demo_user',
+      '/scheduler/posts?userId=demo_user'
     ];
     
     interface EndpointResult {
