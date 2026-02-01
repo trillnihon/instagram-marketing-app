@@ -22,7 +22,11 @@ const DebugPanel: React.FC = () => {
     setDebugInfo(info);
   }, []);
 
-  // 常に表示（本番環境でも）
+  // 本番環境では非表示（サブスク販売時にユーザーに見せない）
+  const isProd = import.meta.env.PROD;
+  const showDebug = !isProd || new URLSearchParams(window.location.search).get('debug') === 'true';
+  if (!showDebug) return null;
+
   return (
     <div className="fixed bottom-4 right-4 bg-black bg-opacity-90 text-white p-4 rounded-lg text-xs max-w-sm z-50">
       <h3 className="font-bold mb-2">🔧 デバッグ情報</h3>
